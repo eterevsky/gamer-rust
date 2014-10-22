@@ -1,0 +1,5 @@
+[package]
+
+name = "qamer"
+version = "0.0.1"
+authors = ["Oleg Eterevsky <oleg@eterevsky.com>"]
