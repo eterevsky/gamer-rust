@@ -1,23 +1,61 @@
-use gomoku::common::GOMOKU_POINTS;
+#[cfg(test)]
+use gomoku::common;
+
+use def;
+use gomoku::game::Gomoku;
+use gomoku::game::SIZE;
 use gomoku::gomoku_move::GomokuMove;
 
+const BOARD_LEN: uint = SIZE * SIZE;
+
 pub struct GomokuState {
-  stone: [bool, ..GOMOKU_POINTS],
-  color: [bool, ..GOMOKU_POINTS],
+  stone: [bool, ..BOARD_LEN],
+  color: [bool, ..BOARD_LEN],
   player: bool
+}
+
+#[cfg(test)]
+#[deriving(PartialEq, Show)]
+enum PointState {
+  Black,
+  White,
+  Empty
 }
 
 impl GomokuState {
   pub fn new() -> GomokuState {
     GomokuState {
-      stone: [false, ..GOMOKU_POINTS],
-      color: [false, ..GOMOKU_POINTS],
+      stone: [false, ..BOARD_LEN],
+      color: [false, ..BOARD_LEN],
       player: true
     }
   }
 
-  pub fn play(&self, gmove: GomokuMove) -> Option<GomokuState> {
-    let GomokuMove(point) = gmove;
+  #[cfg(test)]
+  fn get(&self, p: uint) -> PointState {
+    if self.stone[p] {
+      if self.color[p] {
+        Black
+      } else {
+        White
+      }
+    } else {
+      Empty
+    }
+  }
+
+  #[cfg(test)]
+  fn gets(&self, s: &str) -> Option<PointState> {
+    match common::idx_from_str(s) {
+      Some(p) => Some(self.get(p)),
+      None    => None
+    }
+  }
+}
+
+impl def::State<Gomoku> for GomokuState {
+  pub fn play(&self, gmove: def::Move<Gomoku>) -> Option<GomokuState> {
+    let GomokuMove(point) = gmove as GomokuMove;
 
     if self.stone[point] {
       return None;
@@ -35,30 +73,39 @@ impl GomokuState {
     return Some(new_state);
   }
 
+  pub fn is_terminal(&self) -> bool {
+    false
+  }
+
+  pub fn get_player(&self) -> uint {
+    1
+  }
+
+  pub fn get_payoff(&self, player: uint) -> Option<int> {
+    None
+  }
 }
 
 #[test]
 fn test_empty_point_in_new_gomoku() {
   let state = GomokuState::new();
-  assert!(!state.stone[0]);
+  assert_eq!(Some(Empty), state.gets("A1"));
 }
 
 #[test]
 fn test_gomoku_play() {
   let state0 = GomokuState::new();
-  assert!(!state0.stone[0]);
+    assert_eq!(Some(Empty), state0.gets("c3"));
 
-  let state1 = state0.play(GomokuMove(15)).unwrap();
+  let state1 = state0.play(from_str("c3").unwrap()).unwrap();
   assert!(!state1.player);
-  assert!(state1.stone[15]);
-  assert!(state1.color[15]);
+  assert_eq!(Some(Black), state1.gets("c3"));
   assert!(state0.player);
-  assert!(!state0.stone[15]);
+  assert_eq!(Some(Empty), state0.gets("c3"));
 
-  let state2 = state1.play(GomokuMove(10)).unwrap();
+  let state2 = state1.play(from_str("d4").unwrap()).unwrap();
   assert!(state2.player);
-  assert!(state2.stone[10]);
-  assert!(!state2.color[10]);
+  assert_eq!(Some(White), state2.gets("d4"));
 
-  assert!(state2.play(GomokuMove(15)).is_none());
+  assert!(state2.play(from_str("d4").unwrap()).is_none());
 }
