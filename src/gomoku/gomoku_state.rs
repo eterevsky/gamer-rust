@@ -1,8 +1,7 @@
 #[cfg(test)]
-use gomoku::common;
+use gomoku::game;
 
 use def;
-use gomoku::game::Gomoku;
 use gomoku::game::SIZE;
 use gomoku::gomoku_move::GomokuMove;
 
@@ -46,16 +45,16 @@ impl GomokuState {
 
   #[cfg(test)]
   fn gets(&self, s: &str) -> Option<PointState> {
-    match common::idx_from_str(s) {
+    match game::idx_from_str(s) {
       Some(p) => Some(self.get(p)),
       None    => None
     }
   }
 }
 
-impl def::State<Gomoku> for GomokuState {
-  pub fn play(&self, gmove: def::Move<Gomoku>) -> Option<GomokuState> {
-    let GomokuMove(point) = gmove as GomokuMove;
+impl def::State<GomokuMove> for GomokuState {
+  fn play(&self, gmove: GomokuMove) -> Option<GomokuState> {
+    let GomokuMove(point) = gmove;
 
     if self.stone[point] {
       return None;
@@ -73,15 +72,15 @@ impl def::State<Gomoku> for GomokuState {
     return Some(new_state);
   }
 
-  pub fn is_terminal(&self) -> bool {
+  fn is_terminal(&self) -> bool {
     false
   }
 
-  pub fn get_player(&self) -> uint {
+  fn get_player(&self) -> uint {
     1
   }
 
-  pub fn get_payoff(&self, player: uint) -> Option<int> {
+  fn get_payoff(&self, player: uint) -> Option<int> {
     None
   }
 }

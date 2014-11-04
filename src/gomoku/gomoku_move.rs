@@ -39,7 +39,7 @@ impl fmt::Show for GomokuMove {
   }
 }
 
-impl def::Move<game::Gomoku> for GomokuMove {
+impl def::Move for GomokuMove {
 }
 
 

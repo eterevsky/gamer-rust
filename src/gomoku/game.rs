@@ -1,15 +1,13 @@
 use def;
-use gomoku::GomokuState;
+use gomoku::gomoku_state::GomokuState;
+use gomoku::gomoku_move::GomokuMove;
 
 pub struct Gomoku;
 
-impl def::Game for Gomoku {
-  fn new() -> uint {
-    return 0;
+impl def::Game<GomokuState, GomokuMove> for Gomoku {
+  fn new() -> GomokuState {
+    return GomokuState::new();
   }
-  // fn new() -> GomokuState {
-  //   return GomokuState::new();
-  // }
 }
 
 
@@ -44,4 +42,13 @@ pub fn idx_from_str(s: &str) -> Option<uint> {
   }
 
   return Some(idx_from_coords(col, row - 1));
+}
+
+
+#[test]
+fn test_create_game() {
+  let state: GomokuState = def::Game::new();
+  assert!(!state.is_terminal());
+  assert_eq!(None, state.get_payoff());
+  assert_eq!(1, state.get_player());
 }
