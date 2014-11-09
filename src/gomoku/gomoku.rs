@@ -1,11 +1,21 @@
-use def;
+use def::Game;
+use def::GameState;
 use gomoku::gomoku_state::GomokuState;
 use gomoku::gomoku_move::GomokuMove;
 
-pub struct Gomoku;
+#[allow(dead_code)]
+pub struct Gomoku {
+  unused: int
+}
 
-impl def::Game<GomokuState, GomokuMove> for Gomoku {
-  fn new() -> GomokuState {
+impl Gomoku {
+  fn new() -> Gomoku {
+    Gomoku {unused: 0}
+  }
+}
+
+impl Game<GomokuState, GomokuMove> for Gomoku {
+  fn new(self) -> GomokuState {
     return GomokuState::new();
   }
 }
@@ -47,8 +57,8 @@ pub fn idx_from_str(s: &str) -> Option<uint> {
 
 #[test]
 fn test_create_game() {
-  let state: GomokuState = def::Game::new();
+  let state: GomokuState = Gomoku::new().new();
   assert!(!state.is_terminal());
-  assert_eq!(None, state.get_payoff());
+  assert_eq!(None, state.get_payoff(1));
   assert_eq!(1, state.get_player());
 }

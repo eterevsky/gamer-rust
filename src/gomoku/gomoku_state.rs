@@ -1,15 +1,15 @@
-#[cfg(test)]
-use gomoku::game;
-
 use def;
-use gomoku::game::SIZE;
+use def::GameState;
+#[cfg(test)]
+use gomoku::gomoku;
+use gomoku::gomoku::SIZE;
 use gomoku::gomoku_move::GomokuMove;
 
 const BOARD_LEN: uint = SIZE * SIZE;
 
 pub struct GomokuState {
-  stone: [bool, ..BOARD_LEN],
-  color: [bool, ..BOARD_LEN],
+  stone: [bool, .. BOARD_LEN],
+  color: [bool, .. BOARD_LEN],
   player: bool
 }
 
@@ -24,8 +24,8 @@ enum PointState {
 impl GomokuState {
   pub fn new() -> GomokuState {
     GomokuState {
-      stone: [false, ..BOARD_LEN],
-      color: [false, ..BOARD_LEN],
+      stone: [false, .. BOARD_LEN],
+      color: [false, .. BOARD_LEN],
       player: true
     }
   }
@@ -45,15 +45,15 @@ impl GomokuState {
 
   #[cfg(test)]
   fn gets(&self, s: &str) -> Option<PointState> {
-    match game::idx_from_str(s) {
+    match gomoku::idx_from_str(s) {
       Some(p) => Some(self.get(p)),
       None    => None
     }
   }
 }
 
-impl def::State<GomokuMove> for GomokuState {
-  fn play(&self, gmove: GomokuMove) -> Option<GomokuState> {
+impl def::GameState<GomokuMove> for GomokuState {
+  fn play(self, gmove: GomokuMove) -> Option<GomokuState> {
     let GomokuMove(point) = gmove;
 
     if self.stone[point] {
@@ -97,9 +97,9 @@ fn test_gomoku_play() {
     assert_eq!(Some(Empty), state0.gets("c3"));
 
   let state1 = state0.play(from_str("c3").unwrap()).unwrap();
-  assert!(!state1.player);
+  assert_eq!(2, state1.get_player());
   assert_eq!(Some(Black), state1.gets("c3"));
-  assert!(state0.player);
+  assert_eq!(1, state0.get_player());
   assert_eq!(Some(Empty), state0.gets("c3"));
 
   let state2 = state1.play(from_str("d4").unwrap()).unwrap();
@@ -107,4 +107,20 @@ fn test_gomoku_play() {
   assert_eq!(Some(White), state2.gets("d4"));
 
   assert!(state2.play(from_str("d4").unwrap()).is_none());
+}
+
+#[test]
+fn test_gomoku_game1() {
+  let mut state = GomokuState::new();
+  state = state.play(from_str("a1").unwrap()).unwrap();
+  state = state.play(from_str("b1").unwrap()).unwrap();
+  state = state.play(from_str("b2").unwrap()).unwrap();
+  state = state.play(from_str("c2").unwrap()).unwrap();
+  state = state.play(from_str("c3").unwrap()).unwrap();
+  state = state.play(from_str("d3").unwrap()).unwrap();
+  state = state.play(from_str("d4").unwrap()).unwrap();
+  state = state.play(from_str("e4").unwrap()).unwrap();
+  state = state.play(from_str("e5").unwrap()).unwrap();
+  assert!(state.is_terminal());
+  assert_eq!(Some(1), state.get_payoff(1));
 }

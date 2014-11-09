@@ -2,15 +2,14 @@ use std::fmt;
 use std::from_str;
 use std::char;
 
-use def;
-use gomoku::game;
-use gomoku::game::SIZE;
+use gomoku::gomoku;
+use gomoku::gomoku::SIZE;
 
 pub struct GomokuMove(pub uint);
 
 impl from_str::FromStr for GomokuMove {
   fn from_str(move_str : &str) -> Option<GomokuMove> {
-    match game::idx_from_str(move_str) {
+    match gomoku::idx_from_str(move_str) {
       Some(x) => Some(GomokuMove(x)),
       None => None
     }
@@ -37,9 +36,6 @@ impl fmt::Show for GomokuMove {
     let row = point % SIZE + 1;
     return write!(formatter, "{}{}", col_char, row);
   }
-}
-
-impl def::Move for GomokuMove {
 }
 
 

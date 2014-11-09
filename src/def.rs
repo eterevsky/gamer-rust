@@ -1,13 +1,10 @@
-pub trait Game<S: State<M>, M: Move> {
-  fn new() -> S;
+pub trait Game<State: GameState<Move>, Move> {
+  fn new(self) -> State;
 }
 
-pub trait State<M: Move> {
-  fn play(&self, M) -> Option<Self>;
+pub trait GameState<Move> {
+  fn play(self, Move) -> Option<Self>;
   fn get_player(&self) -> uint;
   fn is_terminal(&self) -> bool;
   fn get_payoff(&self, uint) -> Option<int>;
-}
-
-pub trait Move {
 }
