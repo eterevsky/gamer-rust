@@ -1,17 +1,23 @@
 use std::fmt;
-use std::from_str;
 use std::char;
+use std::str::FromStr;
 
 use gomoku::gomoku;
 use gomoku::gomoku::SIZE;
+use gomoku::util::parse_point;
 
-pub struct GomokuMove(pub uint);
+pub struct GomokuMove(pub usize);
 
-impl from_str::FromStr for GomokuMove {
-  fn from_str(move_str : &str) -> Option<GomokuMove> {
-    match gomoku::idx_from_str(move_str) {
-      Some(x) => Some(GomokuMove(x)),
-      None => None
+#[derive(Debug, PartialEq)]
+pub struct ParseError;
+
+impl FromStr for GomokuMove {
+  type Err = ParseError;
+
+  fn from_str(move_str : &str) -> Result<GomokuMove, ParseError> {
+    match parse_point(move_str) {
+      Some(x) => Ok(GomokuMove(x)),
+      None => Err(ParseError)
     }
   }
 }
@@ -24,16 +30,16 @@ impl PartialEq for GomokuMove {
   }
 }
 
-impl fmt::Show for GomokuMove {
+impl fmt::Debug for GomokuMove {
   fn fmt(&self, formatter : &mut fmt::Formatter) -> fmt::Result {
     let &GomokuMove(point) = self;
-    let col = point / SIZE;
+    let col = point as u32 / SIZE;
     let col_char = if col < 8 {
-      char::from_u32('A' as u32 + col as u32).unwrap()
+      char::from_u32('A' as u32 + col).unwrap()
     } else {
-      char::from_u32('B' as u32 + col as u32).unwrap()
+      char::from_u32('B' as u32 + col).unwrap()
     };
-    let row = point % SIZE + 1;
+    let row = point % SIZE as usize + 1;
     return write!(formatter, "{}{}", col_char, row);
   }
 }
@@ -41,11 +47,11 @@ impl fmt::Show for GomokuMove {
 
 #[test]
 fn test_gomoku_move_parse() {
-  assert_eq!(None, from_str::<GomokuMove>("abc"));
-  assert_eq!(Some(GomokuMove(0)), from_str("a1"));
-  assert_eq!(Some(GomokuMove(0)), from_str("A1"));
-  assert_eq!(Some(GomokuMove(0)), from_str("A1"));
-  assert_eq!(Some(GomokuMove(SIZE * 8 + 2)), from_str("J3"));
+  assert_eq!(Err(ParseError), FromStr::from_str("abc"));
+  assert_eq!(Ok(GomokuMove(0)), FromStr::from_str("a1"));
+  assert_eq!(Ok(GomokuMove(0)), FromStr::from_str("A1"));
+  assert_eq!(Ok(GomokuMove(0)), FromStr::from_str("A1"));
+  assert_eq!(Ok(GomokuMove(SIZE * 8 + 2)), FromStr::from_str("J3"));
 }
 
 #[test]

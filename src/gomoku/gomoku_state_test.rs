@@ -1,44 +1,47 @@
+use std::str::FromStr;
+
 use def::Game;
 use def::GameState;
+use def::IPlayer;
 use gomoku::gomoku::Gomoku;
 use gomoku::gomoku_move::GomokuMove;
 use gomoku::gomoku_state::GomokuState;
-use gomoku::gomoku_state::{Empty,White,Black};
+use gomoku::gomoku_state::PointState;
 
 #[test]
 fn test_empty_point_in_new_gomoku() {
   let state = Gomoku::new().new();
-  assert_eq!(Some(Empty), state.gets("A1"));
+  assert_eq!(Some(PointState::Empty), state.gets("A1"));
 }
 
 #[test]
 fn test_gomoku_play() {
   let state0 = Gomoku::new().new();
-  assert_eq!(Some(Empty), state0.gets("c3"));
+  assert_eq!(Some(PointState::Empty), state0.gets("c3"));
 
-  let state1 = state0.play(from_str("c3").unwrap()).unwrap();
+  let state1 = state0.play(FromStr::from_str("c3").unwrap()).unwrap();
   assert_eq!(1, state1.get_player());
-  assert_eq!(Some(Black), state1.gets("c3"));
+  assert_eq!(Some(PointState::Black), state1.gets("c3"));
   assert_eq!(0, state0.get_player());
-  assert_eq!(Some(Empty), state0.gets("c3"));
+  assert_eq!(Some(PointState::Empty), state0.gets("c3"));
 
-  let state2 = state1.play(from_str("d4").unwrap()).unwrap();
+  let state2 = state1.play(FromStr::from_str("d4").unwrap()).unwrap();
   assert!(state2.get_player_bool());
-  assert_eq!(Some(White), state2.gets("d4"));
+  assert_eq!(Some(PointState::White), state2.gets("d4"));
 
-  assert!(state2.play(from_str("d4").unwrap()).is_none());
+  assert!(state2.play(FromStr::from_str("d4").unwrap()).is_none());
 }
 
-fn test_gomoku_run_game(moves_str: &str, result: int) {
+fn test_gomoku_run_game(moves_str: &str, result: i32) {
   let mut state = Gomoku::new().new();
-  let mut player = 0u;
+  let mut player = IPlayer(0);
 
   for move_str in moves_str.split_str(" ") {
     assert_eq!(player, state.get_player());
     assert!(!state.is_terminal());
-    let m: GomokuMove = from_str(move_str).unwrap();
+    let m: GomokuMove = FromStr::from_str(move_str).unwrap();
     state = state.play(m).unwrap();
-    player = 1 - player;
+    player = player.next2();
   }
 
   assert!(state.is_terminal());
