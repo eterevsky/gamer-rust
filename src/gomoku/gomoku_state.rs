@@ -1,7 +1,6 @@
 use def;
 use def::GameState;
 use def::IPlayer;
-use gomoku::gomoku;
 use gomoku::gomoku::BOARD_LEN;
 use gomoku::gomoku::SIZE;
 use gomoku::gomoku_move::GomokuMove;
@@ -20,6 +19,7 @@ pub struct GomokuState {
 }
 
 #[derive(PartialEq, Debug)]
+#[cfg(test)]
 pub enum PointState {
   Black,
   White,
@@ -35,6 +35,7 @@ impl GomokuState {
     }
   }
 
+  #[cfg(test)]
   pub fn get(&self, p: usize) -> PointState {
     if self.stone[p] {
       if self.color[p] {
@@ -47,6 +48,7 @@ impl GomokuState {
     }
   }
 
+  #[cfg(test)]
   pub fn gets(&self, s: &str) -> Option<PointState> {
     match util::parse_point(s) {
       Some(p) => Some(self.get(p)),
@@ -57,22 +59,52 @@ impl GomokuState {
   pub fn get_player_bool(&self) -> bool {
     self.status & PLAYER_MASK == 1
   }
-//
-//   fn update_status(&mut self, point: u32) {
-//     let (col, row) = point_to_xy(point) as (i32, i32);
-//     let player = color[point];
-//     for (dx, dy) in [(1, 0), (1, 1), (0, 1), (1, -1)] {
-//       let tail: u32 = 1;
-//       for i in range(1, 5) {
-//         let c = col + dx * i;
-//       }
-//
-//     }
-//   }
+
+  fn update_status(&mut self, point: usize) {
+    let (x, y) = util::point_to_xy(point);
+    let (col, row) = (x as i32, y as i32);
+    let player = self.color[point];
+    assert!(self.stone[point]);
+
+    for &(dx, dy) in [(1, 0), (1, 1), (0, 1), (1, -1)].iter() {
+      let mut tail: u32 = 1;
+      for i in 1..5 {
+        let c = col + dx * i;
+        let r = row + dy * i;
+        let p = util::xy_to_point(c as u32, r as u32);
+        if c < 0 || c >= SIZE as i32 || r < 0 || r > SIZE as i32 ||
+           !self.stone[p] || self.color[p] != player {
+          break
+        }
+        tail += 1;
+      }
+
+      for i in 1..5 {
+        let c = col - dx * i;
+        let r = row - dy * i;
+        if c < 0 || c >= SIZE as i32 || r < 0 || r > SIZE as i32 {
+          break
+        }
+        let p = util::xy_to_point(c as u32, r as u32);
+        if !self.stone[p] || self.color[p] != player {
+          break
+        }
+        tail += 1;
+      }
+
+      if tail >= 5 {
+        if player {
+          self.status |= PLAYER1_WIN_MASK;
+        } else {
+          self.status |= PLAYER2_WIN_MASK;
+        }
+      }
+    }
+  }
 }
 
 impl def::GameState<GomokuMove> for GomokuState {
-  fn play(self, gmove: GomokuMove) -> Option<GomokuState> {
+  fn play(&self, gmove: GomokuMove) -> Option<GomokuState> {
     let GomokuMove(point) = gmove;
 
     if self.stone[point] {
@@ -87,7 +119,7 @@ impl def::GameState<GomokuMove> for GomokuState {
 
     new_state.stone[point] = true;
     new_state.color[point] = self.get_player_bool();
-    // new_state.update_status(point);
+    new_state.update_status(point);
 
     return Some(new_state);
   }

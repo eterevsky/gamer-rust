@@ -1,8 +1,6 @@
 use gomoku::gomoku::SIZE;
 
 pub fn xy_to_point(col: u32, row: u32) -> usize {
-  assert!(col < SIZE);
-  assert!(row < SIZE);
   (col * SIZE + row) as usize
 }
 
@@ -30,7 +28,15 @@ pub fn parse_point(s: &str) -> Option<usize> {
       _ => return None
     };
     row = row * 10 + digit;
+    if row > SIZE {
+      return None
+    }
   }
 
-  return Some(xy_to_point(col, row - 1));
+  if 1 <= row && col < SIZE {
+    return Some(xy_to_point(col, row - 1));
+  } else {
+    return None
+  }
+
 }
