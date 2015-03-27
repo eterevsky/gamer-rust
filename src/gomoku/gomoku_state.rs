@@ -71,9 +71,11 @@ impl GomokuState {
       for i in 1..5 {
         let c = col + dx * i;
         let r = row + dy * i;
+        if c < 0 || c >= SIZE as i32 || r < 0 || r >= SIZE as i32 {
+          break
+        }
         let p = util::xy_to_point(c as u32, r as u32);
-        if c < 0 || c >= SIZE as i32 || r < 0 || r > SIZE as i32 ||
-           !self.stone[p] || self.color[p] != player {
+        if !self.stone[p] || self.color[p] != player {
           break
         }
         tail += 1;
@@ -82,7 +84,7 @@ impl GomokuState {
       for i in 1..5 {
         let c = col - dx * i;
         let r = row - dy * i;
-        if c < 0 || c >= SIZE as i32 || r < 0 || r > SIZE as i32 {
+        if c < 0 || c >= SIZE as i32 || r < 0 || r >= SIZE as i32 {
           break
         }
         let p = util::xy_to_point(c as u32, r as u32);
@@ -105,6 +107,10 @@ impl GomokuState {
 
 impl def::GameState<GomokuMove> for GomokuState {
   fn play(&self, gmove: GomokuMove) -> Option<GomokuState> {
+    if self.status & TERMINAL_MASK != 0 {
+      return None;
+    }
+
     let GomokuMove(point) = gmove;
 
     if self.stone[point] {
