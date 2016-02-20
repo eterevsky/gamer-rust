@@ -24,7 +24,8 @@ pub trait Game {
 }
 
 pub trait GameState<Move> {
-  fn play(&self, Move) -> Option<Self>;
+  // false if there was an error.
+  fn apply(&mut self, Move) -> bool;
   fn get_player(&self) -> IPlayer;
   fn is_terminal(&self) -> bool;
   fn get_payoff(&self, IPlayer) -> Option<i32>;

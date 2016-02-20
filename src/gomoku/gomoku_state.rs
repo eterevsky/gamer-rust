@@ -106,28 +106,23 @@ impl GomokuState {
 }
 
 impl def::GameState<GomokuMove> for GomokuState {
-  fn play(&self, gmove: GomokuMove) -> Option<GomokuState> {
+  fn apply(&mut self, gmove: GomokuMove) -> bool {
     if self.status & TERMINAL_MASK != 0 {
-      return None;
+      return false;
     }
 
     let GomokuMove(point) = gmove;
 
     if self.stone[point] {
-      return None;
+      return false;
     }
 
-    let mut new_state = GomokuState {
-      stone: self.stone,
-      color: self.color,
-      status: self.status ^ PLAYER_MASK
-    };
+    self.stone[point] = true;
+    self.color[point] = self.get_player_bool();
+    self.status ^= PLAYER_MASK;
+    self.update_status(point);
 
-    new_state.stone[point] = true;
-    new_state.color[point] = self.get_player_bool();
-    new_state.update_status(point);
-
-    return Some(new_state);
+    return true;
   }
 
   fn is_terminal(&self) -> bool {

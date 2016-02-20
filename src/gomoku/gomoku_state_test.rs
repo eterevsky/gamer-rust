@@ -16,7 +16,7 @@ fn run_game(moves_str: &str, result: i32) -> GomokuState {
     assert_eq!(player, state.get_player());
     assert!(!state.is_terminal());
     let m: GomokuMove = FromStr::from_str(move_str).unwrap();
-    state = state.play(m).unwrap();
+    assert!(state.apply(m));
     player = player.next2();
   }
 
@@ -34,20 +34,18 @@ fn empty_point_in_new_game() {
 
 #[test]
 fn play() {
-  let state0 = Gomoku::new();
-  assert_eq!(Some(PointState::Empty), state0.gets("c3"));
+  let mut state = Gomoku::new();
+  assert_eq!(Some(PointState::Empty), state.gets("c3"));
 
-  let state1 = state0.play("c3".parse().unwrap()).unwrap();
-  assert_eq!(IPlayer(1), state1.get_player());
-  assert_eq!(Some(PointState::Black), state1.gets("c3"));
-  assert_eq!(IPlayer(0), state0.get_player());
-  assert_eq!(Some(PointState::Empty), state0.gets("c3"));
+  assert!(state.apply("c3".parse().unwrap()));
+  assert_eq!(IPlayer(1), state.get_player());
+  assert_eq!(Some(PointState::Black), state.gets("c3"));
 
-  let state2 = state1.play("d4".parse().unwrap()).unwrap();
-  assert!(state2.get_player_bool());
-  assert_eq!(Some(PointState::White), state2.gets("d4"));
+  assert!(state.apply("d4".parse().unwrap()));
+  assert!(state.get_player_bool());
+  assert_eq!(Some(PointState::White), state.gets("d4"));
 
-  assert!(state2.play("d4".parse().unwrap()).is_none());
+  assert!(!state.apply("d4".parse().unwrap()));
 }
 
 #[test]
@@ -84,13 +82,13 @@ fn game_borders() {
 
 #[test]
 fn two_moves_same_spot() {
-  let state0 = Gomoku::new();
-  let state1 = state0.play("c3".parse().unwrap()).unwrap();
-  assert!(state1.play("c3".parse().unwrap()).is_none());
+  let mut state = Gomoku::new();
+  assert!(state.apply("c3".parse().unwrap()));
+  assert!(!state.apply("c3".parse().unwrap()));
 }
 
 #[test]
 fn no_moves_after_end() {
-  let end_state = run_game("c3 d3 c4 b4 c5 c2 c6 e6 c7", 1);
-  assert!(end_state.play("a1".parse().unwrap()).is_none());
+  let mut end_state = run_game("c3 d3 c4 b4 c5 c2 c6 e6 c7", 1);
+  assert!(!end_state.apply("a1".parse().unwrap()));
 }
