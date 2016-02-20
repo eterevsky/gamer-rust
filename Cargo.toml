@@ -1,5 +1,8 @@
 [package]
-
 name = "gamer"
 version = "0.0.1"
 authors = ["Oleg Eterevsky <oleg@eterevsky.com>"]
+
+[dependencies]
+rand = "0.3"
+lazy_static = "0.1"

@@ -1,3 +1,4 @@
+use rand;
 use std::str::FromStr;
 
 use def::Game;
@@ -16,7 +17,7 @@ fn run_game(moves_str: &str, result: i32) -> GomokuState {
     assert_eq!(player, state.get_player());
     assert!(!state.is_terminal());
     let m: GomokuMove = FromStr::from_str(move_str).unwrap();
-    assert!(state.apply(m));
+    assert!(state.apply(m).is_ok());
     player = player.next2();
   }
 
@@ -37,15 +38,15 @@ fn play() {
   let mut state = Gomoku::new();
   assert_eq!(Some(PointState::Empty), state.gets("c3"));
 
-  assert!(state.apply("c3".parse().unwrap()));
+  assert!(state.apply("c3".parse().unwrap()).is_ok());
   assert_eq!(IPlayer(1), state.get_player());
   assert_eq!(Some(PointState::Black), state.gets("c3"));
 
-  assert!(state.apply("d4".parse().unwrap()));
+  assert!(state.apply("d4".parse().unwrap()).is_ok());
   assert!(state.get_player_bool());
   assert_eq!(Some(PointState::White), state.gets("d4"));
 
-  assert!(!state.apply("d4".parse().unwrap()));
+  assert!(!state.apply("d4".parse().unwrap()).is_ok());
 }
 
 #[test]
@@ -83,12 +84,24 @@ fn game_borders() {
 #[test]
 fn two_moves_same_spot() {
   let mut state = Gomoku::new();
-  assert!(state.apply("c3".parse().unwrap()));
-  assert!(!state.apply("c3".parse().unwrap()));
+  assert!(state.apply("c3".parse().unwrap()).is_ok());
+  assert!(state.apply("c3".parse().unwrap()).is_err());
 }
 
 #[test]
 fn no_moves_after_end() {
   let mut end_state = run_game("c3 d3 c4 b4 c5 c2 c6 e6 c7", 1);
-  assert!(!end_state.apply("a1".parse().unwrap()));
+  assert!(!end_state.apply("a1".parse().unwrap()).is_ok());
+}
+
+#[test]
+fn random_game() {
+  let mut rng = rand::XorShiftRng::new_unseeded();
+  let mut state = GomokuState::new();
+
+  while !state.is_terminal() {
+    state.apply_random(&mut rng);
+  }
+
+  assert!(state.is_terminal());
 }

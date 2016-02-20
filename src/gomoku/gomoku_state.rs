@@ -1,3 +1,6 @@
+use rand::Rng;
+use rand::distributions::{IndependentSample, Range};
+
 use def;
 use def::GameState;
 use def::IPlayer;
@@ -11,6 +14,10 @@ const PLAYER1_WIN_MASK: u32 = 2;
 const PLAYER2_WIN_MASK: u32 = 4;
 const DRAW_MASK: u32 = 8;
 const TERMINAL_MASK: u32 = PLAYER1_WIN_MASK | PLAYER2_WIN_MASK | DRAW_MASK;
+
+lazy_static! {
+  static ref RANGE_DIST: Range<usize> = Range::new(0, BOARD_LEN);
+}
 
 pub struct GomokuState {
   stone: [bool; BOARD_LEN],
@@ -103,26 +110,29 @@ impl GomokuState {
       }
     }
   }
+
+  fn play_stone(&mut self, point: usize) {
+    self.stone[point] = true;
+    self.color[point] = self.get_player_bool();
+    self.status ^= PLAYER_MASK;
+    self.update_status(point);
+  }
 }
 
 impl def::GameState<GomokuMove> for GomokuState {
-  fn apply(&mut self, gmove: GomokuMove) -> bool {
+  fn apply(&mut self, gmove: GomokuMove) -> Result<(), &'static str> {
     if self.status & TERMINAL_MASK != 0 {
-      return false;
+      return Err("Trying to make a move in a terminal state.")
     }
 
     let GomokuMove(point) = gmove;
 
     if self.stone[point] {
-      return false;
+      Err("Position is taken")
+    } else {
+      self.play_stone(point);
+      Ok(())
     }
-
-    self.stone[point] = true;
-    self.color[point] = self.get_player_bool();
-    self.status ^= PLAYER_MASK;
-    self.update_status(point);
-
-    return true;
   }
 
   fn is_terminal(&self) -> bool {
@@ -145,6 +155,20 @@ impl def::GameState<GomokuMove> for GomokuState {
       IPlayer(0) => Some(value),
       IPlayer(1) => Some(-value),
       _ => unreachable!()
+    }
+  }
+
+  fn apply_random(&mut self, mut rng: &mut Rng) {
+    if self.status & TERMINAL_MASK != 0 {
+      panic!("Trying to make a move in a terminal state.");
+    }
+
+    loop {
+      let point: usize = RANGE_DIST.ind_sample(&mut rng);
+      if !self.stone[point] {
+        self.play_stone(point);
+        break;
+      }
     }
   }
 }
