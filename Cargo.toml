@@ -3,6 +3,15 @@ name = "gamer"
 version = "0.0.1"
 authors = ["Oleg Eterevsky <oleg@eterevsky.com>"]
 
+[lib]
+name = "gamer"
+path = "src/lib.rs"
+
+[[bin]]
+name = "gamer"
+path = "src/main.rs"
+
 [dependencies]
-rand = "0.3"
 lazy_static = "0.1"
+rand = "0.3"
+time = "0.1"

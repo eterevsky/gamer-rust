@@ -1,9 +1,5 @@
-#![feature(test)]
-extern crate test;
-
-use rand;
+extern crate rand;
 use std::str::FromStr;
-use test::Bencher;
 
 use def::Game;
 use def::GameState;
@@ -108,15 +104,4 @@ fn random_game() {
   }
 
   assert!(state.is_terminal());
-}
-
-#[bench]
-fn bench_random_game(b: &mut Bencher) {
-  let mut rng = rand::XorShiftRng::new_unseeded();
-  b.iter(|| {
-    let g = GomokuState::new();
-    while !g.is_terminal() {
-      g.apply_random(rng);
-    }
-  });
 }
