@@ -4,12 +4,7 @@ use gomoku::gomoku_move::GomokuMove;
 
 pub struct Gomoku;
 
-impl Gomoku {}
-
-impl Game for Gomoku {
-  type Move = GomokuMove;
-  type State = GomokuState;
-
+impl Gomoku {
   fn new() -> GomokuState {
     return GomokuState::new();
   }

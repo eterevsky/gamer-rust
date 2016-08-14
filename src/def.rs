@@ -1,6 +1,7 @@
 //! General definitions of games, moves, players etc.
 
 use rand::Rng;
+use std::fmt;
 
 /// Represent a player in a game.
 ///
@@ -31,18 +32,44 @@ impl IPlayer {
 }
 
 pub trait Game {
-  type Move;
-  type State: GameState<Self::Move>;
-
-  fn new() -> Self::State;
+  fn nplayers(&self) -> u32;
 }
 
-pub trait GameState<Move> {
-  fn apply(&mut self, Move) -> Result<(), &'static str>;
-  fn apply_random(&mut self, &mut Rng);
+pub trait GameState : Game + Clone + fmt::Display {
+  type Move: Copy + Clone;
+
+  fn apply(&mut self, Self::Move) -> Result<(), &'static str>;
+  fn apply_random(&mut self) -> Result<(), &'static str>;
   fn get_player(&self) -> IPlayer;
-  fn is_terminal(&self) -> bool;
-  fn get_payoff(&self, IPlayer) -> Option<i32>;
+  fn get_payoff(&self, IPlayer) -> Option<f32>;
+  fn is_terminal(&self) -> bool {
+    self.get_payoff(0).is_some()
+  }
+}
+
+pub trait MoveGenerator<S: GameState> {
+  fn generate(&self, state: &S) -> Vec<S::Move>;
+}
+
+pub trait MoveSelector<S: GameState> {
+  /// None if the state is terminal.
+  fn select(&self, state: &S) -> Option<S::Move>;
+}
+
+pub trait Evaluator<S: GameState> {
+  fn evaluate(&self, state: &S) -> f32;
+
+  fn evaluate_move(&self, state: &S, m: S::Move) -> f32 {
+    let mut state_clone = state.clone();
+    state_clone.apply(m).ok();
+    self.evaluate(&state_clone)
+  }
+}
+
+pub trait TerminalEvaluator<S: GameState> {
+  // Some(..) -- if terminal, should be compatible with payoff
+  // None -- if not terminal
+  fn evaluate_terminal(&self, state: &S) -> Option<f32>;
 }
 
 #[cfg(test)]

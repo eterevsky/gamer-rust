@@ -119,7 +119,7 @@ impl GomokuState {
   }
 }
 
-impl def::GameState<GomokuMove> for GomokuState {
+impl def::GameState for GomokuState {
   fn apply(&mut self, gmove: GomokuMove) -> Result<(), &'static str> {
     if self.status & TERMINAL_MASK != 0 {
       return Err("Trying to make a move in a terminal state.")
@@ -139,7 +139,7 @@ impl def::GameState<GomokuMove> for GomokuState {
     self.status & TERMINAL_MASK != 0
   }
 
-  fn get_player(&self) -> IPlayer {
+  fn get_player(&self) -> i32 {
     if self.get_player_bool() {IPlayer(0)} else {IPlayer(1)}
   }
 
