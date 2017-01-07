@@ -3,25 +3,22 @@ extern crate time;
 
 extern crate gamer;
 
-use gamer::def::Game;
 use gamer::def::GameState;
-use gamer::def::IPlayer;
-use gamer::gomoku::Gomoku;
+use gamer::gomoku::GomokuState;
 
 const N: u32 = 100_000;
 
 fn main() {
-  let mut payoff = 0;
-  let mut rng = rand::XorShiftRng::new_unseeded();
+  let mut payoff: f32 = 0.0;
 
   let start = time::precise_time_ns();
 
   for _ in 0..N {
-    let mut state = Gomoku::new();
+    let mut state = GomokuState::new();
     while !state.is_terminal() {
-      state.apply_random(&mut rng);
+      state.play_random_move();
     }
-    payoff = payoff + state.get_payoff(IPlayer(0)).unwrap();
+    payoff = payoff + state.get_payoff(true).unwrap();
   }
 
   let end = time::precise_time_ns();

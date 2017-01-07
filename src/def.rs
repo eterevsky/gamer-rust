@@ -1,6 +1,5 @@
 //! General definitions of games, moves, players etc.
 
-use rand::Rng;
 use std::fmt;
 
 pub trait Game {
@@ -40,18 +39,4 @@ pub trait TerminalEvaluator<S: GameState> {
   // Some(..) -- if terminal, should be compatible with payoff
   // None -- if not terminal
   fn evaluate_terminal(&self, state: &S) -> Option<f32>;
-}
-
-#[cfg(test)]
-mod test {
-
-use super::*;
-
-#[test]
-fn player_next() {
-  let player0: IPlayer = IPlayer::new();
-  let player1: IPlayer = player0.next2();
-  assert_eq!(player0, player1.next2());
-}
-
 }
