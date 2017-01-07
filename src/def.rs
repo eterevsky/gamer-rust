@@ -3,14 +3,14 @@
 use rand;
 use std::fmt;
 
-pub trait Game {
-  type State: GameState;
+pub trait Game<'a> : 'a {
+  type State: GameState<'a>;
 
   fn new() -> Self;
-  fn new_game(&self) -> Self::State;
+  fn new_game(&'a self) -> Self::State;
 }
 
-pub trait GameState : Clone + fmt::Display {
+pub trait GameState<'a> : Clone + fmt::Display {
   type Move: Copy + Clone;
   type Player: Copy;
 
@@ -22,27 +22,27 @@ pub trait GameState : Clone + fmt::Display {
   fn is_terminal(&self) -> bool;
 }
 
-pub trait MoveGenerator<S: GameState> {
-  fn generate(&self, state: &S) -> Vec<S::Move>;
-}
-
-pub trait MoveSelector<S: GameState> {
-  /// None if the state is terminal.
-  fn select(&self, state: &S) -> Option<S::Move>;
-}
-
-pub trait Evaluator<S: GameState> {
-  fn evaluate(&self, state: &S) -> f32;
-
-  fn evaluate_move(&self, state: &S, m: S::Move) -> f32 {
-    let mut state_clone = state.clone();
-    state_clone.play(m).ok();
-    self.evaluate(&state_clone)
-  }
-}
-
-pub trait TerminalEvaluator<S: GameState> {
-  // Some(..) -- if terminal, should be compatible with payoff
-  // None -- if not terminal
-  fn evaluate_terminal(&self, state: &S) -> Option<f32>;
-}
+// pub trait MoveGenerator<'a, S: GameState<'a>> {
+//   fn generate(&self, state: &S) -> Vec<S::Move>;
+// }
+//
+// pub trait MoveSelector<'a, S: GameState<'a>> {
+//   /// None if the state is terminal.
+//   fn select(&self, state: &S) -> Option<S::Move>;
+// }
+//
+// pub trait Evaluator<'a, S: GameState<'a>> {
+//   fn evaluate(&self, state: &S) -> f32;
+//
+//   fn evaluate_move(&self, state: &S, m: S::Move) -> f32 {
+//     let mut state_clone = state.clone();
+//     state_clone.play(m).ok();
+//     self.evaluate(&state_clone)
+//   }
+// }
+//
+// pub trait TerminalEvaluator<'a, S: GameState<'a>> {
+//   // Some(..) -- if terminal, should be compatible with payoff
+//   // None -- if not terminal
+//   fn evaluate_terminal(&self, state: &S) -> Option<f32>;
+// }

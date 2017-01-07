@@ -1,6 +1,6 @@
 use std::fmt;
+use std::marker::PhantomData;
 use rand;
-use rand::distributions::{IndependentSample, Range};
 
 use def;
 use def::Game;
@@ -16,25 +16,78 @@ const PLAYER2_WIN_MASK: u32 = 4;
 const DRAW_MASK: u32 = 8;
 const TERMINAL_MASK: u32 = PLAYER1_WIN_MASK | PLAYER2_WIN_MASK | DRAW_MASK;
 
-lazy_static! {
-  static ref RANGE_DIST: Range<usize> = Range::new(0, BOARD_LEN);
+#[derive(Clone, Copy)]
+struct LinesMargins {
+  delta: usize,
+  start: usize,
+  end: usize
 }
 
-pub struct Gomoku {}
+pub struct Gomoku<'a> {
+  _s: PhantomData<&'a Gomoku<'a>>,
+  lines_margins: [[LinesMargins; 4]; BOARD_LEN]
+}
 
-impl Game for Gomoku {
-  type State = GomokuState;
+impl<'a> Gomoku<'a> {
+  fn move_till_margin(p: usize, dx: i32, dy: i32) -> usize {
+    let (xu, yu) = util::point_to_xy(p);
+    let mut x = xu as i32;
+    let mut y = yu as i32;
+    for _ in 0..4 {
+      if x == 0 || x == SIZE as i32 - 1 || y == 0 || y == SIZE as i32 - 1 {
+        break;
+      }
+      x += dx;
+      y += dy;
+    }
 
-  fn new() -> Gomoku {
-    Gomoku { }
-  }
-
-  fn new_game(&self) -> GomokuState {
-    GomokuState::new()
+    util::xy_to_point(x as u32, y as u32)
   }
 }
 
-pub struct GomokuState {
+impl<'a> Game<'a> for Gomoku<'a> {
+  type State = GomokuState<'a>;
+
+  fn new() -> Gomoku<'a> {
+    let mut margins: [[LinesMargins; 4]; BOARD_LEN] =
+        [[LinesMargins{delta: 0, start: 0, end: 0}; 4]; BOARD_LEN];
+
+    for p in 0..BOARD_LEN {
+      margins[p][0] = LinesMargins{
+          delta: 1,
+          start: Gomoku::move_till_margin(p, -1, 0),
+          end: Gomoku::move_till_margin(p, 1, 0)
+      };
+      margins[p][1] = LinesMargins{
+          delta: SIZE as usize,
+          start: Gomoku::move_till_margin(p, 0, -1),
+          end: Gomoku::move_till_margin(p, 0, 1)
+      };
+      margins[p][2] = LinesMargins{
+          delta: SIZE as usize - 1,
+          start: Gomoku::move_till_margin(p, 1, -1),
+          end: Gomoku::move_till_margin(p, -1, 1)
+      };
+      margins[p][3] = LinesMargins{
+          delta: SIZE as usize + 1,
+          start: Gomoku::move_till_margin(p, -1, -1),
+          end: Gomoku::move_till_margin(p, 1, 1)
+      };
+    }
+
+    Gomoku {
+      _s: PhantomData::default(),
+      lines_margins: margins
+    }
+  }
+
+  fn new_game(&'a self) -> GomokuState<'a> {
+    GomokuState::new(self)
+  }
+}
+
+pub struct GomokuState<'a> {
+  gomoku: &'a Gomoku<'a>,
   stone: [bool; BOARD_LEN],
   color: [bool; BOARD_LEN],
   status: u32
@@ -48,9 +101,10 @@ pub enum PointState {
   Empty
 }
 
-impl GomokuState {
-  pub fn new() -> GomokuState {
+impl<'a> GomokuState<'a> {
+  pub fn new(g: &'a Gomoku) -> GomokuState<'a> {
     GomokuState {
+      gomoku: g,
       stone: [false; BOARD_LEN],
       color: [false; BOARD_LEN],
       status: 1
@@ -131,7 +185,7 @@ impl GomokuState {
   }
 }
 
-impl def::GameState for GomokuState {
+impl<'a> def::GameState<'a> for GomokuState<'a> {
   type Move = GomokuMove;
   type Player = bool;
 
@@ -158,7 +212,7 @@ impl def::GameState for GomokuState {
     // let mut rng = rand::thread_rng();
 
     loop {
-      let point: usize = RANGE_DIST.ind_sample(rng);
+      let point: usize = (rng.next_u32() % BOARD_LEN as u32) as usize;
       if !self.stone[point] {
         self.play_stone(point);
         break;
@@ -195,9 +249,10 @@ impl def::GameState for GomokuState {
   }
 }
 
-impl Clone for GomokuState {
-  fn clone(&self) -> GomokuState {
+impl<'a> Clone for GomokuState<'a> {
+  fn clone(&self) -> GomokuState<'a> {
     GomokuState {
+      gomoku: self.gomoku,
       stone: self.stone,
       color: self.color,
       status: self.status
@@ -205,7 +260,7 @@ impl Clone for GomokuState {
   }
 }
 
-impl fmt::Display for GomokuState {
+impl<'a> fmt::Display for GomokuState<'a> {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
     for y in 0..SIZE {
       for x in 0..SIZE {
