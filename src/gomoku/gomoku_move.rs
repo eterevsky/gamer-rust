@@ -5,7 +5,7 @@ use std::str::FromStr;
 use gomoku::gomoku::SIZE;
 use gomoku::util;
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct GomokuMove(pub usize);
 
 #[derive(Debug, PartialEq)]
