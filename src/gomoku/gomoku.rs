@@ -22,14 +22,12 @@ lazy_static! {
 
 pub struct Gomoku {}
 
-impl Gomoku {
-  pub fn new() -> Gomoku {
-    Gomoku { }
-  }
-}
-
 impl Game for Gomoku {
   type State = GomokuState;
+
+  fn new() -> Gomoku {
+    Gomoku { }
+  }
 
   fn new_game(&self) -> GomokuState {
     GomokuState::new()
@@ -59,22 +57,6 @@ impl GomokuState {
     }
   }
 
-
-  pub fn play_random_move(&mut self) {
-    if self.is_terminal() {
-      panic!("Trying to make a move in a terminal state.");
-    }
-
-    let mut rng = rand::thread_rng();
-
-    loop {
-      let point: usize = RANGE_DIST.ind_sample(&mut rng);
-      if !self.stone[point] {
-        self.play_stone(point);
-        break;
-      }
-    }
-  }
 
   #[cfg(test)]
   pub fn get(&self, p: usize) -> PointState {
@@ -168,6 +150,24 @@ impl def::GameState for GomokuState {
     }
   }
 
+  fn play_random_move<R: rand::Rng>(&mut self, rng: &mut R) -> Result<(), &'static str> {
+    if self.is_terminal() {
+      return Err("Trying to make a move in a terminal state.");
+    }
+
+    // let mut rng = rand::thread_rng();
+
+    loop {
+      let point: usize = RANGE_DIST.ind_sample(rng);
+      if !self.stone[point] {
+        self.play_stone(point);
+        break;
+      }
+    }
+
+    Ok(())
+  }
+
   fn is_terminal(&self) -> bool {
     self.status & TERMINAL_MASK != 0
   }
@@ -176,12 +176,19 @@ impl def::GameState for GomokuState {
     self.status & PLAYER_MASK == 1
   }
 
-  fn get_payoff(&self, player: bool) -> Option<f32> {
-    let value = match self.status & TERMINAL_MASK {
-      PLAYER1_WIN_MASK => 1.0,
-      PLAYER2_WIN_MASK => -1.0,
-      DRAW_MASK => 0.0,
+  fn get_payoff_for_player1(&self) -> Option<f32> {
+    match self.status & TERMINAL_MASK {
+      PLAYER1_WIN_MASK => Some(1.0),
+      PLAYER2_WIN_MASK => Some(-1.0),
+      DRAW_MASK => Some(0.0),
       _ => return None
+    }
+  }
+
+  fn get_payoff(&self, player: bool) -> Option<f32> {
+    let value = match self.get_payoff_for_player1() {
+      Some(v) => v,
+      None => return None
     };
 
     if player { Some(value) } else { Some(-value) }

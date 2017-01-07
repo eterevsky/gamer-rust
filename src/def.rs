@@ -1,10 +1,12 @@
 //! General definitions of games, moves, players etc.
 
+use rand;
 use std::fmt;
 
 pub trait Game {
   type State: GameState;
 
+  fn new() -> Self;
   fn new_game(&self) -> Self::State;
 }
 
@@ -13,7 +15,9 @@ pub trait GameState : Clone + fmt::Display {
   type Player: Copy;
 
   fn play(&mut self, Self::Move) -> Result<(), &'static str>;
+  fn play_random_move<R: rand::Rng>(&mut self, rng: &mut R) -> Result<(), &'static str>;
   fn get_player(&self) -> Self::Player;
+  fn get_payoff_for_player1(&self) -> Option<f32>;
   fn get_payoff(&self, Self::Player) -> Option<f32>;
   fn is_terminal(&self) -> bool;
 }

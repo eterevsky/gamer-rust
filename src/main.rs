@@ -10,18 +10,19 @@ use gamer::def::Game;
 use gamer::def::GameState;
 use gamer::gomoku::Gomoku;
 
-fn bench<G>(game: &G) where G : Game {
-  const N: u32 = 100_000;
+fn bench<G>(game: G) where G : Game {
+  const N: u32 = 1000_000;
   let mut payoff: f32 = 0.0;
 
   let start = time::precise_time_ns();
+  let mut rng = rand::thread_rng();
 
   for _ in 0..N {
-    let mut state: G::State = game::new();
+    let mut state: G::State = game.new_game();
     while !state.is_terminal() {
-      state.play_random_move();
+      state.play_random_move(&mut rng).ok();
     }
-    payoff = payoff + state.get_payoff(true).unwrap();
+    payoff += state.get_payoff_for_player1().unwrap();
   }
 
   let end = time::precise_time_ns();
@@ -32,16 +33,27 @@ fn bench<G>(game: &G) where G : Game {
   println!("Payoff: {}", payoff);
 }
 
-fn play<G>(game: &G) where G : Game {
-  let mut state: G::State = game::new();
+fn play<G>(game: G) where G : Game {
+  let mut state: G::State = game.new_game();
+  let mut rng = rand::thread_rng();
   while !state.is_terminal() {
     println!("{}", state);
-    state.play_random_move();
+    state.play_random_move(&mut rng).ok();
   }
   println!("{}", state);
 }
 
-fn args_definition() -> clap::App {
+fn game_main<G: Game>(args: clap::ArgMatches) {
+  let game : G = G::new();
+
+  if let Some(_) = args.subcommand_matches("bench") {
+    bench(game);
+  } else if let Some(_) = args.subcommand_matches("play") {
+    play(game);
+  }
+}
+
+fn args_definition() -> clap::App<'static, 'static> {
   App::new("gamer").version("0.1")
       .arg(Arg::with_name("game")
                .short("g").long("game")
@@ -57,17 +69,10 @@ fn args_definition() -> clap::App {
 }
 
 fn main() {
-  let args = args_definition.get_matches();
+  let args = args_definition().get_matches();
 
-  let game: Box<Game> = match args.value_of("game") {
-    "gomoku" => Box::new(Gomoku::new()),
+  match args.value_of("game") {
+    Some("gomoku") => game_main::<Gomoku>(args),
     _ => unreachable!()
   };
-
-  if let Some(bench_args) = args.subcommand_matches("bench") {
-    bench(game);
-  } else if let Some(play_args) = args.subcommand_matches("play") {
-    play(game);
-  }
-
 }
