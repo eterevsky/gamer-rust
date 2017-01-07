@@ -3,10 +3,12 @@
 use std::fmt;
 
 pub trait Game {
-  fn nplayers(&self) -> u32;
+  type State: GameState;
+
+  fn new_game(&self) -> Self::State;
 }
 
-pub trait GameState : Game + Clone + fmt::Display {
+pub trait GameState : Clone + fmt::Display {
   type Move: Copy + Clone;
   type Player: Copy;
 

@@ -1,3 +1,4 @@
+pub use self::gomoku::Gomoku;
 pub use self::gomoku::GomokuState;
 
 mod gomoku;

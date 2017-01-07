@@ -3,6 +3,7 @@ use rand;
 use rand::distributions::{IndependentSample, Range};
 
 use def;
+use def::Game;
 use def::GameState;
 use gomoku::gomoku_move::GomokuMove;
 use gomoku::util;
@@ -17,6 +18,22 @@ const TERMINAL_MASK: u32 = PLAYER1_WIN_MASK | PLAYER2_WIN_MASK | DRAW_MASK;
 
 lazy_static! {
   static ref RANGE_DIST: Range<usize> = Range::new(0, BOARD_LEN);
+}
+
+pub struct Gomoku {}
+
+impl Gomoku {
+  pub fn new() -> Gomoku {
+    Gomoku { }
+  }
+}
+
+impl Game for Gomoku {
+  type State = GomokuState;
+
+  fn new_game(&self) -> GomokuState {
+    GomokuState::new()
+  }
 }
 
 pub struct GomokuState {
@@ -168,12 +185,6 @@ impl def::GameState for GomokuState {
     };
 
     if player { Some(value) } else { Some(-value) }
-  }
-}
-
-impl def::Game for GomokuState {
-  fn nplayers(&self) -> u32 {
-    2
   }
 }
 
