@@ -1,8 +1,6 @@
 use std::fmt;
-use std::char;
 use std::str::FromStr;
 
-use gomoku::gomoku::SIZE;
 use gomoku::util;
 
 #[derive(Clone, Copy, Debug)]
@@ -33,14 +31,7 @@ impl PartialEq for GomokuMove {
 impl fmt::Display for GomokuMove {
   fn fmt(&self, formatter : &mut fmt::Formatter) -> fmt::Result {
     let &GomokuMove(point) = self;
-    let col = point as u32 / SIZE;
-    let col_char = if col < 8 {
-      char::from_u32('A' as u32 + col).unwrap()
-    } else {
-      char::from_u32('B' as u32 + col).unwrap()
-    };
-    let row = point % SIZE as usize + 1;
-    return write!(formatter, "{}{}", col_char, row);
+    return write!(formatter, "{}", util::point_to_a(point));
   }
 }
 
@@ -70,22 +61,22 @@ fn parse_errors() {
 
 #[test]
 fn parse_legal() {
-  assert_eq!(Ok(GomokuMove(0)), "a1".parse());
-  assert_eq!(Ok(GomokuMove(0)), "A1".parse());
-  assert_eq!(Ok(GomokuMove(9)), "A10".parse());
-  assert_eq!(Ok(GomokuMove(11)), "A12".parse());
-  assert_eq!(Ok(GomokuMove(SIZE as usize)), "B1".parse());
-  assert_eq!(Ok(GomokuMove(SIZE as usize)), "b1".parse());
-  assert_eq!(Ok(GomokuMove(SIZE as usize * 8 + 2)), "J3".parse());
+  assert_eq!(Ok(GomokuMove(0)), "a19".parse());
+  assert_eq!(Ok(GomokuMove(0)), "A19".parse());
+  assert_eq!(Ok(GomokuMove(9)), "K19".parse());
+  assert_eq!(Ok(GomokuMove(11)), "M19".parse());
+  assert_eq!(Ok(GomokuMove(SIZE as usize)), "A18".parse());
+  assert_eq!(Ok(GomokuMove(SIZE as usize)), "a18".parse());
+  assert_eq!(Ok(GomokuMove(SIZE as usize * 8 + 2)), "C11".parse());
 }
 
 #[test]
 fn to_string() {
-  assert_eq!("A1", GomokuMove(0).to_string());
-  assert_eq!("A10", GomokuMove(9).to_string());
-  assert_eq!("A12", GomokuMove(11).to_string());
-  assert_eq!("B1", GomokuMove(SIZE as usize).to_string());
-  assert_eq!("J3", GomokuMove(SIZE as usize * 8 + 2).to_string());
+  assert_eq!("A19", GomokuMove(0).to_string());
+  assert_eq!("K19", GomokuMove(9).to_string());
+  assert_eq!("M19", GomokuMove(11).to_string());
+  assert_eq!("A18", GomokuMove(SIZE as usize).to_string());
+  assert_eq!("C11", GomokuMove(SIZE as usize * 8 + 2).to_string());
 }
 
 }

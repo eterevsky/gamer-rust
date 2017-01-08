@@ -1,13 +1,17 @@
 extern crate rand;
 use std::str::FromStr;
 
+use def::Game;
 use def::GameState;
 use gomoku::gomoku_move::GomokuMove;
+use gomoku::gomoku::Gomoku;
 use gomoku::gomoku::GomokuState;
 use gomoku::gomoku::PointState;
+use gomoku::gomoku::SIZE;
+use gomoku::util;
 
 fn run_game(moves_str: &str, result: f32) -> GomokuState {
-  let mut state = GomokuState::new();
+  let mut state = Gomoku::new().new_game();
   let mut player = true;
 
   for move_str in moves_str.split(' ') {
@@ -15,6 +19,7 @@ fn run_game(moves_str: &str, result: f32) -> GomokuState {
     assert!(!state.is_terminal());
     let m: GomokuMove = FromStr::from_str(move_str).unwrap();
     assert!(state.play(m).is_ok());
+    println!("{}", state);
     player = !player;
   }
 
@@ -25,14 +30,14 @@ fn run_game(moves_str: &str, result: f32) -> GomokuState {
 
 #[test]
 fn empty_point_in_new_game() {
-  let state = GomokuState::new();
+  let state = Gomoku::new().new_game();
   assert_eq!(Some(PointState::Empty), state.gets("A1"));
   assert_eq!(Some(PointState::Empty), state.gets("J3"));
 }
 
 #[test]
 fn play() {
-  let mut state = GomokuState::new();
+  let mut state = Gomoku::new().new_game();
   assert_eq!(Some(PointState::Empty), state.gets("c3"));
 
   assert!(state.play("c3".parse().unwrap()).is_ok());
@@ -78,9 +83,32 @@ fn game_borders() {
            1.0);
 }
 
+// #[test]
+// fn game_draw() {
+//   let mut state = Gomoku::new().new_game();
+//   for x in 0..SIZE {
+//     for y in 0..SIZE {
+//       let xx = match x % 4 {
+//         0 => x,
+//         1 => x + 1,
+//         2 => x - 1,
+//         3 => x,
+//         _ => unreachable!()
+//       };
+//
+//       println!("{} {}", xx, y);
+//       println!("{}", state);
+//       assert!(state.play(GomokuMove(util::xy_to_point(xx, y))).is_ok());
+//     }
+//   }
+//
+//   assert!(state.is_terminal());
+//   assert_eq!(Some(0.0), state.get_payoff_for_player1());
+// }
+
 #[test]
 fn two_moves_same_spot() {
-  let mut state = GomokuState::new();
+  let mut state = Gomoku::new().new_game();
   assert!(state.play("c3".parse().unwrap()).is_ok());
   assert!(state.play("c3".parse().unwrap()).is_err());
 }
@@ -93,10 +121,11 @@ fn no_moves_after_end() {
 
 #[test]
 fn random_game() {
-  let mut state = GomokuState::new();
+  let mut state = Gomoku::new().new_game();
+  let mut rng = rand::XorShiftRng::new_unseeded();
 
   while !state.is_terminal() {
-    state.play_random_move();
+    state.play_random_move(&mut rng).ok();
   }
 
   assert!(state.is_terminal());

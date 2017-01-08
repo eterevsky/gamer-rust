@@ -37,10 +37,11 @@ fn play<G>(game: G) where G : Game {
   let mut state: G::State = game.new_game();
   let mut rng = rand::XorShiftRng::new_unseeded();
   while !state.is_terminal() {
-    println!("{}", state);
     state.play_random_move(&mut rng).ok();
+    println!("{}", state);
   }
-  println!("!");
+
+  println!("Final score: {}", state.get_payoff_for_player1().unwrap());
 }
 
 fn game_main<G>(args: clap::ArgMatches) where G: Game {

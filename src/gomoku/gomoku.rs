@@ -1,5 +1,4 @@
 use std::fmt;
-use std::marker::PhantomData;
 use std::rc::Rc;
 use rand;
 
@@ -34,7 +33,10 @@ impl Gomoku {
     let mut x = xu as i32;
     let mut y = yu as i32;
     for _ in 0..4 {
-      if x == 0 || x == SIZE as i32 - 1 || y == 0 || y == SIZE as i32 - 1 {
+      if dx < 0 && x == 0 ||
+         dx > 0 && x == SIZE as i32 - 1 ||
+         dy < 0 && y == 0 ||
+         dy > 0 && y == SIZE as i32 - 1 {
         break;
       }
       x += dx;
@@ -135,55 +137,96 @@ impl GomokuState {
     }
   }
 
-  fn update_status(&mut self, point: usize) {
-    let (x, y) = util::point_to_xy(point);
-    let (col, row) = (x as i32, y as i32);
-    let player = self.color[point];
+  fn player_won(&mut self, point: usize, player: bool) -> bool {
     assert!(self.stone[point]);
+    let lines: &[LinesMargins; 4] = &self.lines_margins[point];
 
-    for &(dx, dy) in [(1, 0), (1, 1), (0, 1), (1, -1)].iter() {
-      let mut tail: u32 = 1;
-      for i in 1..5 {
-        let c = col + dx * i;
-        let r = row + dy * i;
-        if c < 0 || c >= SIZE as i32 || r < 0 || r >= SIZE as i32 {
-          break
-        }
-        let p = util::xy_to_point(c as u32, r as u32);
+    for line in lines {
+      let mut len = 1;
+      let mut p = point;
+
+      while p > line.start {
+        p -= line.delta;
         if !self.stone[p] || self.color[p] != player {
-          break
+          break;
         }
-        tail += 1;
+        len += 1;
       }
 
-      for i in 1..5 {
-        let c = col - dx * i;
-        let r = row - dy * i;
-        if c < 0 || c >= SIZE as i32 || r < 0 || r >= SIZE as i32 {
-          break
-        }
-        let p = util::xy_to_point(c as u32, r as u32);
+      p = point;
+      while p < line.end {
+        p += line.delta;
         if !self.stone[p] || self.color[p] != player {
-          break
+          break;
         }
-        tail += 1;
+        len += 1;
       }
 
-      if tail >= 5 {
-        if player {
-          self.status |= PLAYER1_WIN_MASK;
-        } else {
-          self.status |= PLAYER2_WIN_MASK;
-        }
+      if len >= 5 {
+        return true;
       }
     }
+
+    false
   }
 
+  // fn old_update_status(&mut self, point: usize, player: bool) {
+  //   let (x, y) = util::point_to_xy(point);
+  //   let (col, row) = (x as i32, y as i32);
+  //   let player = self.color[point];
+  //   assert!(self.stone[point]);
+  //
+  //   for &(dx, dy) in [(1, 0), (1, 1), (0, 1), (1, -1)].iter() {
+  //     let mut tail: u32 = 1;
+  //     for i in 1..5 {
+  //       let c = col + dx * i;
+  //       let r = row + dy * i;
+  //       if c < 0 || c >= SIZE as i32 || r < 0 || r >= SIZE as i32 {
+  //         break
+  //       }
+  //       let p = util::xy_to_point(c as u32, r as u32);
+  //       if !self.stone[p] || self.color[p] != player {
+  //         break
+  //       }
+  //       tail += 1;
+  //     }
+  //
+  //     for i in 1..5 {
+  //       let c = col - dx * i;
+  //       let r = row - dy * i;
+  //       if c < 0 || c >= SIZE as i32 || r < 0 || r >= SIZE as i32 {
+  //         break
+  //       }
+  //       let p = util::xy_to_point(c as u32, r as u32);
+  //       if !self.stone[p] || self.color[p] != player {
+  //         break
+  //       }
+  //       tail += 1;
+  //     }
+  //
+  //     if tail >= 5 {
+  //       if player {
+  //         self.status |= PLAYER1_WIN_MASK;
+  //       } else {
+  //         self.status |= PLAYER2_WIN_MASK;
+  //       }
+  //     }
+  //   }
+  // }
+
   fn play_stone(&mut self, point: usize) {
+    let player = self.get_player();
+
     self.stone[point] = true;
-    self.color[point] = self.get_player();
+    self.color[point] = player;
     self.status ^= PLAYER_MASK;
-    self.update_status(point);
+    if self.player_won(point, player) {
+      if player {
+        self.status |= PLAYER1_WIN_MASK;
+      } else {
+        self.status |= PLAYER2_WIN_MASK;
+      }
+    }
   }
 }
 
@@ -264,7 +307,14 @@ impl Clone for GomokuState {
 
 impl fmt::Display for GomokuState {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+    try!(write!(f, "  "));
+    for x in 0..SIZE {
+      try!(write!(f, " {}", util::col_letter(x)));
+    }
+    try!(writeln!(f, ""));
+
     for y in 0..SIZE {
+      try!(write!(f, "{:2}", SIZE - y));
       for x in 0..SIZE {
         let i = (SIZE * y + x) as usize;
         if self.stone[i] {
