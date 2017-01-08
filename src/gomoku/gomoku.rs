@@ -23,8 +23,41 @@ struct LinesMargins {
   end: usize
 }
 
-pub struct Gomoku<'a> {
-  _s: PhantomData<&'a Gomoku<'a>>,
+fn init_lines_margins() -> [[LinesMargins; 4]; BOARD_LEN] {
+  let mut margins: [[LinesMargins; 4]; BOARD_LEN] =
+      [[LinesMargins{delta: 0, start: 0, end: 0}; 4]; BOARD_LEN];
+
+  for p in 0..BOARD_LEN {
+    margins[p][0] = LinesMargins{
+        delta: 1,
+        start: Gomoku::move_till_margin(p, -1, 0),
+        end: Gomoku::move_till_margin(p, 1, 0)
+    };
+    margins[p][1] = LinesMargins{
+        delta: SIZE as usize,
+        start: Gomoku::move_till_margin(p, 0, -1),
+        end: Gomoku::move_till_margin(p, 0, 1)
+    };
+    margins[p][2] = LinesMargins{
+        delta: SIZE as usize - 1,
+        start: Gomoku::move_till_margin(p, 1, -1),
+        end: Gomoku::move_till_margin(p, -1, 1)
+    };
+    margins[p][3] = LinesMargins{
+        delta: SIZE as usize + 1,
+        start: Gomoku::move_till_margin(p, -1, -1),
+        end: Gomoku::move_till_margin(p, 1, 1)
+    };
+  }
+
+  margins
+}
+
+lazy_static! {
+  static ref LINES_MARGINS: [[LinesMargins; 4]; BOARD_LEN] = init_lines_margins();
+}
+
+pub struct Gomoku {
   lines_margins: [[LinesMargins; 4]; BOARD_LEN]
 }
 
@@ -49,36 +82,7 @@ impl<'a> Game<'a> for Gomoku<'a> {
   type State = GomokuState<'a>;
 
   fn new() -> Gomoku<'a> {
-    let mut margins: [[LinesMargins; 4]; BOARD_LEN] =
-        [[LinesMargins{delta: 0, start: 0, end: 0}; 4]; BOARD_LEN];
-
-    for p in 0..BOARD_LEN {
-      margins[p][0] = LinesMargins{
-          delta: 1,
-          start: Gomoku::move_till_margin(p, -1, 0),
-          end: Gomoku::move_till_margin(p, 1, 0)
-      };
-      margins[p][1] = LinesMargins{
-          delta: SIZE as usize,
-          start: Gomoku::move_till_margin(p, 0, -1),
-          end: Gomoku::move_till_margin(p, 0, 1)
-      };
-      margins[p][2] = LinesMargins{
-          delta: SIZE as usize - 1,
-          start: Gomoku::move_till_margin(p, 1, -1),
-          end: Gomoku::move_till_margin(p, -1, 1)
-      };
-      margins[p][3] = LinesMargins{
-          delta: SIZE as usize + 1,
-          start: Gomoku::move_till_margin(p, -1, -1),
-          end: Gomoku::move_till_margin(p, 1, 1)
-      };
-    }
-
-    Gomoku {
-      _s: PhantomData::default(),
-      lines_margins: margins
-    }
+    Gomoku {}
   }
 
   fn new_game(&'a self) -> GomokuState<'a> {

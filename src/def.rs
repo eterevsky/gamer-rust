@@ -3,14 +3,14 @@
 use rand;
 use std::fmt;
 
-pub trait Game<'a> : 'a {
-  type State: GameState<'a>;
+pub trait Game {
+  type State: GameState;
 
   fn new() -> Self;
-  fn new_game(&'a self) -> Self::State;
+  fn new_game(&self) -> Self::State;
 }
 
-pub trait GameState<'a> : Clone + fmt::Display {
+pub trait GameState : Clone + fmt::Display {
   type Move: Copy + Clone;
   type Player: Copy;
 
