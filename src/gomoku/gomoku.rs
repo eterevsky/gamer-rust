@@ -1,5 +1,6 @@
 use std::fmt;
 use std::marker::PhantomData;
+use std::rc::Rc;
 use rand;
 
 use def;
@@ -23,45 +24,11 @@ struct LinesMargins {
   end: usize
 }
 
-fn init_lines_margins() -> [[LinesMargins; 4]; BOARD_LEN] {
-  let mut margins: [[LinesMargins; 4]; BOARD_LEN] =
-      [[LinesMargins{delta: 0, start: 0, end: 0}; 4]; BOARD_LEN];
-
-  for p in 0..BOARD_LEN {
-    margins[p][0] = LinesMargins{
-        delta: 1,
-        start: Gomoku::move_till_margin(p, -1, 0),
-        end: Gomoku::move_till_margin(p, 1, 0)
-    };
-    margins[p][1] = LinesMargins{
-        delta: SIZE as usize,
-        start: Gomoku::move_till_margin(p, 0, -1),
-        end: Gomoku::move_till_margin(p, 0, 1)
-    };
-    margins[p][2] = LinesMargins{
-        delta: SIZE as usize - 1,
-        start: Gomoku::move_till_margin(p, 1, -1),
-        end: Gomoku::move_till_margin(p, -1, 1)
-    };
-    margins[p][3] = LinesMargins{
-        delta: SIZE as usize + 1,
-        start: Gomoku::move_till_margin(p, -1, -1),
-        end: Gomoku::move_till_margin(p, 1, 1)
-    };
-  }
-
-  margins
-}
-
-lazy_static! {
-  static ref LINES_MARGINS: [[LinesMargins; 4]; BOARD_LEN] = init_lines_margins();
-}
-
 pub struct Gomoku {
-  lines_margins: [[LinesMargins; 4]; BOARD_LEN]
+  lines_margins: Rc<[[LinesMargins; 4]; BOARD_LEN]>
 }
 
-impl<'a> Gomoku<'a> {
+impl Gomoku {
   fn move_till_margin(p: usize, dx: i32, dy: i32) -> usize {
     let (xu, yu) = util::point_to_xy(p);
     let mut x = xu as i32;
@@ -76,25 +43,57 @@ impl<'a> Gomoku<'a> {
 
     util::xy_to_point(x as u32, y as u32)
   }
+
+  fn create_lines_margins() -> [[LinesMargins; 4]; BOARD_LEN] {
+    let mut margins: [[LinesMargins; 4]; BOARD_LEN] =
+        [[LinesMargins{delta: 0, start: 0, end: 0}; 4]; BOARD_LEN];
+
+    for p in 0..BOARD_LEN {
+      margins[p][0] = LinesMargins{
+          delta: 1,
+          start: Gomoku::move_till_margin(p, -1, 0),
+          end: Gomoku::move_till_margin(p, 1, 0)
+      };
+      margins[p][1] = LinesMargins{
+          delta: SIZE as usize,
+          start: Gomoku::move_till_margin(p, 0, -1),
+          end: Gomoku::move_till_margin(p, 0, 1)
+      };
+      margins[p][2] = LinesMargins{
+          delta: SIZE as usize - 1,
+          start: Gomoku::move_till_margin(p, 1, -1),
+          end: Gomoku::move_till_margin(p, -1, 1)
+      };
+      margins[p][3] = LinesMargins{
+          delta: SIZE as usize + 1,
+          start: Gomoku::move_till_margin(p, -1, -1),
+          end: Gomoku::move_till_margin(p, 1, 1)
+      };
+    }
+
+    margins
+  }
 }
 
-impl<'a> Game<'a> for Gomoku<'a> {
-  type State = GomokuState<'a>;
+impl Game for Gomoku {
+  type State = GomokuState;
 
-  fn new() -> Gomoku<'a> {
-    Gomoku {}
+  fn new() -> Gomoku {
+    Gomoku {
+      lines_margins: Rc::new(Self::create_lines_margins())
+    }
   }
 
-  fn new_game(&'a self) -> GomokuState<'a> {
-    GomokuState::new(self)
+  fn new_game(&self) -> GomokuState {
+    GomokuState::new(self.lines_margins.clone())
   }
 }
 
-pub struct GomokuState<'a> {
-  gomoku: &'a Gomoku<'a>,
+pub struct GomokuState {
   stone: [bool; BOARD_LEN],
   color: [bool; BOARD_LEN],
-  status: u32
+  status: u32,
+  lines_margins: Rc<[[LinesMargins; 4]; BOARD_LEN]>
 }
 
 #[derive(PartialEq, Debug)]
@@ -105,16 +104,15 @@ pub enum PointState {
   Empty
 }
 
-impl<'a> GomokuState<'a> {
-  pub fn new(g: &'a Gomoku) -> GomokuState<'a> {
+impl GomokuState {
+  fn new(l: Rc<[[LinesMargins; 4]; BOARD_LEN]>) -> GomokuState {
     GomokuState {
-      gomoku: g,
       stone: [false; BOARD_LEN],
       color: [false; BOARD_LEN],
-      status: 1
+      status: 1,
+      lines_margins: l
     }
   }
-
 
   #[cfg(test)]
   pub fn get(&self, p: usize) -> PointState {
@@ -189,7 +187,7 @@ impl<'a> GomokuState<'a> {
   }
 }
 
-impl<'a> def::GameState<'a> for GomokuState<'a> {
+impl def::GameState for GomokuState {
   type Move = GomokuMove;
   type Player = bool;
 
@@ -253,10 +251,10 @@ impl<'a> def::GameState<'a> for GomokuState<'a> {
   }
 }
 
-impl<'a> Clone for GomokuState<'a> {
-  fn clone(&self) -> GomokuState<'a> {
+impl Clone for GomokuState {
+  fn clone(&self) -> GomokuState {
     GomokuState {
-      gomoku: self.gomoku,
+      lines_margins: self.lines_margins.clone(),
       stone: self.stone,
       color: self.color,
       status: self.status
@@ -264,7 +262,7 @@ impl<'a> Clone for GomokuState<'a> {
   }
 }
 
-impl<'a> fmt::Display for GomokuState<'a> {
+impl fmt::Display for GomokuState {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
     for y in 0..SIZE {
       for x in 0..SIZE {
