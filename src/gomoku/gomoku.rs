@@ -91,26 +91,29 @@ impl Game for Gomoku {
   }
 }
 
-pub struct GomokuState {
-  stone: [bool; BOARD_LEN],
-  color: [bool; BOARD_LEN],
-  status: u32,
-  lines_margins: Rc<[[LinesMargins; 4]; BOARD_LEN]>
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub enum PointState {
+  Empty,
+  Black,
+  White
 }
 
-#[derive(PartialEq, Debug)]
-#[cfg(test)]
-pub enum PointState {
-  Black,
-  White,
-  Empty
+impl PointState {
+  fn from_player(player: bool) -> PointState {
+    if player { PointState::Black } else { PointState::White }
+  }
+}
+
+pub struct GomokuState {
+  board: [PointState; BOARD_LEN],
+  status: u32,
+  lines_margins: Rc<[[LinesMargins; 4]; BOARD_LEN]>
 }
 
 impl GomokuState {
   fn new(l: Rc<[[LinesMargins; 4]; BOARD_LEN]>) -> GomokuState {
     GomokuState {
-      stone: [false; BOARD_LEN],
-      color: [false; BOARD_LEN],
+      board: [PointState::Empty; BOARD_LEN],
       status: 1,
       lines_margins: l
     }
@@ -118,15 +121,7 @@ impl GomokuState {
 
   #[cfg(test)]
   pub fn get(&self, p: usize) -> PointState {
-    if self.stone[p] {
-      if self.color[p] {
-        PointState::Black
-      } else {
-        PointState::White
-      }
-    } else {
-      PointState::Empty
-    }
+    self.board[p]
   }
 
   #[cfg(test)]
@@ -137,8 +132,8 @@ impl GomokuState {
     }
   }
 
-  fn player_won(&mut self, point: usize, player: bool) -> bool {
-    assert!(self.stone[point]);
+  fn player_won(&mut self, point: usize, player: PointState) -> bool {
+    debug_assert!(self.board[point] == player);
     let lines: &[LinesMargins; 4] = &self.lines_margins[point];
 
     for line in lines {
@@ -147,7 +142,7 @@ impl GomokuState {
 
       while p > line.start {
         p -= line.delta;
-        if !self.stone[p] || self.color[p] != player {
+        if self.board[p] != player {
           break;
         }
         len += 1;
@@ -156,7 +151,7 @@ impl GomokuState {
       p = point;
       while p < line.end {
         p += line.delta;
-        if !self.stone[p] || self.color[p] != player {
+        if self.board[p] != player {
           break;
         }
         len += 1;
@@ -170,63 +165,20 @@ impl GomokuState {
     false
   }
 
-  // fn old_update_status(&mut self, point: usize, player: bool) {
-  //   let (x, y) = util::point_to_xy(point);
-  //   let (col, row) = (x as i32, y as i32);
-  //   let player = self.color[point];
-  //   assert!(self.stone[point]);
-  //
-  //   for &(dx, dy) in [(1, 0), (1, 1), (0, 1), (1, -1)].iter() {
-  //     let mut tail: u32 = 1;
-  //     for i in 1..5 {
-  //       let c = col + dx * i;
-  //       let r = row + dy * i;
-  //       if c < 0 || c >= SIZE as i32 || r < 0 || r >= SIZE as i32 {
-  //         break
-  //       }
-  //       let p = util::xy_to_point(c as u32, r as u32);
-  //       if !self.stone[p] || self.color[p] != player {
-  //         break
-  //       }
-  //       tail += 1;
-  //     }
-  //
-  //     for i in 1..5 {
-  //       let c = col - dx * i;
-  //       let r = row - dy * i;
-  //       if c < 0 || c >= SIZE as i32 || r < 0 || r >= SIZE as i32 {
-  //         break
-  //       }
-  //       let p = util::xy_to_point(c as u32, r as u32);
-  //       if !self.stone[p] || self.color[p] != player {
-  //         break
-  //       }
-  //       tail += 1;
-  //     }
-  //
-  //     if tail >= 5 {
-  //       if player {
-  //         self.status |= PLAYER1_WIN_MASK;
-  //       } else {
-  //         self.status |= PLAYER2_WIN_MASK;
-  //       }
-  //     }
-  //   }
-  // }
-
   fn play_stone(&mut self, point: usize) {
-    let player = self.get_player();
+    let player = PointState::from_player(self.get_player());
 
-    self.stone[point] = true;
-    self.color[point] = player;
-    self.status ^= PLAYER_MASK;
+    self.board[point] = player;
     if self.player_won(point, player) {
-      if player {
+      if self.get_player() {
         self.status |= PLAYER1_WIN_MASK;
       } else {
         self.status |= PLAYER2_WIN_MASK;
       }
+    } else if self.board.iter().all(|&x| x != PointState::Empty) {
+      self.status |= DRAW_MASK;
     }
+    self.status ^= PLAYER_MASK;
   }
 }
 
@@ -241,11 +193,11 @@ impl def::GameState for GomokuState {
 
     let GomokuMove(point) = gmove;
 
-    if self.stone[point] {
-      Err("Position is taken")
-    } else {
+    if self.board[point] == PointState::Empty {
       self.play_stone(point);
       Ok(())
+    } else {
+      Err("Position is taken")
     }
   }
 
@@ -258,7 +210,7 @@ impl def::GameState for GomokuState {
 
     loop {
       let point: usize = (rng.next_u32() % BOARD_LEN as u32) as usize;
-      if !self.stone[point] {
+      if self.board[point] == PointState::Empty {
         self.play_stone(point);
         break;
       }
@@ -298,8 +250,7 @@ impl Clone for GomokuState {
   fn clone(&self) -> GomokuState {
     GomokuState {
       lines_margins: self.lines_margins.clone(),
-      stone: self.stone,
-      color: self.color,
+      board: self.board,
       status: self.status
     }
   }
@@ -317,15 +268,11 @@ impl fmt::Display for GomokuState {
       try!(write!(f, "{:2}", SIZE - y));
       for x in 0..SIZE {
         let i = (SIZE * y + x) as usize;
-        if self.stone[i] {
-          if self.color[i] {
-            try!(write!(f, " X"));
-          } else {
-            try!(write!(f, " O"));
-          }
-        } else {
-          try!(write!(f, " ."));
-        }
+        try!(match self.board[i] {
+          PointState::Empty => write!(f, " ."),
+          PointState::Black => write!(f, " X"),
+          PointState::White => write!(f, " O")
+        });
 
       }
       try!(writeln!(f, ""))

@@ -7,6 +7,7 @@ use gomoku::gomoku_move::GomokuMove;
 use gomoku::gomoku::Gomoku;
 use gomoku::gomoku::GomokuState;
 use gomoku::gomoku::PointState;
+use gomoku::gomoku::BOARD_LEN;
 use gomoku::gomoku::SIZE;
 use gomoku::util;
 
@@ -83,28 +84,28 @@ fn game_borders() {
            1.0);
 }
 
-// #[test]
-// fn game_draw() {
-//   let mut state = Gomoku::new().new_game();
-//   for x in 0..SIZE {
-//     for y in 0..SIZE {
-//       let xx = match x % 4 {
-//         0 => x,
-//         1 => x + 1,
-//         2 => x - 1,
-//         3 => x,
-//         _ => unreachable!()
-//       };
-//
-//       println!("{} {}", xx, y);
-//       println!("{}", state);
-//       assert!(state.play(GomokuMove(util::xy_to_point(xx, y))).is_ok());
-//     }
-//   }
-//
-//   assert!(state.is_terminal());
-//   assert_eq!(Some(0.0), state.get_payoff_for_player1());
-// }
+#[test]
+fn game_draw() {
+  let mut state = Gomoku::new().new_game();
+  for x in 0..SIZE {
+    for y in 0..SIZE {
+      let xx = match x % 4 {
+        0 => x,
+        1 => x + 1,
+        2 => x - 1,
+        3 => x,
+        _ => unreachable!()
+      };
+
+      println!("{} {}", xx, y);
+      println!("{}", state);
+      assert!(state.play(GomokuMove(util::xy_to_point(xx, y))).is_ok());
+    }
+  }
+
+  assert!(state.is_terminal());
+  assert_eq!(Some(0.0), state.get_payoff_for_player1());
+}
 
 #[test]
 fn two_moves_same_spot() {
@@ -119,14 +120,51 @@ fn no_moves_after_end() {
   assert!(!end_state.play("a1".parse().unwrap()).is_ok());
 }
 
-#[test]
-fn random_game() {
-  let mut state = Gomoku::new().new_game();
-  let mut rng = rand::XorShiftRng::new_unseeded();
 
-  while !state.is_terminal() {
-    state.play_random_move(&mut rng).ok();
+fn is_finished(state: &GomokuState) -> bool {
+  for point in 0..BOARD_LEN {
+    let pstate = state.get(point);
+    if pstate == PointState::Empty {
+      continue;
+    }
+    let (xu, yu) = util::point_to_xy(point);
+    let x = xu as i32;
+    let y = yu as i32;
+
+    for &(dx, dy) in [(1, 0), (1, 1), (0, 1), (-1, 1)].iter() {
+      let mut tail: u32 = 1;
+      for i in 1..5 {
+        let xx = x + dx * i;
+        let yy = y + dy * i;
+        if xx < 0 || xx >= SIZE as i32 || yy < 0 || yy >= SIZE as i32 ||
+           state.get(util::xy_to_point(xx as u32, yy as u32)) != pstate {
+          break
+        }
+        tail += 1;
+      }
+
+      if tail >= 5 {
+        return true
+      }
+    }
   }
 
-  assert!(state.is_terminal());
+  false
+}
+
+
+#[test]
+fn random_game() {
+  let mut rng = rand::XorShiftRng::new_unseeded();
+
+  for _ in 0..100 {
+    let mut state = Gomoku::new().new_game();
+    while !state.is_terminal() {
+      assert!(!is_finished(&state));
+      state.play_random_move(&mut rng).ok();
+    }
+
+    assert!(is_finished(&state));
+    assert!(state.is_terminal());
+  }
 }
