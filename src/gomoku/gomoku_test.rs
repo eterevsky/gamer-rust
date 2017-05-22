@@ -2,7 +2,7 @@ extern crate rand;
 use std::str::FromStr;
 
 use def::Game;
-use def::GameState;
+use def::State;
 use gomoku::gomoku_move::GomokuMove;
 use gomoku::gomoku::Gomoku;
 use gomoku::gomoku::GomokuState;

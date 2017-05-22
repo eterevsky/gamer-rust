@@ -6,8 +6,10 @@ use clap::{App, Arg, SubCommand};
 
 extern crate gamer;
 
+use gamer::def::Agent;
 use gamer::def::Game;
-use gamer::def::GameState;
+use gamer::def::RandomAgent;
+use gamer::def::State;
 use gamer::gomoku::Gomoku;
 
 fn bench<G>(game: G) where G : Game {
@@ -35,9 +37,10 @@ fn bench<G>(game: G) where G : Game {
 
 fn play<G>(game: G) where G : Game {
   let mut state: G::State = game.new_game();
-  let mut rng = rand::XorShiftRng::new_unseeded();
+  let mut random_agent = RandomAgent::new(rand::XorShiftRng::new_unseeded());
   while !state.is_terminal() {
-    state.play_random_move(&mut rng).ok();
+    let m = random_agent.select_move(&state).unwrap();
+    state.play(m).ok();
     println!("{}", state);
   }
 

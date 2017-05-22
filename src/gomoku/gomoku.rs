@@ -4,7 +4,7 @@ use rand;
 
 use def;
 use def::Game;
-use def::GameState;
+use def::State;
 use gomoku::gomoku_move::GomokuMove;
 use gomoku::util;
 
@@ -182,7 +182,7 @@ impl GomokuState {
   }
 }
 
-impl def::GameState for GomokuState {
+impl def::State for GomokuState {
   type Move = GomokuMove;
   type Player = bool;
 
@@ -198,6 +198,19 @@ impl def::GameState for GomokuState {
       Ok(())
     } else {
       Err("Position is taken")
+    }
+  }
+
+  fn get_random_move<R: rand::Rng>(&self, rng: &mut R) -> Option<GomokuMove> {
+    if self.is_terminal() {
+      return None
+    }
+
+    loop {
+      let point: usize = (rng.next_u32() % BOARD_LEN as u32) as usize;
+      if self.board[point] == PointState::Empty {
+        return Some(GomokuMove(point))
+      }
     }
   }
 
