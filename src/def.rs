@@ -12,19 +12,14 @@ pub trait Game {
 
 pub trait State : Clone + fmt::Display {
   type Move: Copy + Clone;
-  type Player: Copy;
 
   fn play(&mut self, Self::Move) -> Result<(), &'static str>;
+  fn iter_moves<'a>(&'a self) -> Box<Iterator<Item=Self::Move> + 'a>;
   fn get_random_move<R: rand::Rng>(&self, rng: &mut R) -> Option<Self::Move>;
   fn play_random_move<R: rand::Rng>(&mut self, rng: &mut R) -> Result<(), &'static str>;
-  fn get_player(&self) -> Self::Player;
-  fn get_payoff_for_player1(&self) -> Option<f32>;
-  fn get_payoff(&self, Self::Player) -> Option<f32>;
+  fn get_player(&self) -> bool;
+  fn get_payoff(&self) -> Option<f32>;
   fn is_terminal(&self) -> bool;
-}
-
-pub trait MoveGenerator<S: State> {
-  fn generate(&self, state: &S) -> Vec<S::Move>;
 }
 
 pub trait Agent<S: State> {
@@ -51,11 +46,5 @@ impl<S: State, R: rand::Rng + Clone> Agent<S> for RandomAgent<R> {
 }
 
 pub trait Evaluator<S: State> {
-  fn evaluate(&self, state: &S, player: S::Player) -> f32;
-
-  fn evaluate_move(&self, state: &S, m: S::Move, player: S::Player) -> f32 {
-    let mut state_clone = state.clone();
-    state_clone.play(m).ok();
-    self.evaluate(&state_clone, player)
-  }
+  fn evaluate(&self, state: &S) -> f32;
 }

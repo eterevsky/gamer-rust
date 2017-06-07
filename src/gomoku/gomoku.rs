@@ -184,7 +184,6 @@ impl GomokuState {
 
 impl def::State for GomokuState {
   type Move = GomokuMove;
-  type Player = bool;
 
   fn play(&mut self, gmove: GomokuMove) -> Result<(), &'static str> {
     if self.status & TERMINAL_MASK != 0 {
@@ -199,6 +198,11 @@ impl def::State for GomokuState {
     } else {
       Err("Position is taken")
     }
+  }
+
+  fn iter_moves<'a>(&'a self) -> Box<Iterator<Item=GomokuMove> + 'a> {
+    Box::new((0..BOARD_LEN).filter(move |&i| {self.board[i] == PointState::Empty})
+                           .map(|i| GomokuMove(i)))
   }
 
   fn get_random_move<R: rand::Rng>(&self, rng: &mut R) -> Option<GomokuMove> {
@@ -240,22 +244,13 @@ impl def::State for GomokuState {
     self.status & PLAYER_MASK == 1
   }
 
-  fn get_payoff_for_player1(&self) -> Option<f32> {
+  fn get_payoff(&self) -> Option<f32> {
     match self.status & TERMINAL_MASK {
       PLAYER1_WIN_MASK => Some(1.0),
       PLAYER2_WIN_MASK => Some(-1.0),
       DRAW_MASK => Some(0.0),
       _ => return None
     }
-  }
-
-  fn get_payoff(&self, player: bool) -> Option<f32> {
-    let value = match self.get_payoff_for_player1() {
-      Some(v) => v,
-      None => return None
-    };
-
-    if player { Some(value) } else { Some(-value) }
   }
 }
 

@@ -24,9 +24,12 @@ fn run_game(moves_str: &str, result: f32) -> GomokuState {
     player = !player;
   }
 
-  assert!(state.is_terminal());
-  assert_eq!(Some(result), state.get_payoff(true));
-  return state;
+  if result != 0.0 {
+    assert!(state.is_terminal());
+    assert_eq!(Some(result), state.get_payoff(true));
+  }
+
+  state
 }
 
 #[test]
@@ -104,7 +107,7 @@ fn game_draw() {
   }
 
   assert!(state.is_terminal());
-  assert_eq!(Some(0.0), state.get_payoff_for_player1());
+  assert_eq!(Some(0.0), state.get_payoff());
 }
 
 #[test]
@@ -167,4 +170,13 @@ fn random_game() {
     assert!(is_finished(&state));
     assert!(state.is_terminal());
   }
+}
+
+#[test]
+fn iter_moves() {
+  let state = run_game("c3 d3 c4 b4 c5 c2 c6 e6", 0.0);
+  let moves: Vec<GomokuMove> = state.iter_moves().collect();
+  assert_eq!(moves.len(), 19*19 - 8);
+  assert!(moves.iter().find(|&&m| m == FromStr::from_str("a1").unwrap()).is_some());
+  assert!(moves.iter().find(|&&m| m == FromStr::from_str("c3").unwrap()).is_none());
 }

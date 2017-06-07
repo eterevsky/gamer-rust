@@ -11,6 +11,9 @@ use gamer::def::Game;
 use gamer::def::RandomAgent;
 use gamer::def::State;
 use gamer::gomoku::Gomoku;
+use gamer::gomoku::GomokuEvaluator;
+use gamer::gomoku::GomokuState;
+use gamer::minimax::MiniMaxAgent;
 
 fn bench<G>(game: G) where G : Game {
   const N: u32 = 1_000_000;
@@ -24,7 +27,7 @@ fn bench<G>(game: G) where G : Game {
     while !state.is_terminal() {
       state.play_random_move(&mut rng).ok();
     }
-    payoff += state.get_payoff_for_player1().unwrap();
+    payoff += state.get_payoff().unwrap();
   }
 
   let end = time::precise_time_ns();
@@ -35,25 +38,40 @@ fn bench<G>(game: G) where G : Game {
   println!("Payoff: {}", payoff);
 }
 
-fn play<G>(game: G) where G : Game {
-  let mut state: G::State = game.new_game();
+// fn play<G>(game: G) where G : Game {
+//   let mut state: G::State = game.new_game();
+//   let mut random_agent = RandomAgent::new(rand::XorShiftRng::new_unseeded());
+//   while !state.is_terminal() {
+//     let m = random_agent.select_move(&state).unwrap();
+//     state.play(m).ok();
+//     println!("{}", state);
+//   }
+//
+//   println!("Final score: {}", state.get_payoff_for_player1().unwrap());
+// }
+//
+fn play_gomoku(game: Gomoku) {
+  let mut state: GomokuState = game.new_game();
   let mut random_agent = RandomAgent::new(rand::XorShiftRng::new_unseeded());
+  let mut minimax_agent3 = MiniMaxAgent::new(&GomokuEvaluator::new(), 3, 1000.0);
+  let mut minimax_agent2 = MiniMaxAgent::new(&GomokuEvaluator::new(), 2, 1000.0);
   while !state.is_terminal() {
-    let m = random_agent.select_move(&state).unwrap();
+    let m = if state.get_player() { minimax_agent2.select_move(&state).unwrap() }
+            else { minimax_agent3.select_move(&state).unwrap() };
     state.play(m).ok();
     println!("{}", state);
   }
 
-  println!("Final score: {}", state.get_payoff_for_player1().unwrap());
+  println!("Final score: {}", state.get_payoff().unwrap());
 }
 
-fn game_main<G>(args: clap::ArgMatches) where G: Game {
-  let game : G = G::new();
+fn game_main(args: clap::ArgMatches) {
+  let game = Gomoku::new();
 
   if let Some(_) = args.subcommand_matches("bench") {
     bench(game);
   } else if let Some(_) = args.subcommand_matches("play") {
-    play(game);
+    play_gomoku(game);
   }
 }
 
@@ -76,7 +94,7 @@ fn main() {
   let args = args_definition().get_matches();
 
   match args.value_of("game") {
-    Some("gomoku") => game_main::<Gomoku>(args),
+    Some("gomoku") => game_main(args),
     _ => unreachable!()
   };
 }
