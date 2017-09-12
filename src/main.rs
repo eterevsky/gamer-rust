@@ -52,7 +52,7 @@ fn bench<G>(game: G) where G : Game {
 //
 fn play_gomoku(game: Gomoku) {
   let mut state: GomokuState = game.new_game();
-  let mut random_agent = RandomAgent::new(rand::XorShiftRng::new_unseeded());
+  // let mut random_agent = RandomAgent::new(rand::XorShiftRng::new_unseeded());
   let mut minimax_agent3 = MiniMaxAgent::new(&GomokuEvaluator::new(), 3, 1000.0);
   let mut minimax_agent2 = MiniMaxAgent::new(&GomokuEvaluator::new(), 2, 1000.0);
   while !state.is_terminal() {

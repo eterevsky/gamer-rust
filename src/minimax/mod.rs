@@ -44,7 +44,7 @@ impl<S: State, E: Evaluator<S> + Clone> MiniMaxAgent<S, E> {
 
     for m in state.iter_moves() {
       let mut state_clone = state.clone();
-      state_clone.play(m);
+      state_clone.play(m).unwrap();
       match self.search(&state_clone, depth - 1, deadline) {
         None => return None,
         Some((score, _)) => {

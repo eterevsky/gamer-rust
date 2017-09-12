@@ -18,6 +18,7 @@ pub trait State : Clone + fmt::Display {
   fn get_random_move<R: rand::Rng>(&self, rng: &mut R) -> Option<Self::Move>;
   fn play_random_move<R: rand::Rng>(&mut self, rng: &mut R) -> Result<(), &'static str>;
   fn get_player(&self) -> bool;
+  /// Payoff for player #0.
   fn get_payoff(&self) -> Option<f32>;
   fn is_terminal(&self) -> bool;
 }

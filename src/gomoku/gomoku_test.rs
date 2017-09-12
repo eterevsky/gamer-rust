@@ -26,7 +26,7 @@ fn run_game(moves_str: &str, result: f32) -> GomokuState {
 
   if result != 0.0 {
     assert!(state.is_terminal());
-    assert_eq!(Some(result), state.get_payoff(true));
+    assert_eq!(Some(result), state.get_payoff());
   }
 
   state
