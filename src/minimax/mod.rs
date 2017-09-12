@@ -6,14 +6,14 @@ use def::Agent;
 use def::Evaluator;
 use def::State;
 
-pub struct MiniMaxAgent<S: State, E: Evaluator<S> + Clone> {
-  _s: PhantomData<S>,
+pub struct MiniMaxAgent<'a, S: State<'a> + 'a, E: Evaluator<'a, S> + Clone> {
+  _s: PhantomData<&'a S>,
   evaluator: E,
   max_depth: i32,
   time_limit: f64
 }
 
-impl<S: State, E: Evaluator<S> + Clone> MiniMaxAgent<S, E> {
+impl<'a, S: State<'a>, E: Evaluator<'a, S> + Clone> MiniMaxAgent<'a, S, E> {
   pub fn new(evaluator: &E, max_depth: i32, time_limit: f64) -> Self {
     assert!(max_depth > 0);
     assert!(time_limit > 0.0);
@@ -60,7 +60,8 @@ impl<S: State, E: Evaluator<S> + Clone> MiniMaxAgent<S, E> {
   }
 }
 
-impl<S: State, E: Evaluator<S> + Clone> Agent<S> for MiniMaxAgent<S, E> {
+impl<'a, S: State<'a>, E: Evaluator<'a, S> + Clone> Agent<'a, S>
+    for MiniMaxAgent<'a, S, E> {
   fn select_move(&mut self, state: &S) -> Option<S::Move> {
     if state.is_terminal() {
       return None

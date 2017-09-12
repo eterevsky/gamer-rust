@@ -15,7 +15,7 @@ use gamer::gomoku::GomokuEvaluator;
 use gamer::gomoku::GomokuState;
 use gamer::minimax::MiniMaxAgent;
 
-fn bench<G>(game: G) where G : Game {
+fn bench<'a, G>(game: &'a G) where G : Game<'a> + 'a {
   const N: u32 = 1_000_000;
   let mut payoff: f32 = 0.0;
 
@@ -50,7 +50,7 @@ fn bench<G>(game: G) where G : Game {
 //   println!("Final score: {}", state.get_payoff_for_player1().unwrap());
 // }
 //
-fn play_gomoku(game: Gomoku) {
+fn play_gomoku(game: &Gomoku) {
   let mut state: GomokuState = game.new_game();
   // let mut random_agent = RandomAgent::new(rand::XorShiftRng::new_unseeded());
   let mut minimax_agent3 = MiniMaxAgent::new(&GomokuEvaluator::new(), 3, 1000.0);
@@ -69,9 +69,9 @@ fn game_main(args: clap::ArgMatches) {
   let game = Gomoku::new();
 
   if let Some(_) = args.subcommand_matches("bench") {
-    bench(game);
+    bench(&game);
   } else if let Some(_) = args.subcommand_matches("play") {
-    play_gomoku(game);
+    play_gomoku(&game);
   }
 }
 

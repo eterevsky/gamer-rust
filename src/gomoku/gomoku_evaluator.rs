@@ -11,8 +11,8 @@ impl GomokuEvaluator {
   }
 }
 
-impl Evaluator<GomokuState> for GomokuEvaluator {
-  fn evaluate(&self, state: &GomokuState) -> f32 {
+impl<'a> Evaluator<'a, GomokuState<'a>> for GomokuEvaluator {
+  fn evaluate(&self, state: &GomokuState<'a>) -> f32 {
     if state.is_terminal() {
       state.get_payoff().unwrap()
     } else {

@@ -11,8 +11,9 @@ use gomoku::gomoku::BOARD_LEN;
 use gomoku::gomoku::SIZE;
 use gomoku::util;
 
-fn run_game(moves_str: &str, result: f32) -> GomokuState {
-  let mut state = Gomoku::new().new_game();
+fn run_moves_on_state<'a>(game: &'a Gomoku<'a>, moves_str: &str)
+    -> GomokuState<'a> {
+  let mut state = game.new_game();
   let mut player = true;
 
   for move_str in moves_str.split(' ') {
@@ -24,24 +25,31 @@ fn run_game(moves_str: &str, result: f32) -> GomokuState {
     player = !player;
   }
 
+  state
+}
+
+fn run_game(moves_str: &str, result: f32) {
+  let game = Gomoku::new();
+  let state = run_moves_on_state(&game, moves_str);
+
   if result != 0.0 {
     assert!(state.is_terminal());
     assert_eq!(Some(result), state.get_payoff());
   }
-
-  state
 }
 
 #[test]
 fn empty_point_in_new_game() {
-  let state = Gomoku::new().new_game();
+  let game = Gomoku::new();
+  let state = game.new_game();
   assert_eq!(Some(PointState::Empty), state.gets("A1"));
   assert_eq!(Some(PointState::Empty), state.gets("J3"));
 }
 
 #[test]
 fn play() {
-  let mut state = Gomoku::new().new_game();
+  let game = Gomoku::new();
+  let mut state = game.new_game();
   assert_eq!(Some(PointState::Empty), state.gets("c3"));
 
   assert!(state.play("c3".parse().unwrap()).is_ok());
@@ -89,7 +97,8 @@ fn game_borders() {
 
 #[test]
 fn game_draw() {
-  let mut state = Gomoku::new().new_game();
+  let game = Gomoku::new();
+  let mut state = game.new_game();
   for x in 0..SIZE {
     for y in 0..SIZE {
       let xx = match x % 4 {
@@ -112,14 +121,16 @@ fn game_draw() {
 
 #[test]
 fn two_moves_same_spot() {
-  let mut state = Gomoku::new().new_game();
+  let game = Gomoku::new();
+  let mut state = game.new_game();
   assert!(state.play("c3".parse().unwrap()).is_ok());
   assert!(state.play("c3".parse().unwrap()).is_err());
 }
 
 #[test]
 fn no_moves_after_end() {
-  let mut end_state = run_game("c3 d3 c4 b4 c5 c2 c6 e6 c7", 1.0);
+  let game = Gomoku::new();
+  let mut end_state = run_moves_on_state(&game, "c3 d3 c4 b4 c5 c2 c6 e6 c7");
   assert!(!end_state.play("a1".parse().unwrap()).is_ok());
 }
 
@@ -161,7 +172,8 @@ fn random_game() {
   let mut rng = rand::XorShiftRng::new_unseeded();
 
   for _ in 0..100 {
-    let mut state = Gomoku::new().new_game();
+    let game = Gomoku::new();
+    let mut state = game.new_game();
     while !state.is_terminal() {
       assert!(!is_finished(&state));
       state.play_random_move(&mut rng).ok();
@@ -174,9 +186,12 @@ fn random_game() {
 
 #[test]
 fn iter_moves() {
-  let state = run_game("c3 d3 c4 b4 c5 c2 c6 e6", 0.0);
+  let game = Gomoku::new();
+  let state = run_moves_on_state(&game, "c3 d3 c4 b4 c5 c2 c6 e6");
   let moves: Vec<GomokuMove> = state.iter_moves().collect();
   assert_eq!(moves.len(), 19*19 - 8);
-  assert!(moves.iter().find(|&&m| m == FromStr::from_str("a1").unwrap()).is_some());
-  assert!(moves.iter().find(|&&m| m == FromStr::from_str("c3").unwrap()).is_none());
+  assert!(moves.iter().find(|&&m| m == FromStr::from_str("a1").unwrap())
+      .is_some());
+  assert!(moves.iter().find(|&&m| m == FromStr::from_str("c3").unwrap())
+      .is_none());
 }
