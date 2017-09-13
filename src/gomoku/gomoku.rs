@@ -108,7 +108,7 @@ impl PointState {
 
 pub struct GomokuState<'a> {
   gomoku: &'a Gomoku<'a>,
-  board: [PointState; BOARD_LEN],
+  pub board: [PointState; BOARD_LEN],
   status: u32
 }
 
