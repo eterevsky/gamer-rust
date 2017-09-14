@@ -101,7 +101,7 @@ pub enum PointState {
 }
 
 impl PointState {
-  fn from_player(player: bool) -> PointState {
+  pub fn from_player(player: bool) -> PointState {
     if player { PointState::Black } else { PointState::White }
   }
 }

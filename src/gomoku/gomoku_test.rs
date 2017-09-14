@@ -11,7 +11,7 @@ use gomoku::gomoku::BOARD_LEN;
 use gomoku::gomoku::SIZE;
 use gomoku::util;
 
-fn run_moves_on_state<'a>(game: &'a Gomoku<'a>, moves_str: &str)
+pub fn run_moves_on_state<'a>(game: &'a Gomoku<'a>, moves_str: &str)
     -> GomokuState<'a> {
   let mut state = game.new_game();
   let mut player = true;
