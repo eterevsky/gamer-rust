@@ -25,8 +25,17 @@ impl<'a> Evaluator<'a, GomokuState<'a>> for GomokuEvaluator {
 }
 
 #[derive(Clone, Copy, Debug)]
+struct LineRange {
+  start: usize,
+  step: usize,
+  end: usize,
+  diagonal: bool
+}
+
+#[derive(Clone, Debug)]
 pub struct GomokuLinesEvaluator {
-  values: [f32; 16]
+  values: [f32; 16],
+  lines: Vec<LineRange>
 }
 
 /// Evaluate the position, base on lines of 1 to 5 stones of the same color.
@@ -40,37 +49,13 @@ pub struct GomokuLinesEvaluator {
 ///  - whether there's an empty space on one or both sides of the line.
 impl<'a> Evaluator<'a, GomokuState<'a>> for GomokuLinesEvaluator {
   fn evaluate(&self, state: &GomokuState<'a>) -> f32 {
-    let us = SIZE as usize;
-
     if state.is_terminal() {
       return state.get_payoff().unwrap() * 10000.0;
     }
     let mut value: f32 = 0.0;
 
-    // Iterate through points on the top side.
-    for p in 0..us {
-      // Vertical line.
-      value += self.evaluate_line(state, p, us, us, false);
-      // Diagonal line to bottom-right.
-      value += self.evaluate_line(state, p, us + 1, us - p, true);
-      // Diagonal line to bottom-left.
-      value += self.evaluate_line(state, p, us - 1, p + 1, true);
-    }
-    let mut p: usize = 0;
-    while p < BOARD_LEN {
-      // Horizontal line.
-      value += self.evaluate_line(state, p, 1, us, false);
-      if p != 0 {
-        // Diagonal line to bottom-right.
-        value += self.evaluate_line(state, p, us + 1, us - p / us, true);
-      }
-      p += us;
-    }
-    p = us - 1;
-    while p < BOARD_LEN {
-      // Diagonal line to bottom-left.
-      value += self.evaluate_line(state, p, us - 1, us - p / us, true);
-      p += us;
+    for line in self.lines.iter() {
+      value += self.evaluate_line(state, line);
     }
 
     if state.get_player() {
@@ -89,21 +74,55 @@ impl GomokuLinesEvaluator {
          1.,   10.,  100.,  1000.,
         -0.1,  -1.,  -10.,  -100.,
         -1.,  -10., -100., -1000.
-      ]
+      ],
+      lines: Self::gen_lines()
     }
-
   }
 
-  fn evaluate_line<'a>(&self, state: &GomokuState<'a>, start: usize, step: usize,
-                       nsteps: usize, diagonal: bool)
-      -> f32 {
+  fn gen_lines() -> Vec<LineRange> {
+    let size = SIZE as usize;
+    let mut lines = Vec::new();
+
+    // Iterate through points on the top side.
+    for p in 0..size {
+      // Vertical line.
+      lines.push(LineRange{start: p, step: size, end: BOARD_LEN, diagonal: false});
+      // Diagonal line to bottom-right.
+      lines.push(LineRange{start: p, step: size + 1, end: (size - p) * size, diagonal: true});
+      // Diagonal line to bottom-left.
+      lines.push(LineRange{start: p, step: size - 1, end: (p + 1) * size, diagonal: true});
+    }
+
+    let mut p = 0;
+    while p < BOARD_LEN {
+      // Horizontal line.
+      lines.push(LineRange{start: p, step: 1, end: p + size, diagonal: false});
+      if p != 0 {
+        // Diagonal line to bottom-right.
+        lines.push(LineRange{start: p, step: size + 1, end: BOARD_LEN, diagonal: true});
+      }
+      p += size;
+    }
+    
+    let mut p = size - 1;
+    while p < BOARD_LEN {
+      // Diagonal line to bottom-left.
+      lines.push(LineRange{start: p, step: size - 1, end: BOARD_LEN, diagonal: true});
+      p += size;
+    }
+
+    lines
+  }
+
+  fn evaluate_line<'a>(&self, state: &GomokuState<'a>, line: &LineRange) -> f32 {
     let mut value: f32 = 0.0;
     
     let mut line_len = 0;
     let mut color = PointState::Empty;
-    let mut point = start;
+    let mut point = line.start;
     let mut opened_line = true;
-    for _ in 0..nsteps {
+
+    while point < line.end {
       if state.board[point] == color {
         line_len += 1;
       } else {
@@ -120,7 +139,7 @@ impl GomokuLinesEvaluator {
         color = state.board[point];
       }
 
-      point += step;
+      point += line.step;
     }
 
     if color != PointState::Empty {
