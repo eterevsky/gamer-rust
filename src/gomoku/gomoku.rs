@@ -283,10 +283,15 @@ impl<'a> fmt::Display for GomokuState<'a> {
           PointState::Black => write!(f, " X"),
           PointState::White => write!(f, " O")
         });
-
       }
       try!(writeln!(f, ""))
     }
+
+    try!(write!(f, "  "));
+    for x in 0..SIZE {
+      try!(write!(f, " {}", util::col_letter(x)));
+    }
+
 
     Ok(())
   }

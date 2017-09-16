@@ -6,15 +6,15 @@ use gomoku::gomoku::BOARD_LEN;
 use gomoku::gomoku::SIZE;
 
 #[derive(Clone, Copy, Debug)]
-pub struct GomokuEvaluator {}
+pub struct GomokuTerminalEvaluator {}
 
-impl GomokuEvaluator {
-  pub fn new() -> GomokuEvaluator {
-    GomokuEvaluator {}
+impl GomokuTerminalEvaluator {
+  pub fn new() -> GomokuTerminalEvaluator {
+    GomokuTerminalEvaluator {}
   }
 }
 
-impl<'a> Evaluator<'a, GomokuState<'a>> for GomokuEvaluator {
+impl<'a> Evaluator<'a, GomokuState<'a>> for GomokuTerminalEvaluator {
   fn evaluate(&self, state: &GomokuState<'a>) -> f32 {
     if state.is_terminal() {
       state.get_payoff().unwrap()
@@ -25,7 +25,7 @@ impl<'a> Evaluator<'a, GomokuState<'a>> for GomokuEvaluator {
 }
 
 #[derive(Clone, Copy, Debug)]
-struct LineRange {
+pub struct LineRange {
   start: usize,
   step: usize,
   end: usize,
@@ -62,12 +62,12 @@ impl<'a> Evaluator<'a, GomokuState<'a>> for GomokuLinesEvaluator {
       value
     } else {
       -value
-    }    
+    }
   }
 }
 
 impl GomokuLinesEvaluator {
-  pub fn default_instance() -> GomokuLinesEvaluator {
+  pub fn new_default() -> GomokuLinesEvaluator {
     GomokuLinesEvaluator {
       values: [
          0.1,   1.,  10.,    100.,
@@ -79,6 +79,11 @@ impl GomokuLinesEvaluator {
     }
   }
 
+  #[cfg(test)]
+  pub fn gen_lines_for_test() -> Vec<LineRange> {
+    Self::gen_lines()
+  }
+
   fn gen_lines() -> Vec<LineRange> {
     let size = SIZE as usize;
     let mut lines = Vec::new();
@@ -86,11 +91,22 @@ impl GomokuLinesEvaluator {
     // Iterate through points on the top side.
     for p in 0..size {
       // Vertical line.
-      lines.push(LineRange{start: p, step: size, end: BOARD_LEN, diagonal: false});
+      lines.push(
+          LineRange{start: p, step: size, end: BOARD_LEN, diagonal: false});
       // Diagonal line to bottom-right.
-      lines.push(LineRange{start: p, step: size + 1, end: (size - p) * size, diagonal: true});
+      lines.push(
+          LineRange{
+            start: p,
+            step: size + 1,
+            end: (size - p) * size,
+            diagonal: true});
       // Diagonal line to bottom-left.
-      lines.push(LineRange{start: p, step: size - 1, end: (p + 1) * size, diagonal: true});
+      lines.push(
+          LineRange{
+            start: p,
+            step: size - 1,
+            end: (p + 1) * (size - 1),
+            diagonal: true});
     }
 
     let mut p = 0;
@@ -99,12 +115,17 @@ impl GomokuLinesEvaluator {
       lines.push(LineRange{start: p, step: 1, end: p + size, diagonal: false});
       if p != 0 {
         // Diagonal line to bottom-right.
-        lines.push(LineRange{start: p, step: size + 1, end: BOARD_LEN, diagonal: true});
+        lines.push(
+            LineRange{
+              start: p,
+              step: size + 1,
+              end: BOARD_LEN,
+              diagonal: true});
       }
       p += size;
     }
-    
-    let mut p = size - 1;
+
+    let mut p = 2*size - 1;
     while p < BOARD_LEN {
       // Diagonal line to bottom-left.
       lines.push(LineRange{start: p, step: size - 1, end: BOARD_LEN, diagonal: true});
@@ -116,11 +137,11 @@ impl GomokuLinesEvaluator {
 
   fn evaluate_line<'a>(&self, state: &GomokuState<'a>, line: &LineRange) -> f32 {
     let mut value: f32 = 0.0;
-    
+
     let mut line_len = 0;
     let mut color = PointState::Empty;
     let mut point = line.start;
-    let mut opened_line = true;
+    let mut opened_line = false;
 
     while point < line.end {
       if state.board[point] == color {
@@ -165,7 +186,7 @@ impl GomokuLinesEvaluator {
     let encoded: usize = if acting_player { 8 } else { 0 } +
                          (open_ends - 1) * 4 +
                          line_len - 1;
-    
+
     self.values[encoded]
   }
 }
@@ -180,17 +201,23 @@ use gomoku::gomoku_test::run_moves_on_state;
 use super::*;
 
 #[test]
-fn simple_evaluator() {
+fn terminal_evaluator() {
   let game = Gomoku::new();
-  let evaluator = GomokuEvaluator::new();
+  let evaluator = GomokuTerminalEvaluator::new();
   let state = run_moves_on_state(&game, "J10");
   assert_eq!(0.0, evaluator.evaluate(&state));
 }
 
 #[test]
+fn gen_lines() {
+  let lines = GomokuLinesEvaluator::gen_lines_for_test();
+  assert_eq!(19 + 19 + 37 + 37, lines.len());
+}
+
+#[test]
 fn evaluator_empty() {
   let game = Gomoku::new();
-  let evaluator = GomokuLinesEvaluator::default_instance();
+  let evaluator = GomokuLinesEvaluator::new_default();
   let state = game.new_game();
   assert_eq!(0.0, evaluator.evaluate(&state));
 }
@@ -198,7 +225,7 @@ fn evaluator_empty() {
 #[test]
 fn evaluator_single_stone() {
   let game = Gomoku::new();
-  let evaluator = GomokuLinesEvaluator::default_instance();
+  let evaluator = GomokuLinesEvaluator::new_default();
   let state = run_moves_on_state(&game, "J10");
   assert_eq!(-4.0, evaluator.evaluate(&state));
 }
@@ -206,7 +233,7 @@ fn evaluator_single_stone() {
 #[test]
 fn evaluator_two_stones() {
   let game = Gomoku::new();
-  let evaluator = GomokuLinesEvaluator::default_instance();
+  let evaluator = GomokuLinesEvaluator::new_default();
   let state = run_moves_on_state(&game, "J10 K10");
   assert_eq!(0.0, evaluator.evaluate(&state));
 }
@@ -214,7 +241,7 @@ fn evaluator_two_stones() {
 #[test]
 fn evaluator_corner_stone() {
   let game = Gomoku::new();
-  let evaluator = GomokuLinesEvaluator::default_instance();
+  let evaluator = GomokuLinesEvaluator::new_default();
   let state = run_moves_on_state(&game, "A1");
   assert_eq!(-0.3, evaluator.evaluate(&state));
 }

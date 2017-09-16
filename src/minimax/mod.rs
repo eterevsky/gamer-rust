@@ -10,7 +10,7 @@ pub struct MiniMaxAgent<'a, S: State<'a> + 'a, E: Evaluator<'a, S> + Clone> {
   _s: PhantomData<&'a S>,
   evaluator: E,
   max_depth: i32,
-  time_limit: f64
+  time_limit: f64,
 }
 
 impl<'a, S: State<'a>, E: Evaluator<'a, S> + Clone> MiniMaxAgent<'a, S, E> {
@@ -21,26 +21,27 @@ impl<'a, S: State<'a>, E: Evaluator<'a, S> + Clone> MiniMaxAgent<'a, S, E> {
       _s: PhantomData,
       evaluator: (*evaluator).clone(),
       max_depth: max_depth,
-      time_limit: time_limit
+      time_limit: time_limit,
     }
   }
 
-  fn search(&self, state: &S, depth: i32, deadline: f64) -> Option<(f32, Option<S::Move>)> {
+  fn search(&self, state: &S, depth: i32, deadline: f64)
+      -> Option<(f32, Option<S::Move>)> {
     if state.is_terminal() {
-      return Some((state.get_payoff().unwrap(), None))
+      return Some((state.get_payoff().unwrap(), None));
     }
 
     if depth == 0 {
-      return Some((self.evaluator.evaluate(state), None))
+      return Some((self.evaluator.evaluate(state), None));
     }
 
     if time::precise_time_s() >= deadline {
-      return None
+      return None;
     }
 
     let mut best_move = None;
     let player = state.get_player();
-    let mut best_score = if player {-2.0} else {2.0};
+    let mut best_score = if player { -2.0 } else { 2.0 };
 
     for m in state.iter_moves() {
       let mut state_clone = state.clone();
@@ -61,10 +62,10 @@ impl<'a, S: State<'a>, E: Evaluator<'a, S> + Clone> MiniMaxAgent<'a, S, E> {
 }
 
 impl<'a, S: State<'a>, E: Evaluator<'a, S> + Clone> Agent<'a, S>
-    for MiniMaxAgent<'a, S, E> {
+  for MiniMaxAgent<'a, S, E> {
   fn select_move(&mut self, state: &S) -> Option<S::Move> {
     if state.is_terminal() {
-      return None
+      return None;
     }
 
     let deadline = time::precise_time_s() + self.time_limit;
@@ -72,7 +73,9 @@ impl<'a, S: State<'a>, E: Evaluator<'a, S> + Clone> Agent<'a, S>
     for depth in 1..(self.max_depth + 1) {
       match self.search(state, depth, deadline) {
         None => break,
-        Some((_, m)) => {best_move = m;}
+        Some((_, m)) => {
+          best_move = m;
+        }
       }
     }
 

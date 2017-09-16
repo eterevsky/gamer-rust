@@ -21,7 +21,6 @@ pub fn run_moves_on_state<'a>(game: &'a Gomoku<'a>, moves_str: &str)
     assert!(!state.is_terminal());
     let m: GomokuMove = FromStr::from_str(move_str).unwrap();
     assert!(state.play(m).is_ok());
-    println!("{}", state);
     player = !player;
   }
 

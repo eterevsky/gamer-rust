@@ -20,7 +20,7 @@ pub fn col_letter(col: u32) -> char {
 
 pub fn point_to_a(point: usize) -> String {
   let (x, y) = point_to_xy(point);
-  format!("{}{}", col_letter(x), SIZE - y)
+  format!("{}{}", col_letter(x), y + 1)
 }
 
 pub fn parse_point(s: &str) -> Option<usize> {
@@ -49,7 +49,7 @@ pub fn parse_point(s: &str) -> Option<usize> {
   }
 
   if 1 <= row && col < SIZE {
-    return Some(xy_to_point(col, SIZE - row));
+    return Some(xy_to_point(col, row - 1));
   } else {
     return None
   }
@@ -76,6 +76,14 @@ fn point_to_a_to_point() {
     let s = point_to_a(point);
     assert_eq!(Some(point), parse_point(&s));
   }
+}
+
+#[test]
+fn parse_point_samples() {
+  assert_eq!(Some(0), parse_point("A1"));
+  assert_eq!(Some(18), parse_point("T1"));
+  assert_eq!(Some(361 - 19), parse_point("A19"));
+  assert_eq!(Some(360), parse_point("T19"));
 }
 
 }

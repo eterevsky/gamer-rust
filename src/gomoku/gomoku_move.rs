@@ -61,22 +61,22 @@ fn parse_errors() {
 
 #[test]
 fn parse_legal() {
-  assert_eq!(Ok(GomokuMove(0)), "a19".parse());
-  assert_eq!(Ok(GomokuMove(0)), "A19".parse());
-  assert_eq!(Ok(GomokuMove(9)), "K19".parse());
-  assert_eq!(Ok(GomokuMove(11)), "M19".parse());
-  assert_eq!(Ok(GomokuMove(SIZE as usize)), "A18".parse());
-  assert_eq!(Ok(GomokuMove(SIZE as usize)), "a18".parse());
-  assert_eq!(Ok(GomokuMove(SIZE as usize * 8 + 2)), "C11".parse());
+  assert_eq!(Ok(GomokuMove(342)), "a19".parse());
+  assert_eq!(Ok(GomokuMove(342)), "A19".parse());
+  assert_eq!(Ok(GomokuMove(9)), "K1".parse());
+  assert_eq!(Ok(GomokuMove(11)), "M1".parse());
+  assert_eq!(Ok(GomokuMove(SIZE as usize)), "A2".parse());
+  assert_eq!(Ok(GomokuMove(SIZE as usize)), "a2".parse());
+  assert_eq!(Ok(GomokuMove(SIZE as usize * 10 + 2)), "C11".parse());
 }
 
 #[test]
 fn to_string() {
-  assert_eq!("A19", GomokuMove(0).to_string());
-  assert_eq!("K19", GomokuMove(9).to_string());
-  assert_eq!("M19", GomokuMove(11).to_string());
-  assert_eq!("A18", GomokuMove(SIZE as usize).to_string());
-  assert_eq!("C11", GomokuMove(SIZE as usize * 8 + 2).to_string());
+  assert_eq!("A1", GomokuMove(0).to_string());
+  assert_eq!("K1", GomokuMove(9).to_string());
+  assert_eq!("M1", GomokuMove(11).to_string());
+  assert_eq!("A2", GomokuMove(SIZE as usize).to_string());
+  assert_eq!("C11", GomokuMove(SIZE as usize * 10 + 2).to_string());
 }
 
 }

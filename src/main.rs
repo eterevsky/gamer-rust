@@ -1,6 +1,7 @@
+
+extern crate clap;
 extern crate rand;
 extern crate time;
-extern crate clap;
 
 use clap::{App, Arg, SubCommand};
 
@@ -8,14 +9,16 @@ extern crate gamer;
 
 use gamer::def::Agent;
 use gamer::def::Game;
-use gamer::def::RandomAgent;
 use gamer::def::State;
 use gamer::gomoku::Gomoku;
-use gamer::gomoku::GomokuEvaluator;
+use gamer::gomoku::GomokuTerminalEvaluator;
 use gamer::gomoku::GomokuState;
 use gamer::minimax::MiniMaxAgent;
 
-fn bench<'a, G>(game: &'a G) where G : Game<'a> + 'a {
+fn bench<'a, G>(game: &'a G)
+where
+  G: Game<'a> + 'a,
+{
   const N: u32 = 1_000_000;
   let mut payoff: f32 = 0.0;
 
@@ -53,11 +56,16 @@ fn bench<'a, G>(game: &'a G) where G : Game<'a> + 'a {
 fn play_gomoku(game: &Gomoku) {
   let mut state: GomokuState = game.new_game();
   // let mut random_agent = RandomAgent::new(rand::XorShiftRng::new_unseeded());
-  let mut minimax_agent3 = MiniMaxAgent::new(&GomokuEvaluator::new(), 3, 1000.0);
-  let mut minimax_agent2 = MiniMaxAgent::new(&GomokuEvaluator::new(), 2, 1000.0);
+  let mut minimax_agent3 =
+    MiniMaxAgent::new(&GomokuTerminalEvaluator::new(), 3, 1000.0);
+  let mut minimax_agent2 =
+    MiniMaxAgent::new(&GomokuTerminalEvaluator::new(), 2, 1000.0);
   while !state.is_terminal() {
-    let m = if state.get_player() { minimax_agent2.select_move(&state).unwrap() }
-            else { minimax_agent3.select_move(&state).unwrap() };
+    let m = if state.get_player() {
+      minimax_agent2.select_move(&state).unwrap()
+    } else {
+      minimax_agent3.select_move(&state).unwrap()
+    };
     state.play(m).ok();
     println!("{}", state);
   }
@@ -76,18 +84,20 @@ fn game_main(args: clap::ArgMatches) {
 }
 
 fn args_definition() -> clap::App<'static, 'static> {
-  App::new("gamer").version("0.1")
-      .arg(Arg::with_name("game")
-               .short("g").long("game")
-               .value_name("GAME")
-               .takes_value(true)
-               .possible_values(&["gomoku", "chess"])
-               .default_value("gomoku")
-               .help("Selects the game to play"))
-      .subcommand(SubCommand::with_name("bench")
-                             .about("Run benchmark"))
-      .subcommand(SubCommand::with_name("play")
-                             .about("Play a single game"))
+  App::new("gamer")
+    .version("0.1")
+    .arg(
+      Arg::with_name("game")
+        .short("g")
+        .long("game")
+        .value_name("GAME")
+        .takes_value(true)
+        .possible_values(&["gomoku", "chess"])
+        .default_value("gomoku")
+        .help("Selects the game to play"),
+    )
+    .subcommand(SubCommand::with_name("bench").about("Run benchmark"))
+    .subcommand(SubCommand::with_name("play").about("Play a single game"))
 }
 
 fn main() {
@@ -95,6 +105,6 @@ fn main() {
 
   match args.value_of("game") {
     Some("gomoku") => game_main(args),
-    _ => unreachable!()
+    _ => unreachable!(),
   };
 }
