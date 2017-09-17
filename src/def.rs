@@ -21,6 +21,7 @@ pub trait State<'a>: Clone + fmt::Display {
     rng: &mut R,
   ) -> Result<(), &'static str>;
   fn get_player(&self) -> bool;
+
   /// Payoff for player #0.
   fn get_payoff(&self) -> Option<f32>;
   fn is_terminal(&self) -> bool;
@@ -49,5 +50,6 @@ impl<'a, S: State<'a> + 'a, R: rand::Rng + Clone> Agent<'a, S>
 }
 
 pub trait Evaluator<'a, S: State<'a> + 'a> {
+  /// Evaluation for player #0, regardless of whos turn it is.
   fn evaluate(&self, state: &S) -> f32;
 }

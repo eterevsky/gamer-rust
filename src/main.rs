@@ -11,6 +11,7 @@ use gamer::def::Agent;
 use gamer::def::Game;
 use gamer::def::State;
 use gamer::gomoku::Gomoku;
+use gamer::gomoku::GomokuLinesEvaluator;
 use gamer::gomoku::GomokuTerminalEvaluator;
 use gamer::gomoku::GomokuState;
 use gamer::minimax::MiniMaxAgent;
@@ -59,7 +60,7 @@ fn play_gomoku(game: &Gomoku) {
   let mut minimax_agent3 =
     MiniMaxAgent::new(&GomokuTerminalEvaluator::new(), 3, 1000.0);
   let mut minimax_agent2 =
-    MiniMaxAgent::new(&GomokuTerminalEvaluator::new(), 2, 1000.0);
+    MiniMaxAgent::new(&GomokuLinesEvaluator::new_default(), 2, 1000.0);
   while !state.is_terminal() {
     let m = if state.get_player() {
       minimax_agent2.select_move(&state).unwrap()
