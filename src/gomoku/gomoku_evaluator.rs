@@ -38,7 +38,7 @@ pub struct GomokuLinesEvaluator {
   lines: Vec<LineRange>
 }
 
-/// Evaluate the position, base on lines of 1 to 5 stones of the same color.
+/// Evaluate the position, based on lines of 1 to 5 stones of the same color.
 ///
 /// All horizontal, vertical and diagonal lines on the board is scanned. Every
 /// sequence of stones adds a fixed value to the total evaluation. A value
@@ -105,7 +105,7 @@ impl GomokuLinesEvaluator {
           LineRange{
             start: p,
             step: size - 1,
-            end: (p + 1) * (size - 1),
+            end: (p + 1) * size - 1,
             diagonal: true});
     }
 
@@ -183,7 +183,7 @@ impl GomokuLinesEvaluator {
 
     let open_ends = open_ends as usize;
 
-    let encoded: usize = if acting_player { 8 } else { 0 } +
+    let encoded: usize = if acting_player { 0 } else { 8 } +
                          (open_ends - 1) * 4 +
                          line_len - 1;
 
@@ -259,7 +259,7 @@ fn evaluator_three_corner_stones() {
   let game = Gomoku::new();
   let evaluator = GomokuLinesEvaluator::new_default();
   let state = run_moves_on_state(&game, "A1 A19 B1");
-  assert_eq!(0.5 + 1.0 - 0.3, evaluator.evaluate(&state));
+  assert!((0.5 + 1.0 - 0.3 - evaluator.evaluate(&state)).abs() <= 0.001);
 }
 
 }
