@@ -105,7 +105,7 @@ impl GomokuLinesEvaluator {
           LineRange{
             start: p,
             step: size - 1,
-            end: (p + 1) * (size - 1),
+            end: (p + 1) * size - 1,
             diagonal: true});
     }
 
@@ -175,6 +175,7 @@ impl GomokuLinesEvaluator {
 
   fn evaluate_segment(&self, line_len: usize, acting_player: bool,
                       open_ends: u32) -> f32 {
+    println!("evaluate_segment {} {} {}", line_len, acting_player, open_ends);
     assert!(line_len < 5);
     assert!(line_len > 0);
     if open_ends == 0 {
@@ -183,7 +184,7 @@ impl GomokuLinesEvaluator {
 
     let open_ends = open_ends as usize;
 
-    let encoded: usize = if acting_player { 8 } else { 0 } +
+    let encoded: usize = if acting_player { 0 } else { 8 } +
                          (open_ends - 1) * 4 +
                          line_len - 1;
 
@@ -259,7 +260,7 @@ fn evaluator_three_corner_stones() {
   let game = Gomoku::new();
   let evaluator = GomokuLinesEvaluator::new_default();
   let state = run_moves_on_state(&game, "A1 A19 B1");
-  assert_eq!(0.5 + 1.0 - 0.3, evaluator.evaluate(&state));
+  assert!((1.2 -  evaluator.evaluate(&state)).abs() < 0.1);
 }
 
 }
