@@ -27,11 +27,7 @@ impl<'a, S: State<'a>, E: Evaluator<'a, S> + Clone> MiniMaxAgent<'a, S, E> {
 
   fn search(&self, state: &S, depth: i32, deadline: f64)
       -> Option<(f32, Option<S::Move>)> {
-    if state.is_terminal() {
-      return Some((state.get_payoff().unwrap(), None));
-    }
-
-    if depth == 0 {
+    if state.is_terminal() || depth == 0 {
       return Some((self.evaluator.evaluate(state), None));
     }
 

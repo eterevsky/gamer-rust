@@ -50,7 +50,7 @@ pub struct GomokuLinesEvaluator {
 impl<'a> Evaluator<'a, GomokuState<'a>> for GomokuLinesEvaluator {
   fn evaluate(&self, state: &GomokuState<'a>) -> f32 {
     if state.is_terminal() {
-      return state.get_payoff().unwrap() * 10000.0;
+      return state.get_payoff().unwrap() * 100000.0;
     }
     let mut value: f32 = 0.0;
 
@@ -175,7 +175,6 @@ impl GomokuLinesEvaluator {
 
   fn evaluate_segment(&self, line_len: usize, acting_player: bool,
                       open_ends: u32) -> f32 {
-    println!("evaluate_segment {} {} {}", line_len, acting_player, open_ends);
     assert!(line_len < 5);
     assert!(line_len > 0);
     if open_ends == 0 {
@@ -261,6 +260,14 @@ fn evaluator_three_corner_stones() {
   let evaluator = GomokuLinesEvaluator::new_default();
   let state = run_moves_on_state(&game, "A1 A19 B1");
   assert!((1.2 -  evaluator.evaluate(&state)).abs() < 0.1);
+}
+
+#[test]
+fn evaluator_two_stones_in_the_middle() {
+  let game = Gomoku::new();
+  let evaluator = GomokuLinesEvaluator::new_default();
+  let state = run_moves_on_state(&game, "B2 T19 C2 S19");
+  assert!(((10.0 + 6.0) - (1.0 + 0.5) - evaluator.evaluate(&state)).abs() < 0.1);  
 }
 
 }
