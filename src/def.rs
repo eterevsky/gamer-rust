@@ -1,55 +1,55 @@
-//! General definitions of games, moves, players etc.
+//! General traits for games, players and related concepts.
 
 use rand;
 use std::fmt;
 
-pub trait Game<'a> {
-  type State: State<'a>;
-
-  fn new() -> Self;
-  fn new_game(&'a self) -> Self::State;
+/// A trait for a game rules set.
+pub trait Game<'g> {
+  type State: State<'g>;
+  /// Starts a new game and return the game state before the first move of
+  /// the first player.
+  fn new_game(&'g self) -> Self::State;
 }
 
-pub trait State<'a>: Clone + fmt::Display {
+/// A trait for a game state. Lifetime parameter `'g` corresponds to Game object
+/// lifetime.
+pub trait State<'g>: Clone + fmt::Display {
   type Move: Copy + Clone;
 
-  fn play(&mut self, Self::Move) -> Result<(), &'static str>;
-  fn iter_moves<'b>(&'b self) -> Box<Iterator<Item = Self::Move> + 'b>;
-  fn get_random_move<R: rand::Rng>(&self, rng: &mut R) -> Option<Self::Move>;
-  fn play_random_move<R: rand::Rng>(
-    &mut self,
-    rng: &mut R,
-  ) -> Result<(), &'static str>;
+  /// Returns true if it's the turn of the first player.
   fn get_player(&self) -> bool;
 
-  /// Payoff for player #0.
+  /// Returns true if position is terminal.
+  fn is_terminal(&self) -> bool {
+    self.get_payoff() == None
+  }
+
+  /// Returns payoff for the first player if position is terminal, None
+  /// otherwize.
   fn get_payoff(&self) -> Option<f32>;
-  fn is_terminal(&self) -> bool;
+
+  /// Returns an iterator over all legal moves in the given position.
+  fn iter_moves<'s>(&'s self) -> Box<Iterator<Item = Self::Move> + 's>;
+
+  /// Returns a random valid move or None if the position is terminal.
+  fn get_random_move<R: rand::Rng>(&self, rng: &mut R) -> Option<Self::Move>;
+
+  /// Plays a move.
+  fn play(&mut self, m: Self::Move) -> Result<(), &'static str>;
 }
 
-pub trait Agent<'a, S: State<'a> + 'a> {
-  // None if the state is terminal.
-  fn select_move(&mut self, state: &S) -> Option<S::Move>;
+pub trait Agent<'g, S: State<'g>> {
+  type Report: fmt::Display;
+
+  /// Returns a pair of a move and agent report if
+  fn select_move(
+    &mut self,
+    state: &S,
+  ) -> Result<(S::Move, Self::Report), &'static str>;
 }
 
-pub struct RandomAgent<R: rand::Rng + Clone> {
-  rng: R,
-}
-
-impl<R: rand::Rng + Clone> RandomAgent<R> {
-  pub fn new(rng: R) -> Self {
-    RandomAgent { rng: rng.clone() }
-  }
-}
-
-impl<'a, S: State<'a> + 'a, R: rand::Rng + Clone> Agent<'a, S>
-  for RandomAgent<R> {
-  fn select_move(&mut self, state: &S) -> Option<S::Move> {
-    state.get_random_move(&mut self.rng)
-  }
-}
-
-pub trait Evaluator<'a, S: State<'a> + 'a> {
-  /// Evaluation for player #0, regardless of whos turn it is.
+pub trait Evaluator<'g, S: State<'g>> {
+  /// Evaluates the state and returns the score for the first player, regardless
+  /// whose turn it is.
   fn evaluate(&self, state: &S) -> f32;
 }

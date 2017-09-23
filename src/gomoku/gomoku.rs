@@ -23,12 +23,19 @@ struct LinesMargins {
   end: usize
 }
 
-pub struct Gomoku<'a> {
-  _marker: PhantomData<&'a Gomoku<'a>>,
+pub struct Gomoku<'g> {
+  _marker: PhantomData<&'g Gomoku<'g>>,
   lines_margins: [[LinesMargins; 4]; BOARD_LEN]
 }
 
-impl<'a> Gomoku<'a> {
+impl<'g> Gomoku<'g> {
+  pub fn new() -> Gomoku<'g> {
+    Gomoku {
+      _marker: PhantomData,
+      lines_margins: Self::create_lines_margins()
+    }
+  }
+
   fn move_till_margin(p: usize, dx: i32, dy: i32) -> usize {
     let (xu, yu) = util::point_to_xy(p);
     let mut x = xu as i32;
@@ -78,17 +85,10 @@ impl<'a> Gomoku<'a> {
   }
 }
 
-impl<'a> Game<'a> for Gomoku<'a> {
-  type State = GomokuState<'a>;
+impl<'g> Game<'g> for Gomoku<'g> {
+  type State = GomokuState<'g>;
 
-  fn new() -> Gomoku<'a> {
-    Gomoku {
-      _marker: PhantomData,
-      lines_margins: Self::create_lines_margins()
-    }
-  }
-
-  fn new_game(&'a self) -> GomokuState<'a> {
+  fn new_game(&'g self) -> GomokuState<'g> {
     GomokuState::new(self)
   }
 }
@@ -106,14 +106,14 @@ impl PointState {
   }
 }
 
-pub struct GomokuState<'a> {
-  gomoku: &'a Gomoku<'a>,
+pub struct GomokuState<'g> {
+  gomoku: &'g Gomoku<'g>,
   pub board: [PointState; BOARD_LEN],
   status: u32
 }
 
-impl<'a> GomokuState<'a> {
-  fn new(gomoku: &'a Gomoku) -> GomokuState<'a> {
+impl<'g> GomokuState<'g> {
+  fn new(gomoku: &'g Gomoku) -> GomokuState<'g> {
     GomokuState {
       gomoku: gomoku,
       board: [PointState::Empty; BOARD_LEN],
@@ -184,7 +184,30 @@ impl<'a> GomokuState<'a> {
   }
 }
 
-impl<'a> def::State<'a> for GomokuState<'a> {
+struct GomokuMoveIterator<'g: 's, 's> {
+  state: &'s GomokuState<'g>,
+  point: usize
+}
+
+impl<'g: 's, 's> Iterator for GomokuMoveIterator<'g, 's> {
+  type Item = GomokuMove;
+
+  fn next(&mut self) -> Option<GomokuMove> {
+    while self.point < BOARD_LEN &&
+          self.state.board[self.point] != PointState::Empty {
+      self.point += 1;
+    }
+    if self.point < BOARD_LEN {
+      let current_point = self.point;
+      self.point += 1;
+      Some(GomokuMove(current_point))
+    } else {
+      None
+    }
+  }
+}
+
+impl<'g> def::State<'g> for GomokuState<'g> {
   type Move = GomokuMove;
 
   fn play(&mut self, gmove: GomokuMove) -> Result<(), &'static str> {
@@ -202,9 +225,8 @@ impl<'a> def::State<'a> for GomokuState<'a> {
     }
   }
 
-  fn iter_moves<'b>(&'b self) -> Box<Iterator<Item=GomokuMove> + 'b> {
-    Box::new((0..BOARD_LEN).filter(move |&i| {self.board[i] == PointState::Empty})
-                           .map(|i| GomokuMove(i)))
+  fn iter_moves<'s>(&'s self) -> Box<Iterator<Item = GomokuMove> + 's> {
+    Box::new(GomokuMoveIterator{state: self, point: 0})
   }
 
   fn get_random_move<R: rand::Rng>(&self, rng: &mut R) -> Option<GomokuMove> {
@@ -218,24 +240,6 @@ impl<'a> def::State<'a> for GomokuState<'a> {
         return Some(GomokuMove(point))
       }
     }
-  }
-
-  fn play_random_move<R: rand::Rng>(&mut self, rng: &mut R) -> Result<(), &'static str> {
-    if self.is_terminal() {
-      return Err("Trying to make a move in a terminal state.");
-    }
-
-    // let mut rng = rand::thread_rng();
-
-    loop {
-      let point: usize = (rng.next_u32() % BOARD_LEN as u32) as usize;
-      if self.board[point] == PointState::Empty {
-        self.play_stone(point);
-        break;
-      }
-    }
-
-    Ok(())
   }
 
   fn is_terminal(&self) -> bool {
@@ -256,8 +260,8 @@ impl<'a> def::State<'a> for GomokuState<'a> {
   }
 }
 
-impl<'a> Clone for GomokuState<'a> {
-  fn clone(&self) -> GomokuState<'a> {
+impl<'g> Clone for GomokuState<'g> {
+  fn clone(&self) -> GomokuState<'g> {
     GomokuState {
       gomoku: self.gomoku,
       board: self.board,
@@ -266,7 +270,7 @@ impl<'a> Clone for GomokuState<'a> {
   }
 }
 
-impl<'a> fmt::Display for GomokuState<'a> {
+impl<'g> fmt::Display for GomokuState<'g> {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
     try!(write!(f, "  "));
     for x in 0..SIZE {

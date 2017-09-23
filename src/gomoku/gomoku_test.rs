@@ -175,7 +175,8 @@ fn random_game() {
     let mut state = game.new_game();
     while !state.is_terminal() {
       assert!(!is_finished(&state));
-      state.play_random_move(&mut rng).ok();
+      let m = state.get_random_move(&mut rng).unwrap();
+      state.play(m).unwrap();
     }
 
     assert!(is_finished(&state));

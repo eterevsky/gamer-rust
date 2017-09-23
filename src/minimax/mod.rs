@@ -1,10 +1,22 @@
 extern crate time;
 
+use std::fmt;
 use std::marker::PhantomData;
 
 use def::Agent;
 use def::Evaluator;
 use def::State;
+
+pub struct MinimaxReport {
+  score: f32
+}
+
+impl fmt::Display for MinimaxReport {
+  fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+    try!(write!(f, "Score: {}", self.score));
+    Ok(())
+  }
+}
 
 pub struct MiniMaxAgent<'a, S: State<'a> + 'a, E: Evaluator<'a, S> + Clone> {
   _s: PhantomData<&'a S>,
@@ -59,22 +71,31 @@ impl<'a, S: State<'a>, E: Evaluator<'a, S> + Clone> MiniMaxAgent<'a, S, E> {
 
 impl<'a, S: State<'a>, E: Evaluator<'a, S> + Clone> Agent<'a, S>
   for MiniMaxAgent<'a, S, E> {
-  fn select_move(&mut self, state: &S) -> Option<S::Move> {
+  type Report = MinimaxReport;
+
+  fn select_move(&mut self, state: &S) -> Result<(S::Move, MinimaxReport), &'static str> {
     if state.is_terminal() {
-      return None;
+      return Err("Terminal state")
     }
 
     let deadline = time::precise_time_s() + self.time_limit;
     let mut best_move: Option<S::Move> = None;
+    let mut best_score: f32 = 0.0;
+
     for depth in 1..(self.max_depth + 1) {
       match self.search(state, depth, deadline) {
         None => break,
-        Some((_, m)) => {
+        Some((score, m)) => {
           best_move = m;
+          best_score = score;
         }
       }
     }
 
-    best_move
+    if let Some(m) = best_move {
+      Ok((m, MinimaxReport{score: best_score}))
+    } else {
+      Err("No best move?")
+    }
   }
 }

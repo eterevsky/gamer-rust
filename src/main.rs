@@ -16,10 +16,7 @@ use gamer::gomoku::GomokuTerminalEvaluator;
 use gamer::gomoku::GomokuState;
 use gamer::minimax::MiniMaxAgent;
 
-fn bench<'a, G>(game: &'a G)
-where
-  G: Game<'a> + 'a,
-{
+fn bench<'g, G: Game<'g>>(game: &'g G) {
   const N: u32 = 1_000_000;
   let mut payoff: f32 = 0.0;
 
@@ -28,8 +25,8 @@ where
 
   for _ in 0..N {
     let mut state: G::State = game.new_game();
-    while !state.is_terminal() {
-      state.play_random_move(&mut rng).ok();
+    while let Some(m) = state.get_random_move(&mut rng) {
+      state.play(m).unwrap();
     }
     payoff += state.get_payoff().unwrap();
   }
@@ -42,18 +39,6 @@ where
   println!("Payoff: {}", payoff);
 }
 
-// fn play<G>(game: G) where G : Game {
-//   let mut state: G::State = game.new_game();
-//   let mut random_agent = RandomAgent::new(rand::XorShiftRng::new_unseeded());
-//   while !state.is_terminal() {
-//     let m = random_agent.select_move(&state).unwrap();
-//     state.play(m).ok();
-//     println!("{}", state);
-//   }
-//
-//   println!("Final score: {}", state.get_payoff_for_player1().unwrap());
-// }
-//
 fn play_gomoku(game: &Gomoku) {
   let mut state: GomokuState = game.new_game();
   // let mut random_agent = RandomAgent::new(rand::XorShiftRng::new_unseeded());
@@ -62,13 +47,14 @@ fn play_gomoku(game: &Gomoku) {
   let mut minimax_agent2 =
     MiniMaxAgent::new(&GomokuLinesEvaluator::new_default(), 2, 1000.0);
   while !state.is_terminal() {
-    let m = if state.get_player() {
+    let (m, report) = if state.get_player() {
       minimax_agent2.select_move(&state).unwrap()
     } else {
       minimax_agent3.select_move(&state).unwrap()
     };
+
     state.play(m).ok();
-    println!("Move: {}\n{}\n", m, state);
+    println!("Move: {}\nReport: {}\n{}\n", m, report, state);
   }
 
   println!("Final score: {}", state.get_payoff().unwrap());
@@ -93,9 +79,9 @@ fn args_definition() -> clap::App<'static, 'static> {
         .long("game")
         .value_name("GAME")
         .takes_value(true)
-        .possible_values(&["gomoku", "chess"])
+        .possible_values(&["gomoku"])
         .default_value("gomoku")
-        .help("Selects the game to play"),
+        .help("The game to be played."),
     )
     .subcommand(SubCommand::with_name("bench").about("Run benchmark"))
     .subcommand(SubCommand::with_name("play").about("Play a single game"))
