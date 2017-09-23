@@ -68,7 +68,7 @@ fn play_gomoku(game: &Gomoku) {
       minimax_agent3.select_move(&state).unwrap()
     };
     state.play(m).ok();
-    println!("{}", state);
+    println!("Move: {}\n{}\n", m, state);
   }
 
   println!("Final score: {}", state.get_payoff().unwrap());

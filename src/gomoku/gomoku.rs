@@ -274,8 +274,8 @@ impl<'a> fmt::Display for GomokuState<'a> {
     }
     try!(writeln!(f, ""));
 
-    for y in 0..SIZE {
-      try!(write!(f, "{:2}", SIZE - y));
+    for y in (0..SIZE).rev() {
+      try!(write!(f, "{:2}", y + 1));
       for x in 0..SIZE {
         let i = (SIZE * y + x) as usize;
         try!(match self.board[i] {
