@@ -96,9 +96,9 @@ fn play_gomoku() {
   // let mut random_agent = RandomAgent::new(rand::XorShiftRng::new_unseeded());
   let mut player1 =
     // MiniMaxAgent::new(&GomokuLinesEvaluator::new_default(), 3, 1000.0);
-    MiniMaxAgent::new(TerminalEvaluator::new(), 3, 1000.0);
-  let mut player2 =
     MiniMaxAgent::new(GomokuLinesEvaluator::new_default(), 3, 1000.0);
+  let mut player2 =
+    MiniMaxAgent::new(GomokuLinesEvaluator::new_default(), 4, 1000.0);
   while !state.is_terminal() {
     let report = if state.get_player() {
       player1.select_move(&state).unwrap()

@@ -61,7 +61,7 @@ impl<'g, S: State<'g>, E: Evaluator<'g, S>> MiniMaxAgent<'g, S, E> {
     }
   }
 
-  fn search(&self, state: &S, depth: i32, deadline: f64)
+  fn search(&self, state: &S, depth: i32, deadline: f64, lo: f32, hi: f32)
       -> Option<(f32, Vec<S::Move>, u64)> {
     if time::precise_time_s() >= deadline {
       return None;
@@ -73,24 +73,37 @@ impl<'g, S: State<'g>, E: Evaluator<'g, S>> MiniMaxAgent<'g, S, E> {
 
     let player = state.get_player();
     let mut best_pv = Vec::new();
-    let mut best_score = if player { std::f32::MIN } else { std::f32::MAX };
+    let mut lo = lo / 0.999;
+    let mut hi = hi / 0.999;
     let mut samples = 0;
 
     for m in state.iter_moves() {
       let mut state_clone = state.clone();
       state_clone.play(m).unwrap();
-      match self.search(&state_clone, depth - 1, deadline) {
+      match self.search(&state_clone, depth - 1, deadline, lo, hi) {
         None => return None,
         Some((score, pv, branch_samples)) => {
           samples += branch_samples;
-          if player && score > best_score || !player && score < best_score {
-            best_score = score;
+          if player && score > lo {
             best_pv = pv;
             best_pv.push(m);
+            lo = score;
+            if score >= hi {
+              return Some((score * 0.999, best_pv, samples))
+            }
+          } else if !player && score < hi {
+            best_pv = pv;
+            best_pv.push(m);
+            hi = score;
+            if score <= lo {
+              return Some((score * 0.999, best_pv, samples))
+            }
           }
         }
       }
     }
+
+    let best_score = if player { lo } else { hi };
 
     Some((best_score * 0.999, best_pv, samples))
   }
@@ -112,7 +125,7 @@ impl<'a, S: State<'a>, E: Evaluator<'a, S>> Agent<'a, S>
     let mut samples = 0;
 
     for depth in 1..(self.max_depth + 1) {
-      match self.search(state, depth, deadline) {
+      match self.search(state, depth, deadline, std::f32::MIN, std::f32::MAX) {
         None => break,
         Some((score, pv, search_samples)) => {
           samples += search_samples;
