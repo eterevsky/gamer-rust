@@ -17,6 +17,7 @@
 - English/Russian draughts
 - Chess
 - Go
+- 2048
 
 ## Algorithms
 ### Implemented

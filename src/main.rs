@@ -42,19 +42,20 @@ fn bench<'g, G: Game<'g>>(game: &'g G) {
 fn play_gomoku(game: &Gomoku) {
   let mut state: GomokuState = game.new_game();
   // let mut random_agent = RandomAgent::new(rand::XorShiftRng::new_unseeded());
-  let mut minimax_agent3 =
-    MiniMaxAgent::new(&GomokuTerminalEvaluator::new(), 3, 1000.0);
-  let mut minimax_agent2 =
-    MiniMaxAgent::new(&GomokuLinesEvaluator::new_default(), 2, 1000.0);
+  let mut player1 =
+    MiniMaxAgent::new(&GomokuLinesEvaluator::new_default(), 3, 1000.0);
+    // MiniMaxAgent::new(&GomokuTerminalEvaluator::new(), 3, 1000.0);
+  let mut player2 =
+    MiniMaxAgent::new(&GomokuLinesEvaluator::new_default(), 3, 1000.0);
   while !state.is_terminal() {
     let (m, report) = if state.get_player() {
-      minimax_agent2.select_move(&state).unwrap()
+      player1.select_move(&state).unwrap()
     } else {
-      minimax_agent3.select_move(&state).unwrap()
+      player2.select_move(&state).unwrap()
     };
 
     state.play(m).ok();
-    println!("Move: {}\nReport: {}\n{}\n", m, report, state);
+    println!("Move: {}\n{}\n{}\n", m, report, state);
   }
 
   println!("Final score: {}", state.get_payoff().unwrap());
