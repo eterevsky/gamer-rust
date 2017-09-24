@@ -38,14 +38,18 @@ pub trait State<'g>: Clone + fmt::Display {
   fn play(&mut self, m: Self::Move) -> Result<(), &'static str>;
 }
 
+pub trait AgentReport<M>: fmt::Display {
+  fn get_move(&self) -> M;
+}
+
 pub trait Agent<'g, S: State<'g>> {
-  type Report: fmt::Display;
+  type Report: AgentReport<S::Move>;
 
   /// Returns a pair of a move and agent report if
   fn select_move(
     &mut self,
     state: &S,
-  ) -> Result<(S::Move, Self::Report), &'static str>;
+  ) -> Result<Self::Report, &'static str>;
 }
 
 pub trait Evaluator<'g, S: State<'g>> {

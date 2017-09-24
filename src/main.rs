@@ -8,6 +8,7 @@ use clap::{App, Arg, SubCommand};
 extern crate gamer;
 
 use gamer::def::Agent;
+use gamer::def::AgentReport;
 use gamer::def::Game;
 use gamer::def::State;
 use gamer::gomoku::Gomoku;
@@ -43,19 +44,19 @@ fn play_gomoku(game: &Gomoku) {
   let mut state: GomokuState = game.new_game();
   // let mut random_agent = RandomAgent::new(rand::XorShiftRng::new_unseeded());
   let mut player1 =
-    MiniMaxAgent::new(&GomokuLinesEvaluator::new_default(), 3, 1000.0);
-    // MiniMaxAgent::new(&GomokuTerminalEvaluator::new(), 3, 1000.0);
+    // MiniMaxAgent::new(&GomokuLinesEvaluator::new_default(), 3, 1000.0);
+    MiniMaxAgent::new(&GomokuTerminalEvaluator::new(), 3, 1000.0);
   let mut player2 =
     MiniMaxAgent::new(&GomokuLinesEvaluator::new_default(), 3, 1000.0);
   while !state.is_terminal() {
-    let (m, report) = if state.get_player() {
+    let report = if state.get_player() {
       player1.select_move(&state).unwrap()
     } else {
       player2.select_move(&state).unwrap()
     };
 
-    state.play(m).ok();
-    println!("Move: {}\n{}\n{}\n", m, report, state);
+    state.play(report.get_move()).ok();
+    println!("Move: {}\n{}\n{}\n", report.get_move(), report, state);
   }
 
   println!("Final score: {}", state.get_payoff().unwrap());

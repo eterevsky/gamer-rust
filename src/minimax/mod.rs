@@ -4,6 +4,7 @@ use std;
 use std::fmt;
 use std::marker::PhantomData;
 
+use def;
 use def::Agent;
 use def::Evaluator;
 use def::State;
@@ -11,7 +12,10 @@ use def::State;
 pub struct MinimaxReport<M: fmt::Display> {
   score: f32,
   // Principle variation
-  pv: Vec<M>
+  pv: Vec<M>,
+  samples: u64,
+  start_time: f64,
+  end_time: f64
 }
 
 impl<M: fmt::Display> fmt::Display for MinimaxReport<M> {
@@ -22,8 +26,17 @@ impl<M: fmt::Display> fmt::Display for MinimaxReport<M> {
     for m in self.pv.iter() {
       write!(f, " {}", m)?;
     }
+    writeln!(f, "\nEvaluated: {} positions in {} seconds, {} p/s",
+             self.samples, self.end_time - self.start_time,
+             self.samples as f64 / (self.end_time - self.start_time))?;
 
     Ok(())
+  }
+}
+
+impl<M: fmt::Display + Copy> def::AgentReport<M> for MinimaxReport<M> {
+  fn get_move(&self) -> M {
+    self.pv[0]
   }
 }
 
@@ -47,25 +60,27 @@ impl<'a, S: State<'a>, E: Evaluator<'a, S> + Clone> MiniMaxAgent<'a, S, E> {
   }
 
   fn search(&self, state: &S, depth: i32, deadline: f64)
-      -> Option<(f32, Vec<S::Move>)> {
+      -> Option<(f32, Vec<S::Move>, u64)> {
     if time::precise_time_s() >= deadline {
       return None;
     }
 
     if state.is_terminal() || depth == 0 {
-      return Some((self.evaluator.evaluate(state), Vec::new()));
+      return Some((self.evaluator.evaluate(state), Vec::new(), 1));
     }
 
     let player = state.get_player();
     let mut best_pv = Vec::new();
     let mut best_score = if player { std::f32::MIN } else { std::f32::MAX };
+    let mut samples = 0;
 
     for m in state.iter_moves() {
       let mut state_clone = state.clone();
       state_clone.play(m).unwrap();
       match self.search(&state_clone, depth - 1, deadline) {
         None => return None,
-        Some((score, pv)) => {
+        Some((score, pv, branch_samples)) => {
+          samples += branch_samples;
           if player && score > best_score || !player && score < best_score {
             best_score = score;
             best_pv = pv;
@@ -75,7 +90,7 @@ impl<'a, S: State<'a>, E: Evaluator<'a, S> + Clone> MiniMaxAgent<'a, S, E> {
       }
     }
 
-    Some((best_score * 0.999, best_pv))
+    Some((best_score * 0.999, best_pv, samples))
   }
 }
 
@@ -83,20 +98,22 @@ impl<'a, S: State<'a>, E: Evaluator<'a, S> + Clone> Agent<'a, S>
     for MiniMaxAgent<'a, S, E> {
   type Report = MinimaxReport<S::Move>;
 
-  fn select_move(&mut self, state: &S)
-      -> Result<(S::Move, Self::Report), &'static str> {
+  fn select_move(&mut self, state: &S) -> Result<Self::Report, &'static str> {
     if state.is_terminal() {
       return Err("Terminal state");
     }
 
-    let deadline = time::precise_time_s() + self.time_limit;
+    let start_time = time::precise_time_s();
+    let deadline = start_time + self.time_limit;
     let mut best_pv = Vec::new();
     let mut best_score: f32 = 0.0;
+    let mut samples = 0;
 
     for depth in 1..(self.max_depth + 1) {
       match self.search(state, depth, deadline) {
         None => break,
-        Some((score, pv)) => {
+        Some((score, pv, search_samples)) => {
+          samples += search_samples;
           best_pv = pv;
           best_score = score;
         }
@@ -108,7 +125,14 @@ impl<'a, S: State<'a>, E: Evaluator<'a, S> + Clone> Agent<'a, S>
     if best_pv.is_empty() {
       Err("No best move?")
     } else {
-      Ok((best_pv[0], MinimaxReport{score: best_score, pv: best_pv}))
+      Ok(
+        MinimaxReport{
+          score: best_score,
+          pv: best_pv,
+          samples: samples,
+          start_time: start_time,
+          end_time: time::precise_time_s()
+        })
     }
   }
 }
