@@ -4,3 +4,4 @@ pub mod def;
 pub mod gomoku;
 pub mod minimax;
 pub mod subtractor;
+pub mod terminal_evaluator;

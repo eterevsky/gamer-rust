@@ -6,25 +6,6 @@ use gomoku::gomoku::BOARD_LEN;
 use gomoku::gomoku::SIZE;
 
 #[derive(Clone, Copy, Debug)]
-pub struct GomokuTerminalEvaluator {}
-
-impl GomokuTerminalEvaluator {
-  pub fn new() -> GomokuTerminalEvaluator {
-    GomokuTerminalEvaluator {}
-  }
-}
-
-impl<'a> Evaluator<'a, GomokuState<'a>> for GomokuTerminalEvaluator {
-  fn evaluate(&self, state: &GomokuState<'a>) -> f32 {
-    if state.is_terminal() {
-      state.get_payoff().unwrap()
-    } else {
-      0.0
-    }
-  }
-}
-
-#[derive(Clone, Copy, Debug)]
 pub struct LineRange {
   start: usize,
   step: usize,
@@ -199,14 +180,6 @@ use def::Game;
 use gomoku::gomoku::Gomoku;
 use gomoku::gomoku_test::run_moves_on_state;
 use super::*;
-
-#[test]
-fn terminal_evaluator() {
-  let game = Gomoku::new();
-  let evaluator = GomokuTerminalEvaluator::new();
-  let state = run_moves_on_state(&game, "J10");
-  assert_eq!(0.0, evaluator.evaluate(&state));
-}
 
 #[test]
 fn gen_lines() {

@@ -13,9 +13,9 @@ use gamer::def::Game;
 use gamer::def::State;
 use gamer::gomoku::Gomoku;
 use gamer::gomoku::GomokuLinesEvaluator;
-use gamer::gomoku::GomokuTerminalEvaluator;
 use gamer::gomoku::GomokuState;
 use gamer::minimax::MiniMaxAgent;
+use gamer::terminal_evaluator::TerminalEvaluator;
 
 fn bench<'g, G: Game<'g>>(game: &'g G) {
   const N: u32 = 1_000_000;
@@ -45,9 +45,9 @@ fn play_gomoku(game: &Gomoku) {
   // let mut random_agent = RandomAgent::new(rand::XorShiftRng::new_unseeded());
   let mut player1 =
     // MiniMaxAgent::new(&GomokuLinesEvaluator::new_default(), 3, 1000.0);
-    MiniMaxAgent::new(&GomokuTerminalEvaluator::new(), 3, 1000.0);
+    MiniMaxAgent::new(TerminalEvaluator::new(), 3, 1000.0);
   let mut player2 =
-    MiniMaxAgent::new(&GomokuLinesEvaluator::new_default(), 3, 1000.0);
+    MiniMaxAgent::new(GomokuLinesEvaluator::new_default(), 3, 1000.0);
   while !state.is_terminal() {
     let report = if state.get_player() {
       player1.select_move(&state).unwrap()

@@ -40,20 +40,22 @@ impl<M: fmt::Display + Copy> def::AgentReport<M> for MinimaxReport<M> {
   }
 }
 
-pub struct MiniMaxAgent<'a, S: State<'a> + 'a, E: Evaluator<'a, S> + Clone> {
-  _s: PhantomData<&'a S>,
+pub struct MiniMaxAgent<'g, S: State<'g>, E: Evaluator<'g, S>> {
+  _s: PhantomData<S>,
+  _l: PhantomData<&'g ()>,
   evaluator: E,
   max_depth: i32,
   time_limit: f64,
 }
 
-impl<'a, S: State<'a>, E: Evaluator<'a, S> + Clone> MiniMaxAgent<'a, S, E> {
-  pub fn new(evaluator: &E, max_depth: i32, time_limit: f64) -> Self {
+impl<'g, S: State<'g>, E: Evaluator<'g, S>> MiniMaxAgent<'g, S, E> {
+  pub fn new(evaluator: E, max_depth: i32, time_limit: f64) -> Self {
     assert!(max_depth > 0);
     assert!(time_limit > 0.0);
     MiniMaxAgent {
       _s: PhantomData,
-      evaluator: (*evaluator).clone(),
+      _l: PhantomData,
+      evaluator: evaluator,
       max_depth: max_depth,
       time_limit: time_limit,
     }
@@ -94,7 +96,7 @@ impl<'a, S: State<'a>, E: Evaluator<'a, S> + Clone> MiniMaxAgent<'a, S, E> {
   }
 }
 
-impl<'a, S: State<'a>, E: Evaluator<'a, S> + Clone> Agent<'a, S>
+impl<'a, S: State<'a>, E: Evaluator<'a, S>> Agent<'a, S>
     for MiniMaxAgent<'a, S, E> {
   type Report = MinimaxReport<S::Move>;
 
@@ -135,4 +137,29 @@ impl<'a, S: State<'a>, E: Evaluator<'a, S> + Clone> Agent<'a, S>
         })
     }
   }
+}
+
+#[cfg(test)]
+mod test {
+
+use def::Agent;
+use def::AgentReport;
+use def::Game;
+use subtractor::{Subtractor};
+use terminal_evaluator::TerminalEvaluator;
+use super::*;
+
+#[test]
+fn subtractor() {
+  let mut agent = MiniMaxAgent::new(TerminalEvaluator::new(), 10, 1.0);
+  let game = Subtractor::new(10, 4);
+  let mut state = game.new_game();
+
+  assert_eq!(1, agent.select_move(&state).unwrap().get_move());
+
+  state.play(2).unwrap();
+
+  assert_eq!(3, agent.select_move(&state).unwrap().get_move());
+}
+
 }
