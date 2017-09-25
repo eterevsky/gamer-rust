@@ -1,0 +1,42 @@
+2017-09-24 X51
+
+bench_random_gomoku: 4.671088211995084 us
+
+bench_random_subtractor100: 0.6321567659615539 us
+
+bench_minimax_subtractor:
+Score: -0.989055
+PV: 1 3 1 3 1 3 1 3 1 3 1
+Evaluated: 2007924 positions in 0.35391171800438315 seconds, 5673516.580129545 p/s
+
+bench_minimax_gomoku_start:
+Score: 11.964036
+PV: B2 C2 B3
+Evaluated: 46785961 positions in 76.00118092697812 seconds, 615595.1845663019 p/s
+
+bench_minimax_gomoku_forced:
+Score: -2.8913085
+PV: A5 B4 C5
+Evaluated: 43988037 positions in 72.62158780900063 seconds, 605715.7152180605 p/s
+
+
+2017-09-24 X51 + alpha-beta
+
+bench_random_gomoku: 4.549370740016457 us
+
+bench_random_subtractor100: 0.6346348449587822 us
+
+bench_minimax_subtractor:
+Score: -0.989055
+PV: 1 3 1 3 1 3 1 3 1 3 1
+Evaluated: 217168 positions in 0.05644977802876383 seconds, 3847101.044212125 p/s
+
+bench_minimax_gomoku_start:
+Score: 11.964036
+PV: B2 C2 B3
+Evaluated: 1249166 positions in 1.9659386969869956 seconds, 635404.3500514416 p/s
+
+bench_minimax_gomoku_forced:
+Score: -2.8913085
+PV: A5 B4 C5
+Evaluated: 1843680 positions in 3.016224252001848 seconds, 611254.2854783963 p/s
