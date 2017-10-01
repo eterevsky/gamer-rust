@@ -1,5 +1,4 @@
 extern crate rand;
-extern crate serde;
 extern crate time;
 
 pub mod def;

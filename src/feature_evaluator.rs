@@ -1,14 +1,13 @@
-use serde::ser::{Serialize, Deserialize};
 use std::marker::PhantomData;
 
 use def;
 
 trait Regression<FV> {
-  type Parameters: Serialize, Deserialize;
-  type Hyperparameters: Serialize, Deserialize;
+  type Parameters;
+  type Hyperparameters;
 
-  fn new(params: Parameters, hyperparams: Hyperparameters) -> Self;
-  fn export(&self) -> Parameters;
+  fn new(params: Self::Parameters, hyperparams: Self::Hyperparameters) -> Self;
+  fn export(&self) -> Self::Parameters;
   fn evaluate(&self, features: &FV) -> f32;
   fn train1(&mut self, features: &FV, expected: f32);
 }
@@ -19,7 +18,7 @@ struct LinearRegression {
 
 impl Regression<Vec<f32>> for LinearRegression {
   type Parameters = Vec<f32>;
-  type HyperParameters = ();
+  type Hyperparameters = ();
 
   fn new(params: Vec<f32>, hyperparams: ()) -> LinearRegression {
     LinearRegression {
@@ -32,8 +31,8 @@ impl Regression<Vec<f32>> for LinearRegression {
   }
 
   fn evaluate(&self, features: &Vec<f32>) -> f32 {
-    assert_eq!(feature.len(), self.b.len());
-    b.iter().zip(features.iter()).map(|(x, y)| x * y).sum()
+    assert_eq!(features.len(), self.b.len());
+    self.b.iter().zip(features.iter()).map(|(x, y)| x * y).sum()
   }
 
   fn train1(&mut self, features: &Vec<f32>, expected: f32) {
@@ -42,7 +41,7 @@ impl Regression<Vec<f32>> for LinearRegression {
 }
 
 struct FeatureEvaluator<'g, FV, FE, R, S>
-  where FE: def::FeatureExtractor<FeatureVector=FV>,
+  where FE: def::FeatureExtractor<'g, S, FeatureVector=FV>,
         R: Regression<FV>,
         S: def::State<'g> {
   extractor: FE,
@@ -52,8 +51,11 @@ struct FeatureEvaluator<'g, FV, FE, R, S>
 }
 
 impl<'g, FV, FE, R, S> def::Evaluator<'g, S> for FeatureEvaluator<'g, FV, FE, R, S>
-    where FE: def::FeatureExtractor<'g, S>,
-          R: Regression<Parameters=FV>,
+    where FE: def::FeatureExtractor<'g, S, FeatureVector=FV>,
+          R: Regression<FV>,
           S: def::State<'g> {
-  
+  fn evaluate(&self, state: &S) -> f32 {
+    let features = self.extractor.extract(state);
+    self.regression.evaluate(&features)
+  }  
 }
