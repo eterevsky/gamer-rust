@@ -1,8 +1,7 @@
-extern crate time;
-
 use std;
 use std::fmt;
 use std::marker::PhantomData;
+use time;
 
 use def;
 use def::Agent;

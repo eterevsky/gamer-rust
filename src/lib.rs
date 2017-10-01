@@ -1,6 +1,9 @@
 extern crate rand;
+extern crate serde;
+extern crate time;
 
 pub mod def;
+pub mod feature_evaluator;
 pub mod gomoku;
 pub mod minimax;
 pub mod subtractor;

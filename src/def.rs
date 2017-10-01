@@ -57,3 +57,8 @@ pub trait Evaluator<'g, S: State<'g>> {
   /// whose turn it is.
   fn evaluate(&self, state: &S) -> f32;
 }
+
+pub trait FeatureExtractor<'g, S: State<'g>> {
+  type FeatureVector;
+  fn extract(&self, state: &S) -> Self::FeatureVector;
+}

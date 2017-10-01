@@ -4,6 +4,7 @@
 ### Implemented
 
 - Gomoku (w/o Swap2)
+- Subtractor
 
 ### To be implemented
 
@@ -22,11 +23,10 @@
 ## Algorithms
 ### Implemented
 
-- Simple MiniMax
+- MiniMax with alpha-beta pruning
 
 ### TODO
 
-- Alpha-beta pruning
 - Multi-threaded minimax
 - MCT
 - Training evaluation function
