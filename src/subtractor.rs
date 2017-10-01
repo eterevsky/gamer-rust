@@ -1,12 +1,13 @@
 //! A trivial game for the testing purposes. Starting with a positive integer
-//! number N, each player can subtrack a number between 1 and M. Whoever gets 0
-//! as a result, looses.
+//! number N, each player can subtrack a number between 1 and M. Whoever can't
+//! make a move, looses.
 
 use rand;
 use std::cmp;
 use std::fmt;
 
 use def;
+use feature_evaluator;
 
 pub struct Subtractor {
   start: u32,
@@ -47,7 +48,7 @@ impl<'g> def::State<'g> for SubtractorState {
 
   fn get_payoff(&self) -> Option<f32> {
     if self.number == 0 {
-      if self.player { Some(1.0) } else { Some(-1.0) }
+      if self.player { Some(-1.0) } else { Some(1.0) }
     } else {
       None
     }
@@ -84,11 +85,36 @@ impl fmt::Display for SubtractorState {
   }
 }
 
+/// Extracts boolean (1.0 or 0.0), based on whether the number is divisible by
+/// 1, 2, 3 etc.
+pub struct SubtractorFeatureExtractor {
+  nfeatures: u32
+}
+
+impl SubtractorFeatureExtractor {
+  pub fn new(nfeatures: u32) -> SubtractorFeatureExtractor {
+    SubtractorFeatureExtractor {
+      nfeatures
+    }
+  }
+}
+
+impl<'g> feature_evaluator::FeatureExtractor<'g, SubtractorState>
+    for SubtractorFeatureExtractor {
+  type FeatureVector = Vec<f32>;
+
+  fn extract(&self, state: &SubtractorState) -> Vec<f32> {
+    (1..(self.nfeatures + 1))
+        .map(|x| if state.number % (x as u32) == 0 { 1.0 } else { 0.0 })
+        .collect()
+  }
+}
+
 #[cfg(test)]
 mod test {
 
-use def::Game;
-use def::State;
+use def::{Game, State};
+use feature_evaluator::FeatureExtractor;
 use super::*;
 
 #[test]
@@ -105,23 +131,36 @@ fn game() {
   assert!(state.play(4).is_err());
   assert!(state.get_player());
 
+  // Player 1: -3  ->  7
   assert!(state.play(3).is_ok());
   assert!(!state.get_player());
   assert!(!state.is_terminal());
 
+  // Player 2: -3  ->  4
   assert!(state.play(3).is_ok());
   assert!(state.get_player());
 
+  // Player 1: -3  ->  1
   assert!(state.play(3).is_ok());
   assert!(!state.get_player());
   assert!(!state.is_terminal());
   assert_eq!(vec![1], state.iter_moves().collect::<Vec<u32>>());
 
   assert!(state.play(2).is_err());
+
+  // Player 2: -1  ->  0
   assert!(state.play(1).is_ok());
 
   assert!(state.is_terminal());
-  assert_eq!(Some(1.0), state.get_payoff());
+  assert_eq!(Some(-1.0), state.get_payoff());
+}
+
+#[test]
+fn feature_extractor() {
+  let game = Subtractor::new(10, 4);
+  let state = game.new_game();
+  let extractor = SubtractorFeatureExtractor::new(5);
+  assert_eq!(vec![1.0, 1.0, 0.0, 0.0, 1.0], extractor.extract(&state));
 }
 
 }

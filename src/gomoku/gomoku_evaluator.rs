@@ -177,7 +177,7 @@ impl GomokuLinesEvaluator {
 mod test {
 
 use def::Game;
-use gomoku::gomoku::Gomoku;
+use gomoku::Gomoku;
 use gomoku::gomoku_test::run_moves_on_state;
 use super::*;
 

@@ -4,18 +4,17 @@ extern crate rand;
 extern crate time;
 
 use clap::{App, Arg, SubCommand};
+use std::iter;
 
 extern crate gamer;
 
-use gamer::def::Agent;
-use gamer::def::AgentReport;
-use gamer::def::Game;
-use gamer::def::State;
+use gamer::def::{Agent, AgentReport, Evaluator, Game, State};
 use gamer::gomoku::Gomoku;
 use gamer::gomoku::GomokuLinesEvaluator;
 use gamer::gomoku::GomokuState;
+use gamer::feature_evaluator::{FeatureEvaluator, LinearRegression, Regression};
 use gamer::minimax::MiniMaxAgent;
-use gamer::subtractor::Subtractor;
+use gamer::subtractor::{Subtractor, SubtractorFeatureExtractor};
 use gamer::terminal_evaluator::TerminalEvaluator;
 
 fn bench_random_game<'g, G: Game<'g>>(game: &'g G) -> f64 {
@@ -60,7 +59,8 @@ fn bench_minimax_subtractor() {
 fn bench_minimax_gomoku_start() {
   let game = Gomoku::new();
   let state = game.new_game();
-  let mut agent = MiniMaxAgent::new(GomokuLinesEvaluator::new_default(), 3, 1000.0);
+  let mut agent = MiniMaxAgent::new(
+      GomokuLinesEvaluator::new_default(), 3, 1000.0);
   let report = agent.select_move(&state).unwrap();
 
   println!("bench_minimax_gomoku_start:\n{}", report);
@@ -113,6 +113,22 @@ fn play_gomoku() {
   println!("Final score: {}", state.get_payoff().unwrap());
 }
 
+fn train() {
+  let game = Subtractor::new(100, 4);
+  let extractor = SubtractorFeatureExtractor::new(10);
+  let regression = LinearRegression::new(
+      iter::repeat(0.0).take(10).collect(),
+      0.01);
+  let mut evaluator = FeatureEvaluator::new(&game, extractor, regression);
+  evaluator.train(100000, 0.999, 0.1);
+  println!("{:?}", &evaluator.regression);
+  for i in 0..12 {
+    let game = Subtractor::new(i, 4);
+    let score = evaluator.evaluate(&game.new_game());
+    println!("{} {}", i, score);
+  }
+}
+
 fn args_definition() -> clap::App<'static, 'static> {
   App::new("gamer")
     .version("0.1")
@@ -128,14 +144,18 @@ fn args_definition() -> clap::App<'static, 'static> {
     )
     .subcommand(SubCommand::with_name("bench").about("Run benchmark"))
     .subcommand(SubCommand::with_name("play").about("Play a single game"))
+    .subcommand(SubCommand::with_name("train").about(
+        "Reinforcement training for the evaluator."))
 }
 
 fn main() {
   let args = args_definition().get_matches();
 
-  if let Some(_) = args.subcommand_matches("bench") {
+  if args.subcommand_matches("bench").is_some() {
     bench();
-  } else if let Some(_) = args.subcommand_matches("play") {
+  } else if args.subcommand_matches("play").is_some() {
     play_gomoku();
+  } else if args.subcommand_matches("train").is_some() {
+    train();
   }
 }

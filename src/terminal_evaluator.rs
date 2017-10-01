@@ -38,7 +38,7 @@ fn subtractor() {
   state.play(3).unwrap();
   assert_eq!(0.0, evaluator.evaluate(&state));
   state.play(1).unwrap();
-  assert_eq!(1.0, evaluator.evaluate(&state));
+  assert_eq!(-1.0, evaluator.evaluate(&state));
 }
 
 #[test]

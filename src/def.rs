@@ -38,7 +38,7 @@ pub trait State<'g>: Clone + fmt::Display {
   fn play(&mut self, m: Self::Move) -> Result<(), &'static str>;
 }
 
-pub trait AgentReport<M>: fmt::Display {
+pub trait AgentReport<M: fmt::Display>: fmt::Display {
   fn get_move(&self) -> M;
 }
 
@@ -56,9 +56,4 @@ pub trait Evaluator<'g, S: State<'g>> {
   /// Evaluates the state and returns the score for the first player, regardless
   /// whose turn it is.
   fn evaluate(&self, state: &S) -> f32;
-}
-
-pub trait FeatureExtractor<'g, S: State<'g>> {
-  type FeatureVector;
-  fn extract(&self, state: &S) -> Self::FeatureVector;
 }

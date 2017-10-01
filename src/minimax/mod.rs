@@ -167,9 +167,9 @@ fn subtractor() {
   let game = Subtractor::new(10, 4);
   let mut state = game.new_game();
 
-  assert_eq!(1, agent.select_move(&state).unwrap().get_move());
+  assert_eq!(2, agent.select_move(&state).unwrap().get_move());
 
-  state.play(2).unwrap();
+  state.play(3).unwrap();
 
   assert_eq!(3, agent.select_move(&state).unwrap().get_move());
 }
