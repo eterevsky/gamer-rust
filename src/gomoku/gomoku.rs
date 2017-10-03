@@ -1,6 +1,6 @@
+use rand;
 use std::fmt;
 use std::marker::PhantomData;
-use rand;
 
 use def;
 use def::Game;
