@@ -16,6 +16,10 @@ const PLAYER2_WIN_MASK: u32 = 4;
 const DRAW_MASK: u32 = 8;
 const TERMINAL_MASK: u32 = PLAYER1_WIN_MASK | PLAYER2_WIN_MASK | DRAW_MASK;
 
+lazy_static! {
+  static ref GOMOKU_INSTANCE: Gomoku<'static> = Gomoku::new();
+}
+
 #[derive(Clone, Copy)]
 struct LinesMargins {
   delta: usize,
@@ -34,6 +38,10 @@ impl<'g> Gomoku<'g> {
       _marker: PhantomData,
       lines_margins: Self::create_lines_margins()
     }
+  }
+
+  pub fn default() -> &'static Gomoku<'static> {
+    &*GOMOKU_INSTANCE
   }
 
   fn move_till_margin(p: usize, dx: i32, dy: i32) -> usize {

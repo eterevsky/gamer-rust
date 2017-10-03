@@ -178,7 +178,7 @@ mod test {
 
 use def::Game;
 use gomoku::Gomoku;
-use gomoku::gomoku_test::run_moves_on_state;
+use gomoku::gomoku_test::run_game;
 use super::*;
 
 #[test]
@@ -197,49 +197,43 @@ fn evaluator_empty() {
 
 #[test]
 fn evaluator_single_stone() {
-  let game = Gomoku::new();
   let evaluator = GomokuLinesEvaluator::new_default();
-  let state = run_moves_on_state(&game, "J10");
+  let state = run_game("J10", 0.0);
   assert_eq!(4.0, evaluator.evaluate(&state));
 }
 
 #[test]
 fn evaluator_two_stones() {
-  let game = Gomoku::new();
   let evaluator = GomokuLinesEvaluator::new_default();
-  let state = run_moves_on_state(&game, "J10 K10");
+  let state = run_game("J10 K10", 0.0);
   assert_eq!(0.0, evaluator.evaluate(&state));
 }
 
 #[test]
 fn evaluator_corner_stone() {
-  let game = Gomoku::new();
   let evaluator = GomokuLinesEvaluator::new_default();
-  let state = run_moves_on_state(&game, "A1");
+  let state = run_game("A1", 0.0);
   assert_eq!(0.3, evaluator.evaluate(&state));
 }
 
 #[test]
 fn evaluator_two_corner_stones() {
-  let game = Gomoku::new();
   let evaluator = GomokuLinesEvaluator::new_default();
-  let state = run_moves_on_state(&game, "A1 B1");
+  let state = run_game("A1 B1", 0.0);
   assert_eq!(0.2 - 0.4, evaluator.evaluate(&state));
 }
 
 #[test]
 fn evaluator_three_corner_stones() {
-  let game = Gomoku::new();
   let evaluator = GomokuLinesEvaluator::new_default();
-  let state = run_moves_on_state(&game, "A1 A19 B1");
+  let state = run_game("A1 A19 B1", 0.0);
   assert!((1.2 -  evaluator.evaluate(&state)).abs() < 0.1);
 }
 
 #[test]
 fn evaluator_two_stones_in_the_middle() {
-  let game = Gomoku::new();
   let evaluator = GomokuLinesEvaluator::new_default();
-  let state = run_moves_on_state(&game, "B2 T19 C2 S19");
+  let state = run_game("B2 T19 C2 S19", 0.0);
   assert!(((10.0 + 6.0) - (1.0 + 0.5) - evaluator.evaluate(&state)).abs() < 0.1);
 }
 
