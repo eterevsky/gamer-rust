@@ -9,9 +9,7 @@ use std::iter;
 extern crate gamer;
 
 use gamer::def::{Agent, AgentReport, Evaluator, Game, State};
-use gamer::gomoku::Gomoku;
-use gamer::gomoku::GomokuLinesEvaluator;
-use gamer::gomoku::GomokuState;
+use gamer::gomoku::{Gomoku, GomokuLinesEvaluator, GomokuState, GomokuLineFeatureExtractor};
 use gamer::feature_evaluator::{FeatureEvaluator, LinearRegression, Regression};
 use gamer::minimax::MiniMaxAgent;
 use gamer::subtractor::{Subtractor, SubtractorFeatureExtractor};
@@ -113,19 +111,38 @@ fn play_gomoku() {
   println!("Final score: {}", state.get_payoff().unwrap());
 }
 
-fn train() {
-  let game = Subtractor::new(100, 4);
-  let extractor = SubtractorFeatureExtractor::new(10);
-  let regression = LinearRegression::new(
-      iter::repeat(0.0).take(10).collect(),
-      0.01);
-  let mut evaluator = FeatureEvaluator::new(&game, extractor, regression);
-  evaluator.train(100000, 0.999, 0.1);
-  println!("{:?}", &evaluator.regression);
-  for i in 0..12 {
-    let game = Subtractor::new(i, 4);
-    let score = evaluator.evaluate(&game.new_game());
-    println!("{} {}", i, score);
+// fn train() {
+//   let game = Subtractor::new(100, 4);
+//   let extractor = SubtractorFeatureExtractor::new(10);
+//   let regression = LinearRegression::new(
+//       iter::repeat(0.0).take(10).collect(),
+//       0.01);
+//   let mut evaluator = FeatureEvaluator::new(&game, extractor, regression);
+//   evaluator.train(100000, 0.999, 0.1);
+//   println!("{:?}", &evaluator.regression);
+//   for i in 0..12 {
+//     let game = Subtractor::new(i, 4);
+//     let score = evaluator.evaluate(&game.new_game());
+//     println!("{} {}", i, score);
+//   }
+// }
+
+fn train_gomoku() {
+  let extractor = GomokuLineFeatureExtractor::new();
+  let regression = LinearRegression::new(vec![0.0; 33], (0.00002, 0.001));
+  let mut evaluator = FeatureEvaluator::new(Gomoku::default(), extractor, regression);
+  for _ in 0..1000 {
+    evaluator.train(10000, 0.999, 0.1);
+    let b = &evaluator.regression.b;
+    println!("Other / straight / closed: {:?}", &b[0..4]);
+    println!("Other / straight / open:   {:?}", &b[4..8]);
+    println!("Other / diagonal / closed: {:?}", &b[8..12]);
+    println!("Other / diagonal / open:   {:?}", &b[12..16]);
+    println!("Self  / straight / closed: {:?}", &b[16..20]);
+    println!("Self  / straight / open:   {:?}", &b[20..24]);
+    println!("Self  / diagonal / closed: {:?}", &b[24..28]);
+    println!("Self  / diagonal / open:   {:?}", &b[28..32]);
+    println!("Bias:                      {:?}\n", b[32]);
   }
 }
 
@@ -156,6 +173,6 @@ fn main() {
   } else if args.subcommand_matches("play").is_some() {
     play_gomoku();
   } else if args.subcommand_matches("train").is_some() {
-    train();
+    train_gomoku();
   }
 }

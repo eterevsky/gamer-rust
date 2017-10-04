@@ -11,7 +11,7 @@ pub trait FeatureExtractor<'g, S: State<'g>> {
   fn extract(&self, state: &S) -> Self::FeatureVector;
 }
 
-pub trait Regression<FV> {
+pub trait Regression<FV> : std::fmt::Debug {
   type Parameters;
   type Hyperparameters;
 
@@ -23,18 +23,20 @@ pub trait Regression<FV> {
 
 #[derive(Debug)]
 pub struct LinearRegression {
-  b: Vec<f32>,
-  speed: f32
+  pub b: Vec<f32>,
+  speed: f32,
+  regularization: f32
 }
 
 impl Regression<Vec<f32>> for LinearRegression {
   type Parameters = Vec<f32>;
-  type Hyperparameters = f32;
+  type Hyperparameters = (f32, f32);
 
-  fn new(params: Vec<f32>, hyperparams: f32) -> LinearRegression {
+  fn new(params: Vec<f32>, hyperparams: (f32, f32)) -> LinearRegression {
     LinearRegression {
       b: params,
-      speed: hyperparams
+      speed: hyperparams.0,
+      regularization: hyperparams.1
     }
   }
 
@@ -50,8 +52,10 @@ impl Regression<Vec<f32>> for LinearRegression {
   fn train1(&mut self, features: &Vec<f32>, expected: f32) {
     let prediction = self.evaluate(features);
     let error = prediction - expected;
+    let feature_coef = self.speed * 2.0 * error;
+    let regularization_coef = self.speed * 2.0 * self.regularization;
     for i in 0..self.b.len() {
-      self.b[i] -= self.speed * 2.0 * error * features[i];
+      self.b[i] -= feature_coef * features[i] + regularization_coef * self.b[i];
     }
   }
 }
@@ -88,6 +92,7 @@ impl<'g, FV, FE, G, R> FeatureEvaluator<'g, FV, FE, G, R>
 
       let mut best_move = None;
       let mut best_score = std::f32::MIN;
+      let mut same_score_moves = 0;
 
       for m in state.iter_moves() {
         let mut state_clone = state.clone();
@@ -111,6 +116,12 @@ impl<'g, FV, FE, G, R> FeatureEvaluator<'g, FV, FE, G, R>
         if score > best_score {
           best_move = Some(m);
           best_score = score;
+          same_score_moves = 1;
+        } else if score == best_score {
+          same_score_moves += 1;
+          if rng.gen_weighted_bool(same_score_moves) {
+            best_move = Some(m)
+          }
         }
       }
 
@@ -125,6 +136,10 @@ impl<'g, FV, FE, G, R> FeatureEvaluator<'g, FV, FE, G, R>
       } else {
         state.play(best_move.unwrap()).unwrap();
       }
+
+      // if state.is_terminal() {
+      //   println!("regression: {:?}", &self.regression)
+      // }
     }
   }
 }
@@ -157,9 +172,7 @@ use subtractor::{Subtractor, SubtractorFeatureExtractor};
 fn train_linear_regression_subtractor() {
   let game = Subtractor::new(21, 4);
   let extractor = SubtractorFeatureExtractor::new(10);
-  let regression = LinearRegression::new(
-      iter::repeat(0.0).take(10).collect(),
-      0.01);
+  let regression = LinearRegression::new(vec![0.0; 10], (0.01, 0.001));
   let mut evaluator = FeatureEvaluator::new(&game, extractor, regression);
   evaluator.train(10000, 0.999, 0.1);
 
@@ -167,9 +180,9 @@ fn train_linear_regression_subtractor() {
     let game = Subtractor::new(i, 4);
     let score = evaluator.evaluate(&game.new_game());
     if i % 4 == 0 {
-      assert!(-1.1 < score && score < -0.9, "score for {} is {}", i, score);
+      assert!(-1.2 < score && score < -0.8, "score for {} is {}", i, score);
     } else {
-      assert!(0.9 < score && score < 1.1, "score for {} is {}", i, score);
+      assert!(0.8 < score && score < 1.2, "score for {} is {}", i, score);
     }
   }
 }

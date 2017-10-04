@@ -301,4 +301,23 @@ fn three_stones() {
   assert_eq!(2.0, features[encode(1, false, true, true)]);
 }
 
+// 4 . . . . . . 
+// 3 . . . . . .
+// 2 O X X X X O
+// 1 . . O O . .
+//   a b c d e f
+#[test]
+fn four_blocked() {
+  let extractor = GomokuLineFeatureExtractor::default();
+  let state = run_game("b2 c1 c2 d1 d2 a2 e2 f2", 0.0);
+  let features = extractor.extract(&state);
+
+  // X
+  assert_eq!(0.0, features[encode(4, false, false, true)]);
+  assert_eq!(0.0, features[encode(4, true, false, true)]);
+
+  // O
+  assert_eq!(1.0, features[encode(2, true, false, false)]);
+}
+
 }  // mod test
