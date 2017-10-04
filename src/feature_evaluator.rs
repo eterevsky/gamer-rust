@@ -1,4 +1,5 @@
 use std;
+use std::f32;
 use rand;
 use rand::Rng;
 
@@ -46,13 +47,16 @@ impl Regression<Vec<f32>> for LinearRegression {
 
   fn evaluate(&self, features: &Vec<f32>) -> f32 {
     assert_eq!(features.len(), self.b.len());
-    self.b.iter().zip(features.iter()).map(|(x, y)| x * y).sum()
+    let linear_combination: f32 = self.b.iter().zip(features.iter()).map(|(x, y)| x * y).sum();
+    linear_combination.tanh()
   }
 
   fn train1(&mut self, features: &Vec<f32>, expected: f32) {
-    let prediction = self.evaluate(features);
+    let linear_combination: f32 = self.b.iter().zip(features.iter()).map(|(x, y)| x * y).sum();
+    let prediction = linear_combination.tanh();
+    let activation_derivative = prediction.powi(2) - 1.0;
     let error = prediction - expected;
-    let feature_coef = self.speed * 2.0 * error;
+    let feature_coef = self.speed * 2.0 * error * activation_derivative;
     let regularization_coef = self.speed * 2.0 * self.regularization;
     for i in 0..self.b.len() {
       self.b[i] -= feature_coef * features[i] + regularization_coef * self.b[i];
