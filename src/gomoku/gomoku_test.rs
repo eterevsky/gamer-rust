@@ -186,3 +186,16 @@ fn iter_moves() {
   assert!(moves.iter().find(|&&m| m == FromStr::from_str("c3").unwrap())
       .is_none());
 }
+
+#[test]
+fn undo() {
+  let mut state = run_game("e6 e7 f7 f6 d8 e8 e9 d7 f8 g5 g7 h6 d10 c7 c11",
+                           1.0);
+  let c7 = "c7".parse().unwrap();
+  let c11 = "c11".parse().unwrap();
+  assert!(state.undo(c11).is_ok());
+  assert!(state.undo(c7).is_ok());
+  assert!(state.play(c7).is_ok());
+  assert!(state.play(c11).is_ok());
+  assert!(state.is_terminal());
+}

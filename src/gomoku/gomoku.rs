@@ -233,6 +233,18 @@ impl<'g> def::State<'g> for GomokuState<'g> {
     }
   }
 
+  fn undo(&mut self, gmove: GomokuMove) -> Result<(), &'static str> {
+    let GomokuMove(point) = gmove;
+    if self.board[point] == PointState::Empty {
+      Err("This wasn't the last move")
+    } else {
+      self.board[point] = PointState::Empty;
+      self.status ^= PLAYER_MASK;
+      self.status &= !TERMINAL_MASK;
+      Ok(())
+    }
+  }
+
   fn iter_moves<'s>(&'s self) -> Box<Iterator<Item = GomokuMove> + 's> {
     Box::new(GomokuMoveIterator{state: self, point: 0})
   }

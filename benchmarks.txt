@@ -40,3 +40,27 @@ bench_minimax_gomoku_forced:
 Score: -2.8913085
 PV: A5 B4 C5
 Evaluated: 1843680 positions in 3.016224252001848 seconds, 611254.2854783963 p/s
+
+
+2017-10-07 X51
+
+test gomoku_lines_feature_extractor_rand_position ... bench:       2,059 ns/iter (+/- 112)
+test gomoku_lines_feature_extractor_start         ... bench:       1,626 ns/iter (+/- 84)
+test gomoku_random                                ... bench:       4,686 ns/iter (+/- 227)
+test gomoku_train_evaluator_1000                  ... bench: 685,099,165 ns/iter (+/- 21,313,338)
+test subtractor_feature_evaluator                 ... bench:          81 ns/iter (+/- 5)
+test subtractor_minimax                           ... bench:     245,474 ns/iter (+/- 7,541)
+test subtractor_random                            ... bench:         136 ns/iter (+/- 6)
+test subtractor_train_evaluator_1000              ... bench:     487,369 ns/iter (+/- 20,990)
+
+
+2017-10-08 X51 using undo in MiniMax.
+
+test gomoku_lines_feature_extractor_rand_position ... bench:       1,968 ns/iter (+/- 77)
+test gomoku_lines_feature_extractor_start         ... bench:       1,613 ns/iter (+/- 87)
+test gomoku_random                                ... bench:       4,699 ns/iter (+/- 373)
+test gomoku_train_evaluator_1000                  ... bench: 624,743,186 ns/iter (+/- 16,465,980)
+test subtractor_feature_evaluator                 ... bench:          81 ns/iter (+/- 4)
+test subtractor_minimax                           ... bench:     242,216 ns/iter (+/- 9,399)
+test subtractor_random                            ... bench:         139 ns/iter (+/- 3)
+test subtractor_train_evaluator_1000              ... bench:     457,774 ns/iter (+/- 12,383)

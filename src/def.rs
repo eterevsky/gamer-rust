@@ -36,6 +36,10 @@ pub trait State<'g>: Clone + fmt::Display {
 
   /// Plays a move.
   fn play(&mut self, m: Self::Move) -> Result<(), &'static str>;
+
+  /// Undo a given move. The caller must make sure that the passed move was
+  /// actually the last move to be played in the position.
+  fn undo(&mut self, m: Self::Move) -> Result<(), &'static str>;
 }
 
 pub trait AgentReport<M: fmt::Display>: fmt::Display {

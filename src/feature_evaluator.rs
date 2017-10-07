@@ -106,8 +106,9 @@ impl<'g, FV, FE, G, R> FeatureEvaluator<'g, FV, FE, G, R>
       let mut best_score = std::f32::MIN;
       let mut same_score_moves = 0;
 
+      let mut state_clone = state.clone();
+
       for m in state.iter_moves() {
-        let mut state_clone = state.clone();
         state_clone.play(m).unwrap();
         let score = if state_clone.is_terminal() {
           if state.get_player() {
@@ -124,6 +125,8 @@ impl<'g, FV, FE, G, R> FeatureEvaluator<'g, FV, FE, G, R>
             -next_score
           }
         };
+
+        state_clone.undo(m).unwrap();
 
         if score > best_score {
           best_move = Some(m);

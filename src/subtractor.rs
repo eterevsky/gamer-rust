@@ -75,6 +75,12 @@ impl<'g> def::State<'g> for SubtractorState {
       Err("Subtracting wrong number")
     }
   }
+
+  fn undo(&mut self, m: u32) -> Result<(), &'static str> {
+    self.number += m;
+    self.player = !self.player;
+    Ok(())
+  }
 }
 
 impl fmt::Display for SubtractorState {

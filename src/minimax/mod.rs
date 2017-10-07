@@ -76,8 +76,9 @@ impl<'g, S: State<'g>, E: Evaluator<'g, S>> MiniMaxAgent<'g, S, E> {
     let mut hi = hi / 0.999;
     let mut samples = 0;
 
+    let mut state_clone = state.clone();
+
     for m in state.iter_moves() {
-      let mut state_clone = state.clone();
       state_clone.play(m).unwrap();
       match self.search(&state_clone, depth - 1, deadline, lo, hi) {
         None => return None,
@@ -100,6 +101,7 @@ impl<'g, S: State<'g>, E: Evaluator<'g, S>> MiniMaxAgent<'g, S, E> {
           }
         }
       }
+      state_clone.undo(m).unwrap();
     }
 
     let best_score = if player { lo } else { hi };
