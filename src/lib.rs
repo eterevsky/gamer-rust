@@ -3,7 +3,6 @@ extern crate lazy_static;
 extern crate rand;
 extern crate time;
 
-pub mod benchmarks;
 pub mod def;
 pub mod feature_evaluator;
 pub mod gomoku;

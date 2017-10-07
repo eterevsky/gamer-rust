@@ -11,8 +11,15 @@ path = "src/lib.rs"
 name = "gamer"
 path = "src/main.rs"
 
+[[bench]]
+name = "main"
+harness = false
+
 [dependencies]
 clap = "2"
 lazy_static = "0.2"
 rand = "0.3"
 time = "0.1"
+
+[dev-dependencies]
+bencher = "0.1.4"

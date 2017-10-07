@@ -6,7 +6,6 @@ use clap::{App, Arg, SubCommand};
 
 extern crate gamer;
 
-use gamer::benchmarks;
 use gamer::def::{Agent, AgentReport, Game, State};
 use gamer::gomoku::{Gomoku, GomokuLinesEvaluator, GomokuState, GomokuLineFeatureExtractor};
 use gamer::feature_evaluator::{FeatureEvaluator, LinearRegression, Regression};
@@ -92,9 +91,7 @@ fn args_definition() -> clap::App<'static, 'static> {
 fn main() {
   let args = args_definition().get_matches();
 
-  if args.subcommand_matches("bench").is_some() {
-    benchmarks::run();
-  } else if args.subcommand_matches("play").is_some() {
+  if args.subcommand_matches("play").is_some() {
     play_gomoku();
   } else if args.subcommand_matches("train").is_some() {
     train_gomoku();

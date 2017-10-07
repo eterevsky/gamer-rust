@@ -12,6 +12,14 @@ pub trait FeatureExtractor<'g, S: State<'g>> {
   fn extract(&self, state: &S) -> Self::FeatureVector;
 }
 
+impl<'e, 'g, S: State<'g>, E> FeatureExtractor<'g, S> for &'e E
+    where E: FeatureExtractor<'g, S> {
+  type FeatureVector = E::FeatureVector;
+  fn extract(&self, state: &S) -> E::FeatureVector {
+    (*self).extract(state)
+  }
+}
+
 pub trait Regression<FV> : std::fmt::Debug {
   type Parameters;
   type Hyperparameters;
@@ -166,8 +174,6 @@ impl<'g, FV, FE, G, R> Evaluator<'g, G::State>
 
 #[cfg(test)]
 mod test {
-
-use std::iter;
 
 use super::*;
 use subtractor::{Subtractor, SubtractorFeatureExtractor};
