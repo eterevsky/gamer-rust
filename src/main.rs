@@ -129,7 +129,7 @@ fn play_gomoku() {
 
 fn train_gomoku() {
   let extractor = GomokuLineFeatureExtractor::new();
-  let regression = LinearRegression::new(vec![0.0; 33], (0.00002, 0.001));
+  let regression = LinearRegression::new(vec![0.0; 33], (0.001, 0.001));
   let mut evaluator = FeatureEvaluator::new(Gomoku::default(), extractor, regression);
   for _ in 0..1000 {
     evaluator.train(10000, 0.999, 0.1);

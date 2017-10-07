@@ -54,7 +54,7 @@ impl Regression<Vec<f32>> for LinearRegression {
   fn train1(&mut self, features: &Vec<f32>, expected: f32) {
     let linear_combination: f32 = self.b.iter().zip(features.iter()).map(|(x, y)| x * y).sum();
     let prediction = linear_combination.tanh();
-    let activation_derivative = prediction.powi(2) - 1.0;
+    let activation_derivative = 1.0 - prediction.powi(2);
     let error = prediction - expected;
     let feature_coef = self.speed * 2.0 * error * activation_derivative;
     let regularization_coef = self.speed * 2.0 * self.regularization;
@@ -176,7 +176,7 @@ use subtractor::{Subtractor, SubtractorFeatureExtractor};
 fn train_linear_regression_subtractor() {
   let game = Subtractor::new(21, 4);
   let extractor = SubtractorFeatureExtractor::new(10);
-  let regression = LinearRegression::new(vec![0.0; 10], (0.01, 0.001));
+  let regression = LinearRegression::new(vec![0.0; 10], (0.1, 0.001));
   let mut evaluator = FeatureEvaluator::new(&game, extractor, regression);
   evaluator.train(10000, 0.999, 0.1);
 
@@ -184,9 +184,9 @@ fn train_linear_regression_subtractor() {
     let game = Subtractor::new(i, 4);
     let score = evaluator.evaluate(&game.new_game());
     if i % 4 == 0 {
-      assert!(-1.2 < score && score < -0.8, "score for {} is {}", i, score);
+      assert!(-1.0 < score && score < -0.5, "score for {} is {}", i, score);
     } else {
-      assert!(0.8 < score && score < 1.2, "score for {} is {}", i, score);
+      assert!(0.5 < score && score < 1.0, "score for {} is {}", i, score);
     }
   }
 }
