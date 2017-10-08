@@ -102,6 +102,78 @@ fn subtractor_train_evaluator_1000(bench: &mut Bencher) {
   });
 }
 
+fn u32_vec_mult(bench: &mut Bencher) {
+  let mut a: Vec<u32> = vec![0; 64];
+  let mut b: Vec<u32> = vec![0; 64];
+
+  for i in 0..64 {
+    a[i] = i as u32;
+    b[i] = 2 * i as u32;
+  }
+
+  bench.iter(|| -> u32 { a.iter().zip(b.iter()).map(|(x, y)| (x * y)).sum() });
+}
+
+fn f32_vec_mult(bench: &mut Bencher) {
+  let mut a: Vec<f32> = vec![0.0; 64];
+  let mut b: Vec<f32> = vec![0.0; 64];
+
+  for i in 0..64 {
+    a[i] = i as f32;
+    b[i] = 2.0 * i as f32;
+  }
+
+  bench.iter(|| -> f32 { a.iter().zip(b.iter()).map(|(x, y)| x * y).sum() });
+}
+
+fn f64_vec_mult(bench: &mut Bencher) {
+  let mut a: Vec<f64> = vec![0.0; 64];
+  let mut b: Vec<f64> = vec![0.0; 64];
+
+  for i in 0..64 {
+    a[i] = i as f64;
+    b[i] = 2.0 * i as f64;
+  }
+
+  bench.iter(|| -> f64 { a.iter().zip(b.iter()).map(|(x, y)| x * y).sum() });
+}
+
+fn u32_arr_mult(bench: &mut Bencher) {
+  let mut a: [u32; 64] = [0; 64];
+  let mut b: [u32; 64] = [0; 64];
+
+  for i in 0..64 {
+    a[i] = i as u32;
+    b[i] = 2 * i as u32;
+  }
+
+  bench.iter(|| -> u32 { a.iter().zip(b.iter()).map(|(x, y)| x * y).sum() });
+}
+
+fn f32_arr_mult(bench: &mut Bencher) {
+  let mut a: [f32; 64] = [0.; 64];
+  let mut b: [f32; 64] = [0.; 64];
+
+  for i in 0..64 {
+    a[i] = i as f32;
+    b[i] = 2.0 * i as f32;
+  }
+
+  bench.iter(|| -> f32 { a.iter().zip(b.iter()).map(|(x, y)| x * y).sum() });
+}
+
+fn f64_arr_mult(bench: &mut Bencher) {
+  let mut a: [f64; 64] = [0.; 64];
+  let mut b: [f64; 64] = [0.; 64];
+
+  for i in 0..64 {
+    a[i] = i as f64;
+    b[i] = 2.0 * i as f64;
+  }
+
+  bench.iter(|| -> f64 { a.iter().zip(b.iter()).map(|(x, y)| x * y).sum() });
+}
+
 benchmark_group!(benches,
     gomoku_random,
     gomoku_lines_feature_extractor_start,
@@ -110,5 +182,12 @@ benchmark_group!(benches,
     subtractor_random,
     subtractor_minimax,
     subtractor_feature_evaluator,
-    subtractor_train_evaluator_1000);
+    subtractor_train_evaluator_1000,
+    u32_vec_mult,
+    f32_vec_mult,
+    f64_vec_mult,
+    u32_arr_mult,
+    f32_arr_mult,
+    f64_arr_mult
+    );
 benchmark_main!(benches);

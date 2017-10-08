@@ -56,7 +56,7 @@ impl<'g, S: State<'g>, E: Evaluator<'g, S>> MiniMaxAgent<'g, S, E> {
       _l: PhantomData,
       evaluator: evaluator,
       max_depth: max_depth,
-      time_limit: time_limit,
+      time_limit: time_limit
     }
   }
 
