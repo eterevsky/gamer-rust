@@ -52,10 +52,10 @@ impl<'e, 'g, S: State<'g>, E: Evaluator<'g, S> + 'e> MinimaxSearch<'e, 'g, S, E>
     if state.is_terminal() || self.depth == self.max_depth {
       self.leaves += 1;
       let evaluation = self.discount[self.depth as usize] * self.evaluator.evaluate(state);
-      if evaluation < lo {
+      if evaluation <= lo {
         return SearchResult::Lower;
       }
-      if evaluation > hi {
+      if evaluation >= hi {
         return SearchResult::Higher;
       }
       return SearchResult::Found(evaluation, Vec::new());
