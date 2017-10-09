@@ -1,7 +1,7 @@
 use std;
 use std::fmt;
 use std::marker::PhantomData;
-use time;
+use std::time::{Duration, Instant};
 
 use def;
 use def::Agent;
@@ -13,8 +13,8 @@ pub struct MinimaxReport<M: fmt::Display> {
   // Principle variation
   pv: Vec<M>,
   samples: u64,
-  start_time: f64,
-  end_time: f64
+  start_time: Instant,
+  end_time: Instant
 }
 
 impl<M: fmt::Display> fmt::Display for MinimaxReport<M> {
@@ -25,9 +25,14 @@ impl<M: fmt::Display> fmt::Display for MinimaxReport<M> {
     for m in self.pv.iter() {
       write!(f, " {}", m)?;
     }
+
+    let duration = self.end_time - self.start_time;
+    let duration_sec = duration.as_secs() as f64 +
+                       duration.subsec_nanos() as f64 * 1E-9;
+
     writeln!(f, "\nEvaluated: {} positions in {} seconds, {} p/s",
-             self.samples, self.end_time - self.start_time,
-             self.samples as f64 / (self.end_time - self.start_time))?;
+             self.samples, duration_sec,
+             self.samples as f64 / duration_sec)?;
 
     Ok(())
   }
@@ -44,13 +49,12 @@ pub struct MiniMaxAgent<'g, S: State<'g>, E: Evaluator<'g, S>> {
   _l: PhantomData<&'g ()>,
   evaluator: E,
   max_depth: i32,
-  time_limit: f64,
+  time_limit: Duration
 }
 
 impl<'g, S: State<'g>, E: Evaluator<'g, S>> MiniMaxAgent<'g, S, E> {
-  pub fn new(evaluator: E, max_depth: i32, time_limit: f64) -> Self {
+  pub fn new(evaluator: E, max_depth: i32, time_limit: Duration) -> Self {
     assert!(max_depth > 0);
-    assert!(time_limit > 0.0);
     MiniMaxAgent {
       _s: PhantomData,
       _l: PhantomData,
@@ -60,9 +64,9 @@ impl<'g, S: State<'g>, E: Evaluator<'g, S>> MiniMaxAgent<'g, S, E> {
     }
   }
 
-  fn search(&self, state: &S, depth: i32, deadline: f64, lo: f32, hi: f32)
+  fn search(&self, state: &S, depth: i32, deadline: Instant, lo: f32, hi: f32)
       -> Option<(f32, Vec<S::Move>, u64)> {
-    if time::precise_time_s() >= deadline {
+    if Instant::now() >= deadline {
       return None;
     }
 
@@ -119,7 +123,7 @@ impl<'a, S: State<'a>, E: Evaluator<'a, S>> Agent<'a, S>
       return Err("Terminal state");
     }
 
-    let start_time = time::precise_time_s();
+    let start_time = Instant::now();
     let deadline = start_time + self.time_limit;
     let mut best_pv = Vec::new();
     let mut best_score: f32 = 0.0;
@@ -147,7 +151,7 @@ impl<'a, S: State<'a>, E: Evaluator<'a, S>> Agent<'a, S>
           pv: best_pv,
           samples: samples,
           start_time: start_time,
-          end_time: time::precise_time_s()
+          end_time: Instant::now()
         })
     }
   }
@@ -155,6 +159,8 @@ impl<'a, S: State<'a>, E: Evaluator<'a, S>> Agent<'a, S>
 
 #[cfg(test)]
 mod test {
+
+use std::time::Duration;
 
 use def::Agent;
 use def::AgentReport;
@@ -165,7 +171,8 @@ use super::*;
 
 #[test]
 fn subtractor() {
-  let mut agent = MiniMaxAgent::new(TerminalEvaluator::new(), 10, 1.0);
+  let mut agent = MiniMaxAgent::new(
+      TerminalEvaluator::new(), 10, Duration::from_secs(1));
   let game = Subtractor::new(10, 4);
   let mut state = game.new_game();
 

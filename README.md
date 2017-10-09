@@ -19,6 +19,8 @@
 - Chess
 - Go
 - 2048
+- Backgammon
+- Othello
 
 ## Algorithms
 ### Implemented
