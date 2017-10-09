@@ -10,7 +10,7 @@ use std::time::Duration;
 use gamer::def::{Agent, Evaluator, Game, State};
 use gamer::feature_evaluator::{FeatureEvaluator, FeatureExtractor, LinearRegression, Regression};
 use gamer::gomoku::{Gomoku, GomokuState, GomokuLineFeatureExtractor};
-use gamer::minimax::MiniMaxAgent;
+use gamer::minimax::MinimaxAgent;
 use gamer::subtractor::{Subtractor, SubtractorFeatureExtractor};
 use gamer::terminal_evaluator::TerminalEvaluator;
 
@@ -74,7 +74,7 @@ fn subtractor_random(bench: &mut Bencher) {
 
 fn subtractor_minimax(bench: &mut Bencher) {
   let state = Subtractor::new(21, 4).new_game();
-  let mut agent = MiniMaxAgent::new(TerminalEvaluator::new(), 10, Duration::from_secs(1000));
+  let mut agent = MinimaxAgent::new(TerminalEvaluator::new(), 10, Duration::from_secs(1000));
 
   bench.iter(|| {agent.select_move(&state).unwrap()})
 }
@@ -179,7 +179,7 @@ benchmark_group!(benches,
     gomoku_random,
     gomoku_lines_feature_extractor_start,
     gomoku_lines_feature_extractor_rand_position,
-    gomoku_train_evaluator_1000,
+    // gomoku_train_evaluator_1000,
     subtractor_random,
     subtractor_minimax,
     subtractor_feature_evaluator,

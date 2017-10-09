@@ -8,17 +8,17 @@ use std::time::Duration;
 use gamer::def::{Agent, AgentReport, Game, State};
 use gamer::gomoku::{Gomoku, GomokuLinesEvaluator, GomokuState, GomokuLineFeatureExtractor};
 use gamer::feature_evaluator::{FeatureEvaluator, LinearRegression, Regression};
-use gamer::minimax::MiniMaxAgent;
+use gamer::minimax::MinimaxAgent;
 
 fn play_gomoku() {
   let game = Gomoku::new();
   let mut state: GomokuState = game.new_game();
   // let mut random_agent = RandomAgent::new(rand::XorShiftRng::new_unseeded());
   let mut player1 =
-    // MiniMaxAgent::new(&GomokuLinesEvaluator::new_default(), 3, 1000.0);
-    MiniMaxAgent::new(GomokuLinesEvaluator::new_default(), 3, Duration::from_secs(1000));
+    // MinimaxAgent::new(&GomokuLinesEvaluator::new_default(), 3, 1000.0);
+    MinimaxAgent::new(GomokuLinesEvaluator::new_default(), 3, Duration::from_secs(1000));
   let mut player2 =
-    MiniMaxAgent::new(GomokuLinesEvaluator::new_default(), 4, Duration::from_secs(1000));
+    MinimaxAgent::new(GomokuLinesEvaluator::new_default(), 4, Duration::from_secs(1000));
   while !state.is_terminal() {
     let report = if state.get_player() {
       player1.select_move(&state).unwrap()
