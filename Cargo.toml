@@ -12,7 +12,7 @@ name = "gamer"
 path = "src/main.rs"
 
 [[bench]]
-name = "main"
+name = "benchmarks"
 harness = false
 
 [dependencies]

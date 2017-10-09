@@ -5,6 +5,7 @@ extern crate rand;
 extern crate gamer;
 
 use bencher::Bencher;
+use std::time::Duration;
 
 use gamer::def::{Agent, Evaluator, Game, State};
 use gamer::feature_evaluator::{FeatureEvaluator, FeatureExtractor, LinearRegression, Regression};
@@ -73,7 +74,7 @@ fn subtractor_random(bench: &mut Bencher) {
 
 fn subtractor_minimax(bench: &mut Bencher) {
   let state = Subtractor::new(21, 4).new_game();
-  let mut agent = MiniMaxAgent::new(TerminalEvaluator::new(), 10, 1000.0);
+  let mut agent = MiniMaxAgent::new(TerminalEvaluator::new(), 10, Duration::from_secs(1000));
 
   bench.iter(|| {agent.select_move(&state).unwrap()})
 }
