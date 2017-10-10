@@ -5,6 +5,7 @@ extern crate rand;
 extern crate gamer;
 
 use bencher::Bencher;
+use rand::Rng;
 use std::time::Duration;
 
 use gamer::def::{Agent, Evaluator, Game, State};
@@ -175,11 +176,28 @@ fn f64_arr_mult(bench: &mut Bencher) {
   bench.iter(|| -> f64 { a.iter().zip(b.iter()).map(|(x, y)| x * y).sum() });
 }
 
+fn xorshift_rng_new(bench: &mut Bencher) {
+  bench.iter(|| rand::weak_rng());
+}
+
+fn xorshift_rng_new_unseeded(bench: &mut Bencher) {
+  bench.iter(|| rand::XorShiftRng::new_unseeded());
+}
+
+fn xorshift_rng_new_gen1(bench: &mut Bencher) {
+  bench.iter(|| rand::weak_rng().next_u32());
+}
+
+fn xorshift_rng_gen1(bench: &mut Bencher) {
+  let mut rng = rand::XorShiftRng::new_unseeded();
+  bench.iter(|| rng.next_u32());
+}
+
 benchmark_group!(benches,
     gomoku_random,
     gomoku_lines_feature_extractor_start,
     gomoku_lines_feature_extractor_rand_position,
-    // gomoku_train_evaluator_1000,
+    gomoku_train_evaluator_1000,
     subtractor_random,
     subtractor_minimax,
     subtractor_feature_evaluator,
@@ -189,6 +207,10 @@ benchmark_group!(benches,
     f64_vec_mult,
     u32_arr_mult,
     f32_arr_mult,
-    f64_arr_mult
+    f64_arr_mult,
+    xorshift_rng_new,
+    xorshift_rng_new_unseeded,
+    xorshift_rng_new_gen1,
+    xorshift_rng_gen1
     );
 benchmark_main!(benches);

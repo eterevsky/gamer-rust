@@ -1,3 +1,4 @@
+use rand::{Rng, XorShiftRng, weak_rng};
 use std;
 use std::marker::PhantomData;
 use std::time::Instant;
@@ -15,7 +16,8 @@ struct MinimaxSearch<'e, 'g, S: State<'g>, E: Evaluator<'g, S> + 'e> {
   max_depth: u32,
 
   depth: u32,
-  leaves: u64
+  leaves: u64,
+  rng: XorShiftRng
 }
 
 enum SearchResult<'g, S: State<'g>> {
@@ -39,7 +41,8 @@ impl<'e, 'g, S: State<'g>, E: Evaluator<'g, S> + 'e> MinimaxSearch<'e, 'g, S, E>
       max_depth: depth,
 
       depth: 0,
-      leaves: 0
+      leaves: 0,
+      rng: weak_rng()
     }
   }
 
@@ -69,7 +72,9 @@ impl<'e, 'g, S: State<'g>, E: Evaluator<'g, S> + 'e> MinimaxSearch<'e, 'g, S, E>
 
     self.depth += 1;
 
-    for m in state.iter_moves() {
+    let mut moves: Vec<S::Move> = state.iter_moves().collect();
+    self.rng.shuffle(&mut moves);
+    for m in moves {
       state_clone.play(m).unwrap();
       let child_result = self.search(&state_clone, lo, hi);
       match child_result {
@@ -100,7 +105,7 @@ impl<'e, 'g, S: State<'g>, E: Evaluator<'g, S> + 'e> MinimaxSearch<'e, 'g, S, E>
         }
       }
       state_clone.undo(m).unwrap();
-    }
+    };
 
     self.depth -= 1;
 
@@ -130,3 +135,39 @@ pub fn minimax_fixed_depth<'g, S, E>(
   }
 }
 
+
+#[cfg(test)]
+mod test {
+
+use def::{AgentReport, Game};
+use subtractor::Subtractor;
+use terminal_evaluator::TerminalEvaluator;
+use super::*;
+
+#[test]
+fn subtractor() {
+  let game = Subtractor::new(5, 4);
+  let evaluator = TerminalEvaluator::new();
+  let mut state = game.new_game();
+
+  let report = minimax_fixed_depth(&state, &evaluator, 1, 0.5);
+  assert_eq!(0.0, report.score);
+  assert_eq!(3, report.samples);
+  assert!(1 <= report.get_move() && report.get_move() <= 3);
+
+  let report = minimax_fixed_depth(&state, &evaluator, 2, 0.5);
+  assert_eq!(0.0, report.score);
+  assert!(5 <= report.samples && report.samples <= 8);
+  assert_eq!(1, report.get_move());
+
+  let report = minimax_fixed_depth(&state, &evaluator, 3, 0.5);
+  assert_eq!(0.125, report.score);
+  assert_eq!(1, report.get_move());
+
+  state.play(2).unwrap();
+  let report = minimax_fixed_depth(&state, &evaluator, 1, 0.5);
+  assert_eq!(-0.5, report.score);
+  assert_eq!(3, report.get_move());
+}
+
+}

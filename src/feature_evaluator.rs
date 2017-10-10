@@ -1,9 +1,11 @@
 use std;
 use std::f32;
+use std::fmt;
 use rand;
 use rand::Rng;
 
-use def::{Game, Evaluator, State};
+use def::{AgentReport, Game, Evaluator, State};
+use minimax::minimax_fixed_depth;
 
 pub trait FeatureExtractor<'g, S: State<'g>> {
   type FeatureVector;
@@ -83,7 +85,7 @@ pub struct FeatureEvaluator<'g, FV, FE, G, R>
 
 impl<'g, FV, FE, G, R> FeatureEvaluator<'g, FV, FE, G, R>
     where FE: FeatureExtractor<'g, G::State, FeatureVector=FV>,
-        R: Regression<FV>,
+        R: Regression<FV> + fmt::Debug,
         G: Game<'g> + 'g {
   pub fn new(game: &'g G, extractor: FE, regression: R) -> Self {
     FeatureEvaluator {
@@ -102,59 +104,16 @@ impl<'g, FV, FE, G, R> FeatureEvaluator<'g, FV, FE, G, R>
         state = self.game.new_game();
       }
 
-      let mut best_move = None;
-      let mut best_score = std::f32::MIN;
-      let mut same_score_moves = 0;
-
-      let mut state_clone = state.clone();
-
-      for m in state.iter_moves() {
-        state_clone.play(m).unwrap();
-        let score = if state_clone.is_terminal() {
-          if state.get_player() {
-            state_clone.get_payoff().unwrap()
-          } else {
-            -state_clone.get_payoff().unwrap()
-          }
-        } else {
-          let features = self.extractor.extract(&state_clone);
-          let next_score = self.regression.evaluate(&features);
-          if state_clone.get_player() == state.get_player() {
-            next_score
-          } else {
-            -next_score
-          }
-        };
-
-        state_clone.undo(m).unwrap();
-
-        if score > best_score {
-          best_move = Some(m);
-          best_score = score;
-          same_score_moves = 1;
-        } else if score == best_score {
-          same_score_moves += 1;
-          if rng.gen_weighted_bool(same_score_moves) {
-            best_move = Some(m)
-          }
-        }
-      }
-
-      assert!(best_move.is_some());
-      best_score *= discount;
-
-      self.regression.train1(&self.extractor.extract(&state), best_score);
+      let report = minimax_fixed_depth(&state, self, 1, discount);
+      let score = if state.get_player() { report.score } else { -report.score };
+      self.regression.train1(&self.extractor.extract(&state), score);
 
       if rng.next_f32() < random_prob {
         let m = state.get_random_move(&mut rng).unwrap();
         state.play(m).unwrap();
       } else {
-        state.play(best_move.unwrap()).unwrap();
+        state.play(report.get_move()).unwrap();
       }
-
-      // if state.is_terminal() {
-      //   println!("regression: {:?}", &self.regression)
-      // }
     }
   }
 }
@@ -165,6 +124,9 @@ impl<'g, FV, FE, G, R> Evaluator<'g, G::State>
           R: Regression<FV>,
           G: Game<'g> {
   fn evaluate(&self, state: &G::State) -> f32 {
+    if let Some(score) = state.get_payoff() {
+      return score;
+    }
     let features = self.extractor.extract(state);
     let player_score = self.regression.evaluate(&features);
     if state.get_player() {
@@ -187,15 +149,15 @@ fn train_linear_regression_subtractor() {
   let extractor = SubtractorFeatureExtractor::new(10);
   let regression = LinearRegression::new(vec![0.0; 10], (0.1, 0.001));
   let mut evaluator = FeatureEvaluator::new(&game, extractor, regression);
-  evaluator.train(10000, 0.999, 0.1);
+  evaluator.train(1000, 0.999, 0.01);
 
   for i in 0..12 {
     let game = Subtractor::new(i, 4);
     let score = evaluator.evaluate(&game.new_game());
     if i % 4 == 0 {
-      assert!(-1.0 < score && score < -0.5, "score for {} is {}", i, score);
+      assert!(-1.0 <= score && score < -0.5, "score for {} is {}", i, score);
     } else {
-      assert!(0.5 < score && score < 1.0, "score for {} is {}", i, score);
+      assert!(0.5 < score && score <= 1.0, "score for {} is {}", i, score);
     }
   }
 }
