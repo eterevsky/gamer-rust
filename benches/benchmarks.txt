@@ -64,3 +64,25 @@ test subtractor_feature_evaluator                 ... bench:          81 ns/iter
 test subtractor_minimax                           ... bench:     242,216 ns/iter (+/- 9,399)
 test subtractor_random                            ... bench:         139 ns/iter (+/- 3)
 test subtractor_train_evaluator_1000              ... bench:     457,774 ns/iter (+/- 12,383)
+
+
+2017-10-10 Randomizing the order of moves in Minimax.
+
+test f32_arr_mult                                 ... bench:          29 ns/iter (+/- 6)
+test f32_vec_mult                                 ... bench:          31 ns/iter (+/- 18)
+test f64_arr_mult                                 ... bench:          29 ns/iter (+/- 0)
+test f64_vec_mult                                 ... bench:          31 ns/iter (+/- 14)
+test gomoku_lines_feature_extractor_rand_position ... bench:       1,987 ns/iter (+/- 68)
+test gomoku_lines_feature_extractor_start         ... bench:       1,563 ns/iter (+/- 53)
+test gomoku_random                                ... bench:       4,515 ns/iter (+/- 144)
+test gomoku_train_evaluator_1000                  ... bench: 674,851,974 ns/iter (+/- 14,171,529)
+test subtractor_feature_evaluator                 ... bench:          76 ns/iter (+/- 12)
+test subtractor_minimax                           ... bench:     385,130 ns/iter (+/- 340,026)
+test subtractor_random                            ... bench:         150 ns/iter (+/- 15)
+test subtractor_train_evaluator_1000              ... bench:     932,440 ns/iter (+/- 406,489)
+test u32_arr_mult                                 ... bench:           0 ns/iter (+/- 0)
+test u32_vec_mult                                 ... bench:          25 ns/iter (+/- 8)
+test xorshift_rng_gen1                            ... bench:           0 ns/iter (+/- 1)
+test xorshift_rng_new                             ... bench:         194 ns/iter (+/- 24)
+test xorshift_rng_new_gen1                        ... bench:         196 ns/iter (+/- 41)
+test xorshift_rng_new_unseeded                    ... bench:           1 ns/iter (+/- 0)
