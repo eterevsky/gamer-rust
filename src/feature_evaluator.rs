@@ -80,7 +80,7 @@ pub struct FeatureEvaluator<'g, FV, FE, G, R>
         G: Game<'g> + 'g {
   game: &'g G,
   extractor: FE,
-  pub regression: R
+  pub regression: R,
 }
 
 impl<'g, FV, FE, G, R> FeatureEvaluator<'g, FV, FE, G, R>
@@ -95,16 +95,16 @@ impl<'g, FV, FE, G, R> FeatureEvaluator<'g, FV, FE, G, R>
     }
   }
 
-  pub fn train(&mut self, nmoves: u32, discount: f32, random_prob: f32) {
+  pub fn train(&mut self, nmoves: u32, discount: f32, random_prob: f32, callback: &Fn(&Self, u32)) {
     let mut state = self.game.new_game();
     let mut rng = rand::weak_rng();
 
-    for _ in 0..nmoves {
+    for step in 0..nmoves {
       if state.is_terminal() {
         state = self.game.new_game();
       }
 
-      let report = minimax_fixed_depth(&state, self, 1, discount);
+      let report = minimax_fixed_depth(&state, self, 2, discount);
       let score = if state.get_player() { report.score } else { -report.score };
       self.regression.train1(&self.extractor.extract(&state), score);
 
@@ -114,6 +114,8 @@ impl<'g, FV, FE, G, R> FeatureEvaluator<'g, FV, FE, G, R>
       } else {
         state.play(report.get_move()).unwrap();
       }
+
+      callback(self, step);
     }
   }
 }
@@ -149,7 +151,7 @@ fn train_linear_regression_subtractor() {
   let extractor = SubtractorFeatureExtractor::new(10);
   let regression = LinearRegression::new(vec![0.0; 10], (0.1, 0.001));
   let mut evaluator = FeatureEvaluator::new(&game, extractor, regression);
-  evaluator.train(1000, 0.999, 0.01);
+  evaluator.train(1000, 0.999, 0.01, &|_, _| ());
 
   for i in 0..12 {
     let game = Subtractor::new(i, 4);
