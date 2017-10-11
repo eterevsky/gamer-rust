@@ -50,5 +50,4 @@ fn gomoku() {
   assert_eq!(0.0, evaluator.evaluate(&state));
 }
 
-
 }

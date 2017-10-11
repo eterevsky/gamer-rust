@@ -7,8 +7,33 @@ use std::time::Duration;
 
 use gamer::def::{Agent, AgentReport, Game, State};
 use gamer::gomoku::{Gomoku, GomokuLinesEvaluator, GomokuState, GomokuLineFeatureExtractor};
+use gamer::hexapawn::{Hexapawn, HexapawnMove};
 use gamer::feature_evaluator::{FeatureEvaluator, LinearRegression, Regression};
 use gamer::minimax::MinimaxAgent;
+use gamer::random_agent::RandomAgent;
+use gamer::terminal_evaluator::TerminalEvaluator;
+
+fn play_hexapawn() {
+  let hexapawn = Hexapawn::new(3, 3);
+  let mut state = hexapawn.new_game();
+
+  let mut player1 = MinimaxAgent::new(TerminalEvaluator::new(), 2, Duration::from_secs(1));
+  let mut player2 = RandomAgent::new();
+
+  while !state.is_terminal() {
+    let report: Box<AgentReport<HexapawnMove>> =
+        if state.get_player() {
+          Box::new(player1.select_move(&state).unwrap())
+        } else {
+          Box::new(player2.select_move(&state).unwrap())
+        };
+
+    state.play(report.get_move()).ok();
+    println!("Move: {}\n{}\n{}\n", report.get_move(), report, state);
+  }
+
+  println!("Final score: {}", state.get_payoff().unwrap());
+}
 
 fn play_gomoku() {
   let game = Gomoku::new();
@@ -95,7 +120,7 @@ fn main() {
   let args = args_definition().get_matches();
 
   if args.subcommand_matches("play").is_some() {
-    play_gomoku();
+    play_hexapawn();
   } else if args.subcommand_matches("train").is_some() {
     train_gomoku();
   }

@@ -5,10 +5,10 @@
 
 - Gomoku (w/o Swap2)
 - Subtractor
+- Hexapawn
 
 ### To be implemented
 
-- Hexapawn
 - Sim
 - Nim
 - Kayles
@@ -21,6 +21,7 @@
 - 2048
 - Backgammon
 - Othello
+- GIPF games
 
 ## Algorithms
 ### Implemented
