@@ -23,9 +23,9 @@ fn play_hexapawn() {
   while !state.is_terminal() {
     let report: Box<AgentReport<HexapawnMove>> =
         if state.get_player() {
-          Box::new(player1.select_move(&state).unwrap())
+          player1.select_move(&state).unwrap()
         } else {
-          Box::new(player2.select_move(&state).unwrap())
+          player2.select_move(&state).unwrap()
         };
 
     state.play(report.get_move()).ok();

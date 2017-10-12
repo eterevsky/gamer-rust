@@ -27,28 +27,12 @@ impl<C: Cell> Board<C> {
     }
   }
 
-  pub fn new_custom<T: Into<Vec<C>>>(width: u32, height: u32, init: T) -> Self {
-    assert!(width <= 25);
-    assert!(height <= 25);
-    let b = Board {
-      width,
-      height,
-      data: init.into()
-    };
-    assert_eq!((width * height) as usize, b.data.len());
-    b
-  }
-
   pub fn xy_to_point(&self, col: u32, row: u32) -> usize {
     (row * self.width + col) as usize
   }
 
   pub fn point_to_xy(&self, point: usize) -> (u32, u32) {
     point_to_xy(point, self.width)
-  }
-
-  pub fn point_to_a(&self, point: usize) -> String {
-    point_to_a(point, self.width)
   }
 
   pub fn parse_point(&self, s: &str) -> Option<usize> {
@@ -137,21 +121,21 @@ pub struct BoardFormatter<'a, C: Cell + 'a> {
 
 impl<'a, C: Cell> fmt::Display for BoardFormatter<'a, C> {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "   ");
+    write!(f, "   ")?;
     for x in 0..self.board.width {
-      write!(f, " {}", col_letter(x));
+      write!(f, " {}", col_letter(x))?;
     }
-    writeln!(f);
+    writeln!(f)?;
     for y in (0..self.board.height).rev() {
-      write!(f, "{:>2}", y + 1);
+      write!(f, "{:>2}", y + 1)?;
       for x in 0..self.board.width {
         let cell = self.board.get_xy(x, y).unwrap();
-        write!(f, " {}", if self.ascii { cell.ascii() } else { cell.unicode() });
+        write!(f, " {}", if self.ascii { cell.ascii() } else { cell.unicode() })?;
       }
-      writeln!(f, " {}", y + 1);
+      writeln!(f, " {}", y + 1)?;
     }
     for x in 0..self.board.width {
-      write!(f, " {}", col_letter(x));
+      write!(f, " {}", col_letter(x))?;
     }
     writeln!(f)
   }
@@ -247,6 +231,9 @@ fn board() {
 
   board.set_xy(3, 3, GoCell::Black);
   assert_eq!(Some(GoCell::Black), board.get_xy(3, 3));
+
+  board.set_xy(3, 15, GoCell::White);
+  assert_eq!(Some(GoCell::White), board.get_xy(3, 15));
 
   assert!(!format!("{}", board.format(false)).is_empty());
 }

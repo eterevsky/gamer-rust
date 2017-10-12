@@ -3,7 +3,8 @@ use std::time::Duration;
 
 use def::AgentReport;
 
-pub struct MinimaxReport<M: fmt::Display> {
+#[derive(Clone)]
+pub struct MinimaxReport<M: fmt::Display + 'static> {
   pub score: f32,
   // Principle variation
   pub pv: Vec<M>,
@@ -11,7 +12,7 @@ pub struct MinimaxReport<M: fmt::Display> {
   pub duration: Duration
 }
 
-impl<M: fmt::Display> fmt::Display for MinimaxReport<M> {
+impl<M: fmt::Display + 'static> fmt::Display for MinimaxReport<M> {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
     writeln!(f, "Score: {}", self.score)?;
     write!(f, "PV:")?;
@@ -31,7 +32,7 @@ impl<M: fmt::Display> fmt::Display for MinimaxReport<M> {
   }
 }
 
-impl<M: fmt::Display + Copy> AgentReport<M> for MinimaxReport<M> {
+impl<M: fmt::Display + Copy + 'static> AgentReport<M> for MinimaxReport<M> {
   fn get_move(&self) -> M {
     self.pv[0]
   }

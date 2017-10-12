@@ -1,43 +1,38 @@
 use std::marker::PhantomData;
 use std::time::Duration;
 
-use def::{Agent, State, Evaluator};
+use def::{Agent, AgentReport, State, Evaluator};
 use minimax::search::minimax_fixed_depth;
-use minimax::report::MinimaxReport;
 
 pub struct MinimaxAgent<'g, S: State<'g>, E: Evaluator<'g, S>> {
   _s: PhantomData<S>,
   _l: PhantomData<&'g ()>,
   evaluator: E,
   max_depth: u32,
-  time_limit: Duration
 }
 
 impl<'g, S: State<'g>, E: Evaluator<'g, S>> MinimaxAgent<'g, S, E> {
-  pub fn new(evaluator: E, max_depth: u32, time_limit: Duration) -> Self {
+  pub fn new(evaluator: E, max_depth: u32, _time_limit: Duration) -> Self {
     assert!(max_depth > 0);
     MinimaxAgent {
       _s: PhantomData,
       _l: PhantomData,
       evaluator: evaluator,
       max_depth: max_depth,
-      time_limit: time_limit
     }
   }
 }
 
 impl<'a, S: State<'a>, E: Evaluator<'a, S>> Agent<'a, S>
     for MinimaxAgent<'a, S, E> {
-  type Report = MinimaxReport<S::Move>;
-
-  fn select_move(&mut self, state: &S) -> Result<Self::Report, &'static str> {
+  fn select_move(&mut self, state: &S) -> Result<Box<AgentReport<S::Move>>, &'static str> {
     if state.is_terminal() {
       return Err("Terminal state");
     }
 
     let report = minimax_fixed_depth(state, &self.evaluator, self.max_depth, 0.999);
 
-    Ok(report)
+    Ok(Box::new(report))
   }
 }
 
@@ -45,7 +40,7 @@ impl<'a, S: State<'a>, E: Evaluator<'a, S>> Agent<'a, S>
 #[cfg(test)]
 mod test {
 
-use def::{Agent, AgentReport, Game};
+use def::{Agent, Game};
 use subtractor::Subtractor;
 use terminal_evaluator::TerminalEvaluator;
 use super::*;

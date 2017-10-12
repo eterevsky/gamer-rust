@@ -11,7 +11,7 @@ pub struct RandomAgentReport<M> {
   m: M
 }
 
-impl<M: Copy + Display> AgentReport<M> for RandomAgentReport<M> {
+impl<M: Copy + Display + 'static> AgentReport<M> for RandomAgentReport<M> {
   fn get_move(&self) -> M {
     self.m
   }
@@ -19,7 +19,7 @@ impl<M: Copy + Display> AgentReport<M> for RandomAgentReport<M> {
 
 impl<M: Display> Display for RandomAgentReport<M> {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-    write!(f, "{}", self.m)?;
+    write!(f, "random move: {}", self.m)?;
     Ok(())
   }
 }
@@ -35,12 +35,10 @@ impl RandomAgent {
 }
 
 impl<'g, S: State<'g>> Agent<'g, S> for RandomAgent {
-  type Report = RandomAgentReport<S::Move>;
-
   fn select_move(&mut self, state: &S)
-      -> Result<RandomAgentReport<S::Move>, &'static str> {
+      -> Result<Box<AgentReport<S::Move>>, &'static str> {
     match state.get_random_move(&mut self.rng) {
-      Some(m) => Ok(RandomAgentReport{m}),
+      Some(m) => Ok(Box::new(RandomAgentReport{m})),
       None => Err("Terminal position")
     }
   }
