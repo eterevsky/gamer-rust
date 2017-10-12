@@ -121,7 +121,7 @@ pub struct BoardFormatter<'a, C: Cell + 'a> {
 
 impl<'a, C: Cell> fmt::Display for BoardFormatter<'a, C> {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "   ")?;
+    write!(f, "  ")?;
     for x in 0..self.board.width {
       write!(f, " {}", col_letter(x))?;
     }
@@ -130,10 +130,12 @@ impl<'a, C: Cell> fmt::Display for BoardFormatter<'a, C> {
       write!(f, "{:>2}", y + 1)?;
       for x in 0..self.board.width {
         let cell = self.board.get_xy(x, y).unwrap();
-        write!(f, " {}", if self.ascii { cell.ascii() } else { cell.unicode() })?;
+        write!(f, " {}", if self.ascii { cell.ascii() }
+                         else { cell.unicode() })?;
       }
       writeln!(f, " {}", y + 1)?;
     }
+    write!(f, "  ")?;
     for x in 0..self.board.width {
       write!(f, " {}", col_letter(x))?;
     }

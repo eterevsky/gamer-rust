@@ -3,76 +3,10 @@ extern crate clap;
 extern crate gamer;
 
 use clap::{App, Arg, SubCommand};
-use std::time::Duration;
 
-use gamer::def::{Agent, AgentReport, Game, State};
-use gamer::gomoku::{Gomoku, GomokuLinesEvaluator, GomokuState, GomokuLineFeatureExtractor};
-use gamer::hexapawn::{Hexapawn, HexapawnMove};
+use gamer::gomoku::{Gomoku, GomokuLineFeatureExtractor};
 use gamer::feature_evaluator::{FeatureEvaluator, LinearRegression, Regression};
-use gamer::minimax::MinimaxAgent;
-use gamer::random_agent::RandomAgent;
-use gamer::terminal_evaluator::TerminalEvaluator;
-
-fn play_hexapawn() {
-  let hexapawn = Hexapawn::new(3, 3);
-  let mut state = hexapawn.new_game();
-
-  let mut player1 = MinimaxAgent::new(TerminalEvaluator::new(), 2, Duration::from_secs(1));
-  let mut player2 = RandomAgent::new();
-
-  while !state.is_terminal() {
-    let report: Box<AgentReport<HexapawnMove>> =
-        if state.get_player() {
-          player1.select_move(&state).unwrap()
-        } else {
-          player2.select_move(&state).unwrap()
-        };
-
-    state.play(report.get_move()).ok();
-    println!("Move: {}\n{}\n{}\n", report.get_move(), report, state);
-  }
-
-  println!("Final score: {}", state.get_payoff().unwrap());
-}
-
-fn play_gomoku() {
-  let game = Gomoku::new();
-  let mut state: GomokuState = game.new_game();
-  // let mut random_agent = RandomAgent::new(rand::XorShiftRng::new_unseeded());
-  let mut player1 =
-    // MinimaxAgent::new(&GomokuLinesEvaluator::new_default(), 3, 1000.0);
-    MinimaxAgent::new(GomokuLinesEvaluator::new_default(), 3, Duration::from_secs(1000));
-  let mut player2 =
-    MinimaxAgent::new(GomokuLinesEvaluator::new_default(), 4, Duration::from_secs(1000));
-  while !state.is_terminal() {
-    let report = if state.get_player() {
-      player1.select_move(&state).unwrap()
-    } else {
-      player2.select_move(&state).unwrap()
-    };
-
-    state.play(report.get_move()).ok();
-    println!("Move: {}\n{}\n{}\n", report.get_move(), report, state);
-  }
-
-  println!("Final score: {}", state.get_payoff().unwrap());
-}
-
-// fn train() {
-//   let game = Subtractor::new(100, 4);
-//   let extractor = SubtractorFeatureExtractor::new(10);
-//   let regression = LinearRegression::new(
-//       iter::repeat(0.0).take(10).collect(),
-//       0.01);
-//   let mut evaluator = FeatureEvaluator::new(&game, extractor, regression);
-//   evaluator.train(100000, 0.999, 0.1);
-//   println!("{:?}", &evaluator.regression);
-//   for i in 0..12 {
-//     let game = Subtractor::new(i, 4);
-//     let score = evaluator.evaluate(&game.new_game());
-//     println!("{} {}", i, score);
-//   }
-// }
+use gamer::play::{AgentSpec, GameSpec, play_spec};
 
 fn train_gomoku() {
   let extractor = GomokuLineFeatureExtractor::new();
@@ -106,22 +40,52 @@ fn args_definition() -> clap::App<'static, 'static> {
         .long("game")
         .value_name("GAME")
         .takes_value(true)
-        .possible_values(&["gomoku"])
+        .possible_values(&["gomoku", "subtractor", "hexapawn"])
         .default_value("gomoku")
         .help("The game to be played."),
     )
-    .subcommand(SubCommand::with_name("bench").about("Run benchmark"))
-    .subcommand(SubCommand::with_name("play").about("Play a single game"))
+    .subcommand(
+      SubCommand::with_name("play")
+        .about("Play a single game")
+        .arg(
+          Arg::with_name("player1")
+            .short("1")
+            .long("player1")
+            .value_name("PLAYER")
+            .takes_value(true)
+            .default_value("random")
+            .help("Specification of the first player.")
+        )
+        .arg(
+          Arg::with_name("player2")
+            .short("2")
+            .long("player2")
+            .value_name("PLAYER")
+            .takes_value(true)
+            .default_value("random")
+            .help("Specification of the second player.")
+        )
+    )
     .subcommand(SubCommand::with_name("train").about(
         "Reinforcement training for the evaluator."))
 }
 
 fn main() {
   let args = args_definition().get_matches();
+  let game_spec_str = args.value_of("game").unwrap();
+  let game_spec = GameSpec::parse(game_spec_str).unwrap();
 
-  if args.subcommand_matches("play").is_some() {
-    play_hexapawn();
-  } else if args.subcommand_matches("train").is_some() {
-    train_gomoku();
+  match args.subcommand() {
+    ("play", Some(play_args)) => {
+      let player1_spec_str = play_args.value_of("player1").unwrap();
+      let player2_spec_str = play_args.value_of("player2").unwrap();
+      let player1_spec = AgentSpec::parse(player1_spec_str).unwrap();
+      let player2_spec = AgentSpec::parse(player2_spec_str).unwrap();
+      play_spec(&game_spec, &player1_spec, &player2_spec);
+    },
+    ("train", _) => {
+      train_gomoku();
+    },
+    _ => panic!("Unknown subcommand.")
   }
 }

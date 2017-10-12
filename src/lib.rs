@@ -8,6 +8,7 @@ pub mod feature_evaluator;
 pub mod gomoku;
 pub mod hexapawn;
 pub mod minimax;
+pub mod play;
 pub mod random_agent;
 mod status;
 pub mod subtractor;
