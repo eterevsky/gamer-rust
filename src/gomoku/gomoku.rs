@@ -315,6 +315,7 @@ impl<'g> fmt::Display for GomokuState<'g> {
     for x in 0..SIZE {
       try!(write!(f, " {}", util::col_letter(x)));
     }
+    writeln!(f)?;
 
 
     Ok(())

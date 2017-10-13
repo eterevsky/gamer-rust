@@ -20,38 +20,38 @@ impl GameSpec {
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Debug, Deserialize)]
 pub enum AgentSpec {
   Random,
   Human,
   Minimax(MinimaxSpec)
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Debug, Deserialize)]
 pub struct MinimaxSpec {
   pub depth: u32,
   pub evaluator: EvaluatorSpec
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Debug, Deserialize)]
 pub enum EvaluatorSpec {
   TerminalEvaluator,
   FeatureEvaluator(FeatureEvaluatorSpec)
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Debug, Deserialize)]
 pub struct FeatureEvaluatorSpec {
   pub extractor: FeatureExtractorSpec,
   pub regression: RegressionSpec
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Debug, Deserialize)]
 pub enum FeatureExtractorSpec {
   SubtractorFeatureExtractor(u32),
   GomokuLineFeatureExtractor
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Debug, Deserialize)]
 pub struct RegressionSpec {
   pub speed: f32,
   pub regularization: f32,
@@ -77,9 +77,11 @@ pub fn load_agent_spec(s: &str) -> Result<AgentSpec, String> {
     "human"  => Ok(AgentSpec::Human),
     _ => {
       // Treating the string as filename.
-      let mut f = File::open(s).map_err(|e| "Error while opening file.")?;
+      let mut f = File::open(s)
+          .map_err(|e| format!("Error while opening file: {}", e))?;
       let mut s = String::new();
-      f.read_to_string(&mut s).map_err(|e| "Error while reading file.")?;
+      f.read_to_string(&mut s)
+          .map_err(|e| format!("Error while reading file: {}", e))?;
       AgentSpec::parse(&s).ok_or("Error while parsing AgentSpec.".to_string())
     }
   }

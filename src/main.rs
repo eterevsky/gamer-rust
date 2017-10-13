@@ -79,7 +79,9 @@ fn main() {
   match args.subcommand() {
     ("play", Some(play_args)) => {
       let player1_spec = load_agent_spec(play_args.value_of("player1").unwrap()).unwrap();
-      let player2_spec = load_agent_spec(play_args.value_of("player1").unwrap()).unwrap();
+      let player2_spec = load_agent_spec(play_args.value_of("player2").unwrap()).unwrap();
+      println!("Player 1 spec: {:?}", player1_spec);
+      println!("Player 2 spec: {:?}\n", player2_spec);
       play_spec(&game_spec, &player1_spec, &player2_spec);
     },
     ("train", _) => {

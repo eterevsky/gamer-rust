@@ -14,19 +14,14 @@ pub struct MinimaxReport<M: fmt::Display + 'static> {
 
 impl<M: fmt::Display + 'static> fmt::Display for MinimaxReport<M> {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-    writeln!(f, "Score: {}", self.score)?;
     write!(f, "PV:")?;
 
     for m in self.pv.iter() {
       write!(f, " {}", m)?;
     }
 
-    let duration_sec = self.duration.as_secs() as f64 +
-                       self.duration.subsec_nanos() as f64 * 1E-9;
-
-    writeln!(f, "\nEvaluated: {} positions in {} seconds, {} p/s",
-             self.samples, duration_sec,
-             self.samples as f64 / duration_sec)?;
+    write!(f, ", score: {}, evaluated {} positions",
+             self.score, self.samples)?;
 
     Ok(())
   }

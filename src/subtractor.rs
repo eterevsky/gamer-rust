@@ -85,7 +85,7 @@ impl<'g> def::State<'g> for SubtractorState {
 
 impl fmt::Display for SubtractorState {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-    write!(f, "Number: {}, player {}",
+    writeln!(f, "Number: {}, player {}",
            self.number, if self.player { 1 } else { 2 })?;
     Ok(())
   }
