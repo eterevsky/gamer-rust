@@ -95,7 +95,9 @@ impl<'g, FV, FE, G, R> FeatureEvaluator<'g, FV, FE, G, R>
     }
   }
 
-  pub fn train(&mut self, nmoves: u32, discount: f32, random_prob: f32, callback: &Fn(&Self, u32)) {
+  pub fn train(
+      &mut self, nmoves: u32, discount: f32, random_prob: f32,
+      callback: &Fn(&Self, u32)) {
     let mut state = self.game.new_game();
     let mut rng = rand::weak_rng();
 

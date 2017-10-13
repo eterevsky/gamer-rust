@@ -3,41 +3,9 @@ use std::borrow::BorrowMut;
 use def::{Agent, Game, State};
 use gomoku::Gomoku;
 use random_agent::RandomAgent;
+use spec::{GameSpec, AgentSpec};
 use subtractor::Subtractor;
 use hexapawn::Hexapawn;
-
-pub enum GameSpec {
-  Gomoku,
-  Hexapawn(u32, u32),
-  Subtractor(u32, u32)
-}
-
-impl GameSpec {
-  pub fn parse(s: &str) -> Option<GameSpec> {
-    match s {
-      "gomoku" => Some(GameSpec::Gomoku),
-      "hexapawn" => Some(GameSpec::Hexapawn(8, 8)),
-      "subtractor" => Some(GameSpec::Subtractor(21, 4)),
-      _ => None
-    }
-  }
-}
-
-pub enum AgentSpec {
-  Random,
-  Human,
-  Minimax
-}
-
-impl AgentSpec {
-  pub fn parse(s: &str) -> Option<AgentSpec> {
-    if s == "random" {
-      Some(AgentSpec::Random)
-    } else {
-      None
-    }
-  }
-}
 
 pub fn play<'g, G: Game<'g>>(
     game: &'g G,
