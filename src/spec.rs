@@ -1,5 +1,6 @@
 use serde_json;
 use std::fs::File;
+use std::io::Read;
 
 pub enum GameSpec {
   Gomoku,
@@ -28,8 +29,8 @@ pub enum AgentSpec {
 
 #[derive(Serialize, Deserialize)]
 pub struct MinimaxSpec {
-  depth: u32,
-  evaluator: EvaluatorSpec
+  pub depth: u32,
+  pub evaluator: EvaluatorSpec
 }
 
 #[derive(Serialize, Deserialize)]
@@ -40,8 +41,8 @@ pub enum EvaluatorSpec {
 
 #[derive(Serialize, Deserialize)]
 pub struct FeatureEvaluatorSpec {
-  extractor: FeatureExtractorSpec,
-  regression: RegressionSpec
+  pub extractor: FeatureExtractorSpec,
+  pub regression: RegressionSpec
 }
 
 #[derive(Serialize, Deserialize)]
@@ -52,9 +53,9 @@ pub enum FeatureExtractorSpec {
 
 #[derive(Serialize, Deserialize)]
 pub struct RegressionSpec {
-  speed: f32,
-  regularization: f32,
-  b: Vec<f32>
+  pub speed: f32,
+  pub regularization: f32,
+  pub b: Vec<f32>
 }
 
 impl AgentSpec {
@@ -75,9 +76,11 @@ pub fn load_agent_spec(s: &str) -> Result<AgentSpec, String> {
     "random" => Ok(AgentSpec::Random),
     "human"  => Ok(AgentSpec::Human),
     _ => {
-      Err("".to_string())
-      // // Treating the string as filename.
-      // let mut f = File::open()
+      // Treating the string as filename.
+      let mut f = File::open(s).map_err(|e| "Error while opening file.")?;
+      let mut s = String::new();
+      f.read_to_string(&mut s).map_err(|e| "Error while reading file.")?;
+      AgentSpec::parse(&s).ok_or("Error while parsing AgentSpec.".to_string())
     }
   }
 }

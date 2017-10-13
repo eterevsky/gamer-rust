@@ -7,7 +7,7 @@ use clap::{App, Arg, SubCommand};
 use gamer::gomoku::{Gomoku, GomokuLineFeatureExtractor};
 use gamer::feature_evaluator::{FeatureEvaluator, LinearRegression, Regression};
 use gamer::play::play_spec;
-use gamer::spec::{AgentSpec, GameSpec, load_agent_spec};
+use gamer::spec::{GameSpec, load_agent_spec};
 
 fn train_gomoku() {
   let extractor = GomokuLineFeatureExtractor::new();
@@ -71,8 +71,6 @@ fn args_definition() -> clap::App<'static, 'static> {
         "Reinforcement training for the evaluator."))
 }
 
-
-
 fn main() {
   let args = args_definition().get_matches();
   let game_spec_str = args.value_of("game").unwrap();
@@ -80,10 +78,8 @@ fn main() {
 
   match args.subcommand() {
     ("play", Some(play_args)) => {
-      let player1_spec_str = play_args.value_of("player1").unwrap();
-      let player2_spec_str = play_args.value_of("player2").unwrap();
-      let player1_spec = AgentSpec::parse(player1_spec_str).unwrap();
-      let player2_spec = AgentSpec::parse(player2_spec_str).unwrap();
+      let player1_spec = load_agent_spec(play_args.value_of("player1").unwrap()).unwrap();
+      let player2_spec = load_agent_spec(play_args.value_of("player1").unwrap()).unwrap();
       play_spec(&game_spec, &player1_spec, &player2_spec);
     },
     ("train", _) => {

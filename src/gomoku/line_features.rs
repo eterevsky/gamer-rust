@@ -20,6 +20,7 @@ pub struct LineRange {
 ///  - color of the stones (whether the stones belong to the player whos turn
 ///    it is now or now),
 ///  - whether there's an empty space on one or both sides of the line.
+#[derive(Clone)]
 pub struct GomokuLineFeatureExtractor {
   lines: Vec<LineRange>
 }
@@ -109,7 +110,7 @@ impl GomokuLineFeatureExtractor {
     (len - 1 + if both_ends {4} else {0} + if diagonal {8} else {0} +
         if active_player {16} else {0}) as usize
   }
-  
+
   fn process_single_line<'g>(state: &GomokuState<'g>, line: &LineRange,
                              features: &mut Vec<f32>) {
     let mut line_len = 0;
@@ -153,7 +154,7 @@ impl <'g> FeatureExtractor<'g, GomokuState<'g>> for GomokuLineFeatureExtractor {
   type FeatureVector = Vec<f32>;
 
   fn extract(&self, state: &GomokuState<'g>) -> Vec<f32> {
-    // Length 1-4, 1 or 2 open ends, straight or diagonal, 
+    // Length 1-4, 1 or 2 open ends, straight or diagonal,
     let mut features = vec![0.0; 33];
     features[32] = 1.0;  // Bias
 
@@ -295,13 +296,13 @@ fn three_stones() {
   assert_eq!(1.0, features[encode(1, false, true, false)]);
   assert_eq!(1.0, features[encode(1, true, true, false)]);
   assert_eq!(1.0, features[encode(2, false, true, false)]);
- 
+
   // O
   assert_eq!(1.0, features[encode(1, false, false, true)]);
   assert_eq!(2.0, features[encode(1, false, true, true)]);
 }
 
-// 4 . . . . . . 
+// 4 . . . . . .
 // 3 . . . . . .
 // 2 O X X X X O
 // 1 . . O O . .

@@ -126,7 +126,7 @@ impl<'g, FV, FE, G, R> Evaluator<'g, G::State>
     for FeatureEvaluator<'g, FV, FE, G, R>
     where FE: FeatureExtractor<'g, G::State, FeatureVector=FV>,
           R: Regression<FV>,
-          G: Game<'g> {
+          G: Game<'g> + 'g {
   fn evaluate(&self, state: &G::State) -> f32 {
     if let Some(score) = state.get_payoff() {
       return score;
@@ -153,7 +153,7 @@ fn train_linear_regression_subtractor() {
   let extractor = SubtractorFeatureExtractor::new(10);
   let regression = LinearRegression::new(vec![0.0; 10], (0.1, 0.001));
   let mut evaluator = FeatureEvaluator::new(&game, extractor, regression);
-  evaluator.train(1000, 0.999, 0.01, &|_, _| ());
+  evaluator.train(5000, 0.999, 0.01, &|_, _| ());
 
   for i in 0..12 {
     let game = Subtractor::new(i, 4);

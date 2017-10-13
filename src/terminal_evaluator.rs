@@ -1,6 +1,7 @@
 use def::Evaluator;
 use def::State;
 
+#[derive(Clone)]
 pub struct TerminalEvaluator {}
 
 impl TerminalEvaluator {

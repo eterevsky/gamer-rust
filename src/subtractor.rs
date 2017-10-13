@@ -93,6 +93,7 @@ impl fmt::Display for SubtractorState {
 
 /// Extracts boolean (1.0 or 0.0), based on whether the number is divisible by
 /// 1, 2, 3 etc.
+#[derive(Clone)]
 pub struct SubtractorFeatureExtractor {
   nfeatures: u32
 }
