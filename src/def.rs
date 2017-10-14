@@ -14,7 +14,7 @@ pub trait Game<'g> {
 /// A trait for a game state. Lifetime parameter `'g` corresponds to Game object
 /// lifetime.
 pub trait State<'g>: Clone + fmt::Display {
-  type Move: 'static + Copy + Clone + fmt::Display;
+  type Move: 'static + Clone + Copy + fmt::Display;
 
   /// Returns true if it's the turn of the first player.
   fn get_player(&self) -> bool;
@@ -40,6 +40,9 @@ pub trait State<'g>: Clone + fmt::Display {
   /// Undo a given move. The caller must make sure that the passed move was
   /// actually the last move to be played in the position.
   fn undo(&mut self, m: Self::Move) -> Result<(), &'static str>;
+
+  /// Parse move, represented as a string.
+  fn parse_move(&self, move_str: &str) -> Result<Self::Move, &'static str>;
 }
 
 pub trait AgentReport<M: fmt::Display + Copy + 'static>: fmt::Display {

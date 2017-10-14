@@ -128,7 +128,8 @@ pub fn minimax_fixed_depth<'g, S, E>(
       score,
       pv,
       samples: minimax.leaves,
-      duration: start_time.elapsed()
+      duration: start_time.elapsed(),
+      player: state.get_player()
     }
   } else {
     panic!()

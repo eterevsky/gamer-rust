@@ -8,7 +8,8 @@ use def::{Agent, AgentReport, State};
 
 #[derive(Debug)]
 pub struct RandomAgentReport<M> {
-  m: M
+  m: M,
+  player: bool
 }
 
 impl<M: Copy + Display + 'static> AgentReport<M> for RandomAgentReport<M> {
@@ -19,7 +20,7 @@ impl<M: Copy + Display + 'static> AgentReport<M> for RandomAgentReport<M> {
 
 impl<M: Display> Display for RandomAgentReport<M> {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-    write!(f, "random move: {}", self.m)?;
+    write!(f, "Player {} random move: {}", self.player, self.m)?;
     Ok(())
   }
 }
@@ -38,7 +39,7 @@ impl<'g, S: State<'g>> Agent<'g, S> for RandomAgent {
   fn select_move(&mut self, state: &S)
       -> Result<Box<AgentReport<S::Move>>, &'static str> {
     match state.get_random_move(&mut self.rng) {
-      Some(m) => Ok(Box::new(RandomAgentReport{m})),
+      Some(m) => Ok(Box::new(RandomAgentReport{m, player: state.get_player()})),
       None => Err("Terminal position")
     }
   }

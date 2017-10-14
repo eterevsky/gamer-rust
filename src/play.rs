@@ -5,6 +5,7 @@ use def::{Agent, Evaluator, Game, State};
 use feature_evaluator::{FeatureExtractor, FeatureEvaluator, LinearRegression, Regression};
 use gomoku::{Gomoku, GomokuLineFeatureExtractor, GomokuState};
 use hexapawn::Hexapawn;
+use human_agent::HumanAgent;
 use minimax::MinimaxAgent;
 use random_agent::RandomAgent;
 use spec::{GameSpec, AgentSpec, EvaluatorSpec, MinimaxSpec, FeatureExtractorSpec};
@@ -23,7 +24,7 @@ pub fn play<'g, G: Game<'g>>(
         if state.get_player() { player1.borrow_mut() }
         else { player2.borrow_mut() };
     let report = player.select_move(&state).unwrap();
-    println!("Player {}: {}\n", if state.get_player() { 1 } else { 2 }, report);
+    println!("{}", report);
     state.play(report.get_move()).unwrap();
   }
 
@@ -38,7 +39,7 @@ trait Creating<'g, G: Game<'g>> {
       -> Box<Agent<'g, G::State> + 'g> {
     match spec {
       &AgentSpec::Random => Box::new(RandomAgent::new()),
-      &AgentSpec::Human => panic!("Human player not yet implemented."),
+      &AgentSpec::Human => Box::new(HumanAgent{}),
       &AgentSpec::Minimax(ref minimax_spec) => {
         match minimax_spec.evaluator {
           EvaluatorSpec::TerminalEvaluator =>

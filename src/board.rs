@@ -74,6 +74,7 @@ impl<C: Cell> Board<C> {
     }
   }
 
+  #[cfg(test)]
   pub fn get_a(&self, a: &str) -> Option<C> {
     if let Some(point) = self.parse_point(a) {
       self.get(point)

@@ -1,6 +1,7 @@
 use rand;
 use std::fmt;
 use std::marker::PhantomData;
+use std::str::FromStr;
 
 use def;
 use def::Game;
@@ -277,6 +278,10 @@ impl<'g> def::State<'g> for GomokuState<'g> {
       DRAW_MASK => Some(0.0),
       _ => return None
     }
+  }
+
+  fn parse_move(&self, move_str: &str) -> Result<GomokuMove, &'static str> {
+    GomokuMove::from_str(move_str)
   }
 }
 

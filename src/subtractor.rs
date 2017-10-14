@@ -81,6 +81,10 @@ impl<'g> def::State<'g> for SubtractorState {
     self.player = !self.player;
     Ok(())
   }
+
+  fn parse_move(&self, move_str: &str) -> Result<u32, &'static str> {
+    move_str.parse().map_err(|_| "Error parsing Subtractor move.")
+  }
 }
 
 impl fmt::Display for SubtractorState {

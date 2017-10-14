@@ -1,0 +1,6 @@
+{
+  "Minimax": {
+    "depth": 4,
+    "evaluator": "TerminalEvaluator"
+  }
+}

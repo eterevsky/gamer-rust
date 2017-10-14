@@ -6,16 +6,13 @@ use gomoku::util;
 #[derive(Clone, Copy, Debug)]
 pub struct GomokuMove(pub usize);
 
-#[derive(Debug, PartialEq)]
-pub struct ParseError;
-
 impl FromStr for GomokuMove {
-  type Err = ParseError;
+  type Err = &'static str;
 
-  fn from_str(move_str : &str) -> Result<GomokuMove, ParseError> {
+  fn from_str(move_str : &str) -> Result<GomokuMove, &'static str> {
     match util::parse_point(move_str) {
       Some(x) => Ok(GomokuMove(x)),
-      None => Err(ParseError)
+      None => Err("Error parsing gomoku move.")
     }
   }
 }
@@ -45,18 +42,17 @@ use super::*;
 
 #[test]
 fn parse_errors() {
-  let err: Result<GomokuMove, ParseError> = Err(ParseError);
-  assert_eq!(err, "ab1".parse());
-  assert_eq!(err, "a0".parse());
-  assert_eq!(err, "z1".parse());
-  assert_eq!(err, "b123".parse());
-  assert_eq!(err, "1a".parse());
-  assert_eq!(err, "aa".parse());
-  assert_eq!(err, "A0".parse());
-  assert_eq!(err, "a".parse());
-  assert_eq!(err, "A".parse());
-  assert_eq!(err, "".parse());
-  assert_eq!(err, "A999999999999999999999999".parse());
+  assert!("ab1".parse::<GomokuMove>().is_err());
+  assert!("a0".parse::<GomokuMove>().is_err());
+  assert!("z1".parse::<GomokuMove>().is_err());
+  assert!("b123".parse::<GomokuMove>().is_err());
+  assert!("1a".parse::<GomokuMove>().is_err());
+  assert!("aa".parse::<GomokuMove>().is_err());
+  assert!("A0".parse::<GomokuMove>().is_err());
+  assert!("a".parse::<GomokuMove>().is_err());
+  assert!("A".parse::<GomokuMove>().is_err());
+  assert!("".parse::<GomokuMove>().is_err());
+  assert!("A999999999999999999999999".parse::<GomokuMove>().is_err());
 }
 
 #[test]

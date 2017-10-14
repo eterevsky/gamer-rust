@@ -1,4 +1,5 @@
 use rand;
+use regex::Regex;
 use std::fmt;
 
 use board::{Cell, Board, point_to_a};
@@ -65,6 +66,11 @@ impl<'g> Game<'g> for Hexapawn {
   fn new_game(&'g self) -> HexapawnState {
     HexapawnState::new(self.width, self.height)
   }
+}
+
+lazy_static! {
+  static ref MOVE_RE: Regex =
+      Regex::new(r"^([[:alpha:]]\d+)([-x])([[:alpha:]]\d+)$").unwrap();
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -142,6 +148,24 @@ impl HexapawnState {
       }
     }
   }
+
+  fn check_move(&self, m: HexapawnMove) -> Result<(), &'static str> {
+    let player = self.get_player();
+    if !self.board.get(m.from as usize).unwrap().is_player(player) {
+      return Err("Original square doesn't contain player's pawn.");
+    }
+    if m.is_take() {
+      if !self.board.get(m.to as usize).unwrap().is_player(!player) {
+        return Err("Target square doesn't contain opponent's pawn.");
+      }
+    } else {
+      if !self.board.get(m.to as usize).unwrap().is_empty() {
+        return Err("Target square is not empty.");
+      }
+    }
+
+    Ok(())
+  }
 }
 
 impl<'g> State<'g> for HexapawnState {
@@ -173,20 +197,7 @@ impl<'g> State<'g> for HexapawnState {
 
   fn play(&mut self, m: HexapawnMove) -> Result<(), &'static str> {
     let player = self.get_player();
-
-    if !self.board.get(m.from as usize).unwrap().is_player(player) {
-      return Err("Original square doesn't contain player's pawn.");
-    }
-    if m.is_take() {
-      if !self.board.get(m.to as usize).unwrap().is_player(!player) {
-        return Err("Target square doesn't contain opponent's pawn.");
-      }
-    } else {
-      if !self.board.get(m.to as usize).unwrap().is_empty() {
-        return Err("Target square is not empty.");
-      }
-    }
-
+    self.check_move(m)?;
     self.board.set(m.from as usize, HexapawnCell::Empty);
     self.board.set(m.to as usize, HexapawnCell::player(player));
 
@@ -220,6 +231,19 @@ impl<'g> State<'g> for HexapawnState {
     self.status.switch_player();
 
     Ok(())
+  }
+
+  fn parse_move(&self, move_str: &str) -> Result<HexapawnMove, &'static str> {
+    let caps = MOVE_RE.captures(move_str).ok_or("Error parsing Hexapawn move.")?;
+    let from = self.board.parse_point(&caps[1]).ok_or("Error parsing Hexapawn move.")?;
+    let to = self.board.parse_point(&caps[3]).ok_or("Error parsing Hexapawn move.")?;
+    let m = HexapawnMove::new(from, to, self.board.width);
+    self.check_move(m)?;
+    if m.is_take() == (&caps[2] == "x") {
+      Ok(m)
+    } else {
+      Err("Incorrect `-` vs `x`")
+    }
   }
 }
 
