@@ -56,7 +56,7 @@ fn gomoku_train_evaluator_1000(bench: &mut Bencher) {
     let extractor = GomokuLineFeatureExtractor::default();
     let regression = LinearRegression::new(vec![0.0; 33], (0.001, 0.0001));
     let mut evaluator = FeatureEvaluator::new(game, extractor, regression);
-    evaluator.train(1000, 0.999, 0.1);
+    evaluator.train(1000, 0.999, 0.1, &|_, _| ());
     evaluator
   });
 }
@@ -99,7 +99,7 @@ fn subtractor_train_evaluator_1000(bench: &mut Bencher) {
     let extractor = SubtractorFeatureExtractor::new(10);
     let regression = LinearRegression::new(vec![0.0; 10], (0.1, 0.001));
     let mut evaluator = FeatureEvaluator::new(&game, extractor, regression);
-    evaluator.train(1000, 0.999, 0.1);
+    evaluator.train(1000, 0.999, 0.1, &|_, _| ());
     evaluator
   });
 }
