@@ -1,4 +1,5 @@
 use rand;
+use std::borrow::Borrow;
 use std::marker::PhantomData;
 use std::time::{Duration, Instant};
 
@@ -6,16 +7,20 @@ use def::{Agent, AgentReport, State, Evaluator};
 use minimax::search::{MinimaxSearch, SearchResult};
 use minimax::report::MinimaxReport;
 
-pub struct MinimaxAgent<'g, S: State<'g>, E: Evaluator<'g, S>> {
+pub struct MinimaxAgent<'g, S: State<'g>> {
   _s: PhantomData<S>,
   _l: PhantomData<&'g ()>,
-  evaluator: E,
+  evaluator: Box<Evaluator<'g, S> + 'g>,
   max_depth: u32,
   time_limit: Option<Duration>
 }
 
-impl<'g, S: State<'g>, E: Evaluator<'g, S>> MinimaxAgent<'g, S, E> {
-  pub fn new(evaluator: E, max_depth: u32, time_limit: Option<Duration>) -> Self {
+impl<'g, S: State<'g>> MinimaxAgent<'g, S> {
+  pub fn new_boxed(
+      evaluator: Box<Evaluator<'g, S> + 'g>,
+      max_depth: u32,
+      time_limit: Option<Duration>
+  ) -> Self {
     assert!(max_depth > 0);
     MinimaxAgent {
       _s: PhantomData,
@@ -25,11 +30,20 @@ impl<'g, S: State<'g>, E: Evaluator<'g, S>> MinimaxAgent<'g, S, E> {
       time_limit
     }
   }
+
+  pub fn new<E: Evaluator<'g, S> + 'g>(
+      evaluator: E,
+      max_depth: u32,
+      time_limit: Option<Duration>
+  ) -> Self {
+    Self::new_boxed(Box::new(evaluator), max_depth, time_limit)
+  }
 }
 
-impl<'a, S: State<'a>, E: Evaluator<'a, S>> Agent<'a, S>
-    for MinimaxAgent<'a, S, E> {
-  fn select_move(&mut self, state: &S) -> Result<Box<AgentReport<S::Move>>, &'static str> {
+impl<'g, S: State<'g>> Agent<'g, S> for MinimaxAgent<'g, S> {
+  fn select_move(
+      &mut self, state: &S
+  ) -> Result<Box<AgentReport<S::Move>>, &'static str> {
     if state.is_terminal() {
       return Err("Terminal state");
     }
@@ -40,7 +54,7 @@ impl<'a, S: State<'a>, E: Evaluator<'a, S>> Agent<'a, S>
       None => None
     };
 
-    let mut minimax = MinimaxSearch::new(&self.evaluator, 1, 0.999, deadline);
+    let mut minimax = MinimaxSearch::new(self.evaluator.borrow(), 1, 0.999, deadline);
     let mut report = MinimaxReport {
       score: 0.0,
       pv: vec![state.get_random_move(&mut rand::weak_rng()).unwrap()],

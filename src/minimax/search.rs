@@ -2,17 +2,13 @@ use rand::{Rng, XorShiftRng, weak_rng};
 use std;
 use std::f32;
 use std::fmt;
-use std::marker::PhantomData;
 use std::time::Instant;
 
 use def::{Evaluator, State};
 use minimax::MinimaxReport;
 
-#[derive(Debug)]
-pub struct MinimaxSearch<'e, 'g, S: State<'g>, E: Evaluator<'g, S> + 'e> {
-  _s: PhantomData<S>,
-  _l: PhantomData<&'g ()>,
-  evaluator: &'e E,
+pub struct MinimaxSearch<'e, 'g: 'e, S: State<'g> + 'e> {
+  evaluator: &'e Evaluator<'g, S>,
   deadline: Option<Instant>,
   // Discount per depth.
   discount: Vec<f32>,
@@ -31,14 +27,17 @@ pub enum SearchResult<M: 'static + Copy + fmt::Debug> {
   Found(f32, Vec<M>)
 }
 
-impl<'e, 'g, S: State<'g>, E: Evaluator<'g, S> + 'e> MinimaxSearch<'e, 'g, S, E> {
-  pub fn new(evaluator: &'e E, depth: u32, discount: f32, deadline: Option<Instant>) -> Self {
+impl<'e, 'g: 'e, S: State<'g> + 'e> MinimaxSearch<'e, 'g, S> {
+  pub fn new(
+      evaluator: &'e Evaluator<'g, S>,
+      depth: u32,
+      discount: f32,
+      deadline: Option<Instant>
+  ) -> Self {
     assert!(discount <= 1.0);
-    let discount_vec = (0..(depth + 1)).map(|d| discount.powi(d as i32)).collect();
+    let discount_vec =
+        (0..(depth + 1)).map(|d| discount.powi(d as i32)).collect();
     MinimaxSearch {
-      _l: PhantomData,
-      _s: PhantomData,
-
       evaluator,
       deadline,
       discount: discount_vec,
@@ -208,7 +207,7 @@ fn subtractor_minimax_10() {
   let mut minimax = MinimaxSearch::new(&evaluator, 10, 0.999, None);
   let result = minimax.full_search(&state);
 
-  println!("{:?}", result);
+  // println!("{:?}", result);
   match result {
     SearchResult::Found(_, pv) => assert_eq!(3, pv[pv.len() - 1]),
     _ => panic!()

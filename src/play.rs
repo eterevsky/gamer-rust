@@ -175,6 +175,10 @@ pub fn play_spec(
   }
 }
 
+pub fn train_spec(
+    game_spec: &GameSpec, evaluator_spec: &EvaluatorSpec, steps: u64) {
+}
+
 #[cfg(test)]
 mod test {
 

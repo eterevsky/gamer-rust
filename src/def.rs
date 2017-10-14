@@ -62,3 +62,7 @@ pub trait Evaluator<'g, S: State<'g>> {
   /// whose turn it is.
   fn evaluate(&self, state: &S) -> f32;
 }
+
+pub trait TrainingEvaluator<'g, S: State<'g>>: Evaluator<'g, S> {
+  fn train(&mut self, steps: u64);
+}

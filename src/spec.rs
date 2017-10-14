@@ -2,6 +2,7 @@ use serde_json;
 use std::fs::File;
 use std::io::Read;
 
+#[derive(Debug)]
 pub enum GameSpec {
   Gomoku,
   Hexapawn(u32, u32),

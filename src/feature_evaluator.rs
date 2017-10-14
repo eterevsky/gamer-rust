@@ -106,7 +106,7 @@ impl<'g, FV, FE, G, R> FeatureEvaluator<'g, FV, FE, G, R>
         state = self.game.new_game();
       }
 
-      let report = minimax_fixed_depth(&state, self, 2, discount);
+      let report = minimax_fixed_depth(&state, self, 1, discount);
       let score = if state.get_player() { report.score } else { -report.score };
       self.regression.train1(&self.extractor.extract(&state), score);
 

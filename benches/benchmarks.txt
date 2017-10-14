@@ -86,3 +86,25 @@ test xorshift_rng_gen1                            ... bench:           0 ns/iter
 test xorshift_rng_new                             ... bench:         194 ns/iter (+/- 24)
 test xorshift_rng_new_gen1                        ... bench:         196 ns/iter (+/- 41)
 test xorshift_rng_new_unseeded                    ... bench:           1 ns/iter (+/- 0)
+
+
+2017-10-14
+
+test f32_arr_mult                                 ... bench:          30 ns/iter (+/- 1)
+test f32_vec_mult                                 ... bench:          31 ns/iter (+/- 1)
+test f64_arr_mult                                 ... bench:          30 ns/iter (+/- 1)
+test f64_vec_mult                                 ... bench:          31 ns/iter (+/- 15)
+test gomoku_lines_feature_extractor_rand_position ... bench:       1,852 ns/iter (+/- 1,028)
+test gomoku_lines_feature_extractor_start         ... bench:       1,558 ns/iter (+/- 56)
+test gomoku_random                                ... bench:       4,544 ns/iter (+/- 124)
+test hexapawn_minimax                             ... bench:      21,178 ns/iter (+/- 595)
+test subtractor_feature_evaluator                 ... bench:          85 ns/iter (+/- 68)
+test subtractor_minimax                           ... bench:     379,134 ns/iter (+/- 44,148)
+test subtractor_random                            ... bench:         138 ns/iter (+/- 2)
+test subtractor_train_evaluator_1000              ... bench:     928,330 ns/iter (+/- 23,517)
+test u32_arr_mult                                 ... bench:           0 ns/iter (+/- 0)
+test u32_vec_mult                                 ... bench:          23 ns/iter (+/- 1)
+test xorshift_rng_gen1                            ... bench:           0 ns/iter (+/- 0)
+test xorshift_rng_new                             ... bench:         187 ns/iter (+/- 27)
+test xorshift_rng_new_gen1                        ... bench:         187 ns/iter (+/- 79)
+test xorshift_rng_new_unseeded                    ... bench:           1 ns/iter (+/- 0)

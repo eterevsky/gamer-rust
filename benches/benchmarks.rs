@@ -6,12 +6,12 @@ extern crate gamer;
 
 use bencher::Bencher;
 use rand::Rng;
-use std::time::Duration;
 
-use gamer::def::{Agent, Evaluator, Game, State};
+use gamer::def::{Evaluator, Game, State};
 use gamer::feature_evaluator::{FeatureEvaluator, FeatureExtractor, LinearRegression, Regression};
 use gamer::gomoku::{Gomoku, GomokuState, GomokuLineFeatureExtractor};
-use gamer::minimax::MinimaxAgent;
+use gamer::hexapawn::Hexapawn;
+use gamer::minimax::{minimax_fixed_depth};
 use gamer::subtractor::{Subtractor, SubtractorFeatureExtractor};
 use gamer::terminal_evaluator::TerminalEvaluator;
 
@@ -75,9 +75,9 @@ fn subtractor_random(bench: &mut Bencher) {
 
 fn subtractor_minimax(bench: &mut Bencher) {
   let state = Subtractor::new(21, 4).new_game();
-  let mut agent = MinimaxAgent::new(TerminalEvaluator::new(), 10, Duration::from_secs(1000));
+  let evaluator = TerminalEvaluator::new();
 
-  bench.iter(|| {agent.select_move(&state).unwrap()})
+  bench.iter(|| {minimax_fixed_depth(&state, &evaluator, 10, 0.999)});
 }
 
 fn subtractor_feature_evaluator(bench: &mut Bencher) {
@@ -102,6 +102,14 @@ fn subtractor_train_evaluator_1000(bench: &mut Bencher) {
     evaluator.train(1000, 0.999, 0.1, &|_, _| ());
     evaluator
   });
+}
+
+fn hexapawn_minimax(bench: &mut Bencher) {
+  let game = Hexapawn::new(3, 3);
+  let evaluator = TerminalEvaluator::new();
+  let state = game.new_game();
+
+  bench.iter(|| {minimax_fixed_depth(&state, &evaluator, 10, 0.999)});
 }
 
 fn u32_vec_mult(bench: &mut Bencher) {
@@ -197,7 +205,8 @@ benchmark_group!(benches,
     gomoku_random,
     gomoku_lines_feature_extractor_start,
     gomoku_lines_feature_extractor_rand_position,
-    gomoku_train_evaluator_1000,
+    // gomoku_train_evaluator_1000,
+    hexapawn_minimax,
     subtractor_random,
     subtractor_minimax,
     subtractor_feature_evaluator,
