@@ -14,7 +14,7 @@ pub trait Game<'g> {
 /// A trait for a game state. Lifetime parameter `'g` corresponds to Game object
 /// lifetime.
 pub trait State<'g>: Clone + fmt::Display {
-  type Move: 'static + Clone + Copy + fmt::Display;
+  type Move: 'static + Clone + Copy + fmt::Debug + fmt::Display;
 
   /// Returns true if it's the turn of the first player.
   fn get_player(&self) -> bool;

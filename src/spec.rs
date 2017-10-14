@@ -30,6 +30,7 @@ pub enum AgentSpec {
 #[derive(Serialize, Debug, Deserialize)]
 pub struct MinimaxSpec {
   pub depth: u32,
+  pub time_per_move: f64,
   pub evaluator: EvaluatorSpec
 }
 
@@ -96,6 +97,7 @@ use super::*;
 fn to_json_from_json() {
   let agent_spec = AgentSpec::Minimax(MinimaxSpec {
       depth: 3,
+      time_per_move: 0.0,
       evaluator: EvaluatorSpec::FeatureEvaluator(FeatureEvaluatorSpec {
         extractor: FeatureExtractorSpec::SubtractorFeatureExtractor(10),
         regression: RegressionSpec {

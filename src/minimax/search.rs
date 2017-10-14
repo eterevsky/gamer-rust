@@ -1,12 +1,15 @@
 use rand::{Rng, XorShiftRng, weak_rng};
 use std;
+use std::f32;
+use std::fmt;
 use std::marker::PhantomData;
 use std::time::Instant;
 
 use def::{Evaluator, State};
 use minimax::MinimaxReport;
 
-struct MinimaxSearch<'e, 'g, S: State<'g>, E: Evaluator<'g, S> + 'e> {
+#[derive(Debug)]
+pub struct MinimaxSearch<'e, 'g, S: State<'g>, E: Evaluator<'g, S> + 'e> {
   _s: PhantomData<S>,
   _l: PhantomData<&'g ()>,
   evaluator: &'e E,
@@ -16,19 +19,20 @@ struct MinimaxSearch<'e, 'g, S: State<'g>, E: Evaluator<'g, S> + 'e> {
   max_depth: u32,
 
   depth: u32,
-  leaves: u64,
+  pub leaves: u64,
   rng: XorShiftRng
 }
 
-enum SearchResult<'g, S: State<'g>> {
+#[derive(Debug)]
+pub enum SearchResult<M: 'static + Copy + fmt::Debug> {
   Deadline,  // Deadline exceeded while scanning the branch.
   Lower,
   Higher,
-  Found(f32, Vec<S::Move>)
+  Found(f32, Vec<M>)
 }
 
 impl<'e, 'g, S: State<'g>, E: Evaluator<'g, S> + 'e> MinimaxSearch<'e, 'g, S, E> {
-  pub fn new(evaluator: &'e E, depth: u32, discount: f32) -> Self {
+  pub fn new(evaluator: &'e E, depth: u32, discount: f32, deadline: Option<Instant>) -> Self {
     assert!(discount <= 1.0);
     let discount_vec = (0..(depth + 1)).map(|d| discount.powi(d as i32)).collect();
     MinimaxSearch {
@@ -36,7 +40,7 @@ impl<'e, 'g, S: State<'g>, E: Evaluator<'g, S> + 'e> MinimaxSearch<'e, 'g, S, E>
       _s: PhantomData,
 
       evaluator,
-      deadline: None,
+      deadline,
       discount: discount_vec,
       max_depth: depth,
 
@@ -46,7 +50,20 @@ impl<'e, 'g, S: State<'g>, E: Evaluator<'g, S> + 'e> MinimaxSearch<'e, 'g, S, E>
     }
   }
 
-  fn search(&mut self, state: &S, lo: f32, hi: f32) -> SearchResult<'g, S> {
+  pub fn set_depth(&mut self, depth: u32) {
+    assert!(depth > 0);
+    let discount = self.discount[1];
+    let discount_vec = (0..(depth + 1)).map(|d| discount.powi(d as i32)).collect();
+    self.max_depth = depth;
+    self.discount = discount_vec;
+  }
+
+  pub fn full_search(&mut self, state: &S) -> SearchResult<S::Move> {
+    self.depth = 0;
+    self.search(state, f32::MIN, f32::MAX)
+  }
+
+  fn search(&mut self, state: &S, lo: f32, hi: f32) -> SearchResult<S::Move> {
     assert!(lo <= hi);
     if self.deadline.is_some() && Instant::now() >= self.deadline.unwrap() {
       return SearchResult::Deadline;
@@ -117,7 +134,7 @@ pub fn minimax_fixed_depth<'g, S, E>(
     state: &S, evaluator: &E, depth: u32, discount: f32)
     -> MinimaxReport<S::Move>
     where S: State<'g>, E: Evaluator<'g, S>{
-  let mut minimax = MinimaxSearch::new(evaluator, depth, discount);
+  let mut minimax = MinimaxSearch::new(evaluator, depth, discount, None);
   let start_time = Instant::now();
   if let SearchResult::Found(score, pv) =
       minimax.search(state, std::f32::MIN, std::f32::MAX) {
@@ -129,7 +146,8 @@ pub fn minimax_fixed_depth<'g, S, E>(
       pv,
       samples: minimax.leaves,
       duration: start_time.elapsed(),
-      player: state.get_player()
+      player: state.get_player(),
+      depth
     }
   } else {
     panic!()
@@ -169,6 +187,32 @@ fn subtractor() {
   let report = minimax_fixed_depth(&state, &evaluator, 1, 0.5);
   assert_eq!(-0.5, report.score);
   assert_eq!(3, report.get_move());
+}
+
+#[test]
+fn subtractor_minimax_10() {
+  let game = Subtractor::new(10, 4);
+  let mut state = game.new_game();
+  let evaluator = TerminalEvaluator::new();
+
+  let mut minimax = MinimaxSearch::new(&evaluator, 10, 0.999, None);
+  let result = minimax.full_search(&state);
+
+  match result {
+    SearchResult::Found(_, pv) => assert_eq!(2, pv[pv.len() - 1]),
+    _ => panic!()
+  };
+
+  state.play(3).unwrap();
+
+  let mut minimax = MinimaxSearch::new(&evaluator, 10, 0.999, None);
+  let result = minimax.full_search(&state);
+
+  println!("{:?}", result);
+  match result {
+    SearchResult::Found(_, pv) => assert_eq!(3, pv[pv.len() - 1]),
+    _ => panic!()
+  };
 }
 
 }

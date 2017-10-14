@@ -104,7 +104,7 @@ impl fmt::Display for HexapawnMove {
   }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct HexapawnState {
   board: Board<HexapawnCell>,
   status: Status,

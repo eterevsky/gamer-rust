@@ -10,7 +10,8 @@ pub struct MinimaxReport<M: fmt::Display + 'static> {
   pub pv: Vec<M>,
   pub samples: u64,
   pub duration: Duration,
-  pub player: bool
+  pub player: bool,
+  pub depth: u32
 }
 
 impl<M: fmt::Display + 'static> fmt::Display for MinimaxReport<M> {
@@ -21,8 +22,8 @@ impl<M: fmt::Display + 'static> fmt::Display for MinimaxReport<M> {
       write!(f, " {}", m)?;
     }
 
-    writeln!(f, ", score {}, evaluated {} positions",
-             self.score, self.samples)?;
+    writeln!(f, ", score {:.3}, depth {}, evaluated {} positions",
+             self.score, self.depth, self.samples)?;
 
     Ok(())
   }

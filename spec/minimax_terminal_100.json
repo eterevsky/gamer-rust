@@ -1,0 +1,7 @@
+{
+  "Minimax": {
+    "depth": 100,
+    "time_per_move": 0.0,
+    "evaluator": "TerminalEvaluator"
+  }
+}

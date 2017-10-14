@@ -66,6 +66,15 @@ fn args_definition() -> clap::App<'static, 'static> {
             .default_value("random")
             .help("Specification of the second player.")
         )
+        .arg(
+          Arg::with_name("time_per_move")
+            .short("t")
+            .long("time")
+            .value_name("SECONDS")
+            .takes_value(true)
+            .default_value("0")
+            .help("Time per move in seconds. 0 for no time limit.")
+        )
     )
     .subcommand(SubCommand::with_name("train").about(
         "Reinforcement training for the evaluator."))
@@ -78,11 +87,12 @@ fn main() {
 
   match args.subcommand() {
     ("play", Some(play_args)) => {
+      let t: f64 = play_args.value_of("time_per_move").unwrap().parse().unwrap();
       let player1_spec = load_agent_spec(play_args.value_of("player1").unwrap()).unwrap();
       let player2_spec = load_agent_spec(play_args.value_of("player2").unwrap()).unwrap();
       println!("Player 1 spec: {:?}", player1_spec);
       println!("Player 2 spec: {:?}\n", player2_spec);
-      play_spec(&game_spec, &player1_spec, &player2_spec);
+      play_spec(&game_spec, &player1_spec, &player2_spec, t);
     },
     ("train", _) => {
       train_gomoku();

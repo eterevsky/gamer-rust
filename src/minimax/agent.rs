@@ -1,24 +1,28 @@
+use rand;
 use std::marker::PhantomData;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use def::{Agent, AgentReport, State, Evaluator};
-use minimax::search::minimax_fixed_depth;
+use minimax::search::{MinimaxSearch, SearchResult};
+use minimax::report::MinimaxReport;
 
 pub struct MinimaxAgent<'g, S: State<'g>, E: Evaluator<'g, S>> {
   _s: PhantomData<S>,
   _l: PhantomData<&'g ()>,
   evaluator: E,
   max_depth: u32,
+  time_limit: Option<Duration>
 }
 
 impl<'g, S: State<'g>, E: Evaluator<'g, S>> MinimaxAgent<'g, S, E> {
-  pub fn new(evaluator: E, max_depth: u32, _time_limit: Duration) -> Self {
+  pub fn new(evaluator: E, max_depth: u32, time_limit: Option<Duration>) -> Self {
     assert!(max_depth > 0);
     MinimaxAgent {
       _s: PhantomData,
       _l: PhantomData,
       evaluator: evaluator,
       max_depth: max_depth,
+      time_limit
     }
   }
 }
@@ -30,7 +34,41 @@ impl<'a, S: State<'a>, E: Evaluator<'a, S>> Agent<'a, S>
       return Err("Terminal state");
     }
 
-    let report = minimax_fixed_depth(state, &self.evaluator, self.max_depth, 0.999);
+    let start_time = Instant::now();
+    let deadline = match self.time_limit {
+      Some(d) => Some(start_time + d),
+      None => None
+    };
+
+    let mut minimax = MinimaxSearch::new(&self.evaluator, 1, 0.999, deadline);
+    let mut report = MinimaxReport {
+      score: 0.0,
+      pv: vec![state.get_random_move(&mut rand::weak_rng()).unwrap()],
+      samples: 0,
+      duration: Duration::new(0, 0),
+      player: state.get_player(),
+      depth: 0
+    };
+
+    for depth in 1..(self.max_depth + 1) {
+      minimax.set_depth(depth);
+      let result = minimax.full_search(state);
+      match result {
+        SearchResult::Deadline => break,
+        SearchResult::Found(score, mut pv) => {
+          pv.reverse();
+          report.score = score;
+          report.pv = pv;
+          report.samples = minimax.leaves;
+          report.depth = depth;
+        },
+        _ => unreachable!()
+      }
+    }
+
+    report.duration = Instant::now() - start_time;
+
+    assert!(!report.pv.len() > 0);
 
     Ok(Box::new(report))
   }
@@ -47,15 +85,19 @@ use super::*;
 
 #[test]
 fn subtractor() {
-  let mut agent = MinimaxAgent::new(TerminalEvaluator::new(), 10, Duration::from_secs(1));
+  let mut agent = MinimaxAgent::new(TerminalEvaluator::new(), 10, None);
   let game = Subtractor::new(10, 4);
   let mut state = game.new_game();
 
-  assert_eq!(2, agent.select_move(&state).unwrap().get_move());
+  let report = agent.select_move(&state).unwrap();
+  println!("{}", report);
+  assert_eq!(2, report.get_move());
 
   state.play(3).unwrap();
 
-  assert_eq!(3, agent.select_move(&state).unwrap().get_move());
+  let report = agent.select_move(&state).unwrap();
+  println!("{}", report);
+  assert_eq!(3, report.get_move());
 }
 
 }

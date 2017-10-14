@@ -4,7 +4,7 @@ const PLAYER2_WIN_MASK: u8 = 4;
 const DRAW_MASK: u8 = 8;
 const TERMINAL_MASK: u8 = PLAYER1_WIN_MASK | PLAYER2_WIN_MASK | DRAW_MASK;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Status(u8);
 
 impl Status {

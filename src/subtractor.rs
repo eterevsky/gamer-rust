@@ -27,7 +27,7 @@ impl<'g> def::Game<'g> for Subtractor {
   }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SubtractorState {
   number: u32,
   max_sub: u32,
