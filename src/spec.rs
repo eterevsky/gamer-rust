@@ -88,6 +88,16 @@ pub fn load_agent_spec(s: &str) -> Result<AgentSpec, String> {
   }
 }
 
+pub fn load_evaluator_spec(s: &str) -> Result<EvaluatorSpec, String> {
+  let mut f = File::open(s)
+      .map_err(|e| format!("Error while opening file: {}", e))?;
+  let mut s = String::new();
+  f.read_to_string(&mut s)
+      .map_err(|e| format!("Error while reading file: {}", e))?;
+  serde_json::from_str(&s).map_err(
+      |e| format!("Error while parsing EvaluatorSpec: {}", e))
+}
+
 #[cfg(test)]
 mod test {
 

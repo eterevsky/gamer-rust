@@ -7,7 +7,7 @@ use clap::{App, Arg, SubCommand};
 use gamer::gomoku::{Gomoku, GomokuLineFeatureExtractor};
 use gamer::feature_evaluator::{FeatureEvaluator, LinearRegression, Regression};
 use gamer::play::play_spec;
-use gamer::spec::{GameSpec, load_agent_spec};
+use gamer::spec::{GameSpec, load_agent_spec, load_evaluator_spec};
 
 fn train_gomoku() {
   let extractor = GomokuLineFeatureExtractor::new();
@@ -76,14 +76,43 @@ fn args_definition() -> clap::App<'static, 'static> {
             .help("Time per move in seconds. 0 for no time limit.")
         )
     )
-    .subcommand(SubCommand::with_name("train").about(
-        "Reinforcement training for the evaluator."))
+    .subcommand(
+      SubCommand::with_name("train")
+        .about("Reinforcement training of the evaluator.")
+        .arg(
+          Arg::with_name("input")
+            .short("i")
+            .long("input")
+            .value_name("PATH")
+            .takes_value(true)
+            .required(true)
+            .help("A path to initial evaluator spec.")
+        )
+        .arg(
+          Arg::with_name("output")
+            .short("o")
+            .long("output")
+            .value_name("PATH")
+            .takes_value(true)
+            .help("A path where the evaluator will be written.")
+        )
+        .arg(
+          Arg::with_name("steps")
+            .short("s")
+            .long("steps")
+            .value_name("STEPS")
+            .takes_value(true)
+            .default_value("10000")
+            .help("Number of training steps.")
+        )
+    )
 }
 
 fn main() {
   let args = args_definition().get_matches();
   let game_spec_str = args.value_of("game").unwrap();
   let game_spec = GameSpec::parse(game_spec_str).unwrap();
+  println!("Game spec: {:?}", game_spec);
 
   match args.subcommand() {
     ("play", Some(play_args)) => {
@@ -94,8 +123,9 @@ fn main() {
       println!("Player 2 spec: {:?}\n", player2_spec);
       play_spec(&game_spec, &player1_spec, &player2_spec, t);
     },
-    ("train", _) => {
-      train_gomoku();
+    ("train", Some(train_args)) => {
+      let evaluator_spec = load_evaluator_spec(train_args.value_of("input").unwrap()).unwrap();
+      println!("Evaluator spec: {:?}", evaluator_spec);
     },
     _ => panic!("Unknown subcommand.")
   }
