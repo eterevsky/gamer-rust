@@ -1,5 +1,4 @@
-use def::Evaluator;
-use def::State;
+use def::{Evaluator, State};
 
 #[derive(Clone, Debug)]
 pub struct TerminalEvaluator {}
@@ -10,7 +9,7 @@ impl TerminalEvaluator {
   }
 }
 
-impl<'g, S: State<'g>> Evaluator<'g, S> for TerminalEvaluator {
+impl<S: State> Evaluator<S> for TerminalEvaluator {
   fn evaluate(&self, state: &S) -> f32 {
     if state.is_terminal() {
       state.get_payoff().unwrap()
@@ -33,7 +32,7 @@ use super::*;
 fn subtractor() {
   let game = Subtractor::new(4, 4);
   let mut state = game.new_game();
-  let evaluator = TerminalEvaluator::new();
+  let evaluator: TerminalEvaluator = TerminalEvaluator::new();
 
   assert_eq!(0.0, evaluator.evaluate(&state));
   state.play(3).unwrap();

@@ -6,8 +6,11 @@ use rand;
 use std::cmp;
 use std::fmt;
 
-use def;
-use feature_evaluator;
+use def::{FeatureExtractor, Game, State};
+
+lazy_static! {
+  static ref INSTANCE_21_4: Subtractor = Subtractor::new(21, 4);
+}
 
 pub struct Subtractor {
   start: u32,
@@ -18,11 +21,19 @@ impl Subtractor {
   pub fn new(start: u32, max_sub: u32) -> Subtractor {
     Subtractor{start, max_sub}
   }
+
+  pub fn default(start: u32, max_sub: u32) -> &'static Subtractor {
+    if (start, max_sub) == (21, 4) {
+      &*INSTANCE_21_4
+    } else {
+      panic!()
+    }
+  }
 }
 
-impl<'g> def::Game<'g> for Subtractor {
+impl Game for Subtractor {
   type State = SubtractorState;
-  fn new_game(&'g self) -> SubtractorState {
+  fn new_game(&self) -> SubtractorState {
     SubtractorState::new(self.start, self.max_sub)
   }
 }
@@ -40,7 +51,7 @@ impl SubtractorState {
   }
 }
 
-impl<'g> def::State<'g> for SubtractorState {
+impl State for SubtractorState {
   type Move = u32;
 
   fn get_player(&self) -> bool { self.player }
@@ -110,10 +121,7 @@ impl SubtractorFeatureExtractor {
   }
 }
 
-impl<'g> feature_evaluator::FeatureExtractor<'g, SubtractorState>
-    for SubtractorFeatureExtractor {
-  type FeatureVector = Vec<f32>;
-
+impl FeatureExtractor<SubtractorState> for SubtractorFeatureExtractor {
   fn extract(&self, state: &SubtractorState) -> Vec<f32> {
     (1..(self.nfeatures + 1))
         .map(|x| if state.number % (x as u32) == 0 { 1.0 } else { 0.0 })
@@ -124,8 +132,7 @@ impl<'g> feature_evaluator::FeatureExtractor<'g, SubtractorState>
 #[cfg(test)]
 mod test {
 
-use def::{Game, State};
-use feature_evaluator::FeatureExtractor;
+use def::{FeatureExtractor, Game, State};
 use super::*;
 
 #[test]

@@ -4,17 +4,17 @@ use std::io::Write;
 
 use def::{Agent, AgentReport, State};
 
-pub struct HumanAgentReport<M> {
+pub struct HumanAgentReport<M: Copy + fmt::Display> {
   m: M
 }
 
-impl<M: Copy + fmt::Display + 'static> AgentReport<M> for HumanAgentReport<M> {
+impl<M: Copy + fmt::Display> AgentReport<M> for HumanAgentReport<M> {
   fn get_move(&self) -> M {
     self.m
   }
 }
 
-impl<M: fmt::Display> fmt::Display for HumanAgentReport<M> {
+impl<M: Copy + fmt::Display> fmt::Display for HumanAgentReport<M> {
   fn fmt(&self, _f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
     Ok(())
   }
@@ -22,7 +22,7 @@ impl<M: fmt::Display> fmt::Display for HumanAgentReport<M> {
 
 pub struct HumanAgent {}
 
-impl<'g, S: State<'g>> Agent<'g, S> for HumanAgent {
+impl<S: State> Agent<S> for HumanAgent {
   fn select_move(&mut self, state: &S)
       -> Result<Box<AgentReport<S::Move>>, &'static str> {
     loop {

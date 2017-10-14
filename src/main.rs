@@ -116,12 +116,12 @@ fn main() {
     ("play", Some(play_args)) => {
       let t: f64 = play_args.value_of("time_per_move").unwrap().parse().unwrap();
       let player1_spec =
-          load_agent_spec(play_args.value_of("player1").unwrap()).unwrap();
+          load_agent_spec(play_args.value_of("player1").unwrap(), t).unwrap();
       let player2_spec =
-          load_agent_spec(play_args.value_of("player2").unwrap()).unwrap();
+          load_agent_spec(play_args.value_of("player2").unwrap(), t).unwrap();
       println!("Player 1 spec: {:?}", player1_spec);
       println!("Player 2 spec: {:?}\n", player2_spec);
-      play_spec(&game_spec, &player1_spec, &player2_spec, t);
+      play_spec(&game_spec, &player1_spec, &player2_spec);
     },
     ("train", Some(train_args)) => {
       let evaluator_spec =

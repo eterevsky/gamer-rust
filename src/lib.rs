@@ -16,6 +16,7 @@ mod human_agent;
 pub mod minimax;
 pub mod play;
 pub mod random_agent;
+mod registry;
 pub mod spec;
 mod status;
 pub mod subtractor;

@@ -4,16 +4,17 @@ use rand;
 use std::fmt;
 
 /// A trait for a game rules set.
-pub trait Game<'g> {
-  type State: State<'g>;
+pub trait Game: 'static {
+  type State: State;
+
   /// Starts a new game and return the game state before the first move of
   /// the first player.
-  fn new_game(&'g self) -> Self::State;
+  fn new_game(&self) -> Self::State;
 }
 
 /// A trait for a game state. Lifetime parameter `'g` corresponds to Game object
 /// lifetime.
-pub trait State<'g>: Clone + fmt::Display {
+pub trait State: Clone + fmt::Display {
   type Move: 'static + Clone + Copy + fmt::Debug + fmt::Display;
 
   /// Returns true if it's the turn of the first player.
@@ -45,24 +46,24 @@ pub trait State<'g>: Clone + fmt::Display {
   fn parse_move(&self, move_str: &str) -> Result<Self::Move, &'static str>;
 }
 
-pub trait AgentReport<M: fmt::Display + Copy + 'static>: fmt::Display {
+pub trait AgentReport<M>: fmt::Display {
   fn get_move(&self) -> M;
 }
 
-pub trait Agent<'g, S: State<'g>> {
+pub trait Agent<S: State> {
   /// Returns a pair of a move and agent report if
-  fn select_move(
-    &mut self,
-    state: &S,
-  ) -> Result<Box<AgentReport<S::Move>>, &'static str>;
+  fn select_move(&mut self, state: &S)
+      -> Result<Box<AgentReport<S::Move>>, &'static str>;
 }
 
-pub trait Evaluator<'g, S: State<'g>> {
+pub trait Evaluator<S: State> {
   /// Evaluates the state and returns the score for the first player, regardless
   /// whose turn it is.
   fn evaluate(&self, state: &S) -> f32;
 }
 
-pub trait TrainingEvaluator<'g, S: State<'g>>: Evaluator<'g, S> {
-  fn train(&mut self, steps: u64);
+pub trait FeatureExtractor<S: State> {
+  /// Returns a feature vector for a given position from the point of view of
+  /// the acting player.
+  fn extract(&self, state: &S) -> Vec<f32>;
 }

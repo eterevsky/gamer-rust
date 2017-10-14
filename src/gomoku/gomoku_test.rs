@@ -11,7 +11,7 @@ use gomoku::gomoku::BOARD_LEN;
 use gomoku::gomoku::SIZE;
 use gomoku::util;
 
-pub fn run_game(moves_str: &str, result: f32) -> GomokuState<'static> {
+pub fn run_game(moves_str: &str, result: f32) -> GomokuState {
   let mut state = Gomoku::default().new_game();
   let mut player = true;
 

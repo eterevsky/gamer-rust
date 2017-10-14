@@ -1,8 +1,7 @@
 //! FeatureExtractor with features based on the continuous lines of stones
 //! of the same color.
 
-use def::State;
-use feature_evaluator::FeatureExtractor;
+use def::{FeatureExtractor, State};
 use gomoku::gomoku::{BOARD_LEN, SIZE, GomokuState, PointState};
 
 #[derive(Clone, Copy, Debug)]
@@ -111,8 +110,9 @@ impl GomokuLineFeatureExtractor {
         if active_player {16} else {0}) as usize
   }
 
-  fn process_single_line<'g>(state: &GomokuState<'g>, line: &LineRange,
-                             features: &mut Vec<f32>) {
+  fn process_single_line(
+      state: &GomokuState, line: &LineRange, features: &mut Vec<f32>
+  ) {
     let mut line_len = 0;
     let mut color = PointState::Empty;
     let mut point = line.start;
@@ -150,10 +150,8 @@ impl GomokuLineFeatureExtractor {
   }
 }
 
-impl <'g> FeatureExtractor<'g, GomokuState<'g>> for GomokuLineFeatureExtractor {
-  type FeatureVector = Vec<f32>;
-
-  fn extract(&self, state: &GomokuState<'g>) -> Vec<f32> {
+impl FeatureExtractor<GomokuState> for GomokuLineFeatureExtractor {
+  fn extract(&self, state: &GomokuState) -> Vec<f32> {
     // Length 1-4, 1 or 2 open ends, straight or diagonal,
     let mut features = vec![0.0; 33];
     features[32] = 1.0;  // Bias

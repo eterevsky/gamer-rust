@@ -7,8 +7,8 @@ use std::time::Instant;
 use def::{Evaluator, State};
 use minimax::MinimaxReport;
 
-pub struct MinimaxSearch<'e, 'g: 'e, S: State<'g> + 'e> {
-  evaluator: &'e Evaluator<'g, S>,
+pub struct MinimaxSearch<'e, S: State + 'e> {
+  evaluator: &'e Evaluator<S>,
   deadline: Option<Instant>,
   // Discount per depth.
   discount: Vec<f32>,
@@ -27,9 +27,9 @@ pub enum SearchResult<M: 'static + Copy + fmt::Debug> {
   Found(f32, Vec<M>)
 }
 
-impl<'e, 'g: 'e, S: State<'g> + 'e> MinimaxSearch<'e, 'g, S> {
+impl<'e, S: State> MinimaxSearch<'e, S> {
   pub fn new(
-      evaluator: &'e Evaluator<'g, S>,
+      evaluator: &'e Evaluator<S>,
       depth: u32,
       discount: f32,
       deadline: Option<Instant>
@@ -129,10 +129,9 @@ impl<'e, 'g: 'e, S: State<'g> + 'e> MinimaxSearch<'e, 'g, S> {
   }
 }
 
-pub fn minimax_fixed_depth<'g, S, E>(
-    state: &S, evaluator: &E, depth: u32, discount: f32)
-    -> MinimaxReport<S::Move>
-    where S: State<'g>, E: Evaluator<'g, S>{
+pub fn minimax_fixed_depth<S: State, E: Evaluator<S>>(
+    state: &S, evaluator: &E, depth: u32, discount: f32
+) -> MinimaxReport<S::Move> {
   let mut minimax = MinimaxSearch::new(evaluator, depth, discount, None);
   let start_time = Instant::now();
   if let SearchResult::Found(score, pv) =

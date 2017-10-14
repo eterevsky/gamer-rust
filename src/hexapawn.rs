@@ -60,10 +60,10 @@ impl Hexapawn {
   }
 }
 
-impl<'g> Game<'g> for Hexapawn {
+impl Game for Hexapawn {
   type State = HexapawnState;
 
-  fn new_game(&'g self) -> HexapawnState {
+  fn new_game(&self) -> HexapawnState {
     HexapawnState::new(self.width, self.height)
   }
 }
@@ -168,7 +168,7 @@ impl HexapawnState {
   }
 }
 
-impl<'g> State<'g> for HexapawnState {
+impl State for HexapawnState {
   type Move = HexapawnMove;
 
   fn get_player(&self) -> bool {

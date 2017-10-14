@@ -73,7 +73,7 @@ impl AgentSpec {
 /// First match the string with "random" or "human". If it doesn't, treat it
 /// as a filename. One the file, read the contents as JSON and convert to
 /// AgentSpec.
-pub fn load_agent_spec(s: &str) -> Result<AgentSpec, String> {
+pub fn load_agent_spec(s: &str, time_per_move: f64) -> Result<AgentSpec, String> {
   match s {
     "random" => Ok(AgentSpec::Random),
     "human"  => Ok(AgentSpec::Human),
@@ -84,7 +84,12 @@ pub fn load_agent_spec(s: &str) -> Result<AgentSpec, String> {
       let mut s = String::new();
       f.read_to_string(&mut s)
           .map_err(|e| format!("Error while reading file: {}", e))?;
-      AgentSpec::parse(&s).ok_or("Error while parsing AgentSpec.".to_string())
+      let mut spec = AgentSpec::parse(&s)
+          .ok_or("Error while parsing AgentSpec.".to_string())?;
+      if let AgentSpec::Minimax(ref mut minimax_spec) = spec {
+        minimax_spec.time_per_move = time_per_move
+      };
+      Ok(spec)
     }
   }
 }

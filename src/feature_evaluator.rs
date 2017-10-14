@@ -1,35 +1,17 @@
 use std;
 use std::f32;
-use std::fmt;
 use rand;
 use rand::Rng;
 
-use def::{AgentReport, Game, Evaluator, State};
+use def::{AgentReport, Game, Evaluator, FeatureExtractor, State};
 use minimax::minimax_fixed_depth;
 
-pub trait FeatureExtractor<'g, S: State<'g>> {
-  type FeatureVector;
-  /// Returns a feature vector for a given position from the point of view of
-  /// the acting player.
-  fn extract(&self, state: &S) -> Self::FeatureVector;
-}
-
-impl<'e, 'g, S: State<'g>, E> FeatureExtractor<'g, S> for &'e E
-    where E: FeatureExtractor<'g, S> {
-  type FeatureVector = E::FeatureVector;
-  fn extract(&self, state: &S) -> E::FeatureVector {
-    (*self).extract(state)
-  }
-}
-
-pub trait Regression<FV> : std::fmt::Debug {
-  type Parameters;
+pub trait Regression : std::fmt::Debug {
   type Hyperparameters;
 
-  fn new(params: Self::Parameters, hyperparams: Self::Hyperparameters) -> Self;
-  fn export(&self) -> Self::Parameters;
-  fn evaluate(&self, features: &FV) -> f32;
-  fn train1(&mut self, features: &FV, expected: f32);
+  fn new(params: Vec<f32>, hyperparams: Self::Hyperparameters) -> Self;
+  fn evaluate(&self, features: &Vec<f32>) -> f32;
+  fn train1(&mut self, features: &Vec<f32>, expected: f32);
 }
 
 #[derive(Debug)]
@@ -39,8 +21,7 @@ pub struct LinearRegression {
   regularization: f32
 }
 
-impl Regression<Vec<f32>> for LinearRegression {
-  type Parameters = Vec<f32>;
+impl Regression for LinearRegression {
   type Hyperparameters = (f32, f32);
 
   fn new(params: Vec<f32>, hyperparams: (f32, f32)) -> LinearRegression {
@@ -51,18 +32,16 @@ impl Regression<Vec<f32>> for LinearRegression {
     }
   }
 
-  fn export(&self) -> Vec<f32> {
-    self.b.clone()
-  }
-
   fn evaluate(&self, features: &Vec<f32>) -> f32 {
     assert_eq!(features.len(), self.b.len());
-    let linear_combination: f32 = self.b.iter().zip(features.iter()).map(|(x, y)| x * y).sum();
+    let linear_combination: f32 =
+        self.b.iter().zip(features.iter()).map(|(x, y)| x * y).sum();
     linear_combination.tanh()
   }
 
   fn train1(&mut self, features: &Vec<f32>, expected: f32) {
-    let linear_combination: f32 = self.b.iter().zip(features.iter()).map(|(x, y)| x * y).sum();
+    let linear_combination: f32 =
+        self.b.iter().zip(features.iter()).map(|(x, y)| x * y).sum();
     let prediction = linear_combination.tanh();
     let activation_derivative = 1.0 - prediction.powi(2);
     let error = prediction - expected;
@@ -74,20 +53,16 @@ impl Regression<Vec<f32>> for LinearRegression {
   }
 }
 
-pub struct FeatureEvaluator<'g, FV, FE, G, R>
-  where FE: FeatureExtractor<'g, G::State, FeatureVector=FV>,
-        R: Regression<FV>,
-        G: Game<'g> + 'g {
-  game: &'g G,
-  extractor: FE,
-  pub regression: R,
+pub struct FeatureEvaluator<G, E, R>
+where G: Game, E: FeatureExtractor<G::State>, R: Regression {
+  game: &'static G,
+  extractor: E,
+  regression: R
 }
 
-impl<'g, FV, FE, G, R> FeatureEvaluator<'g, FV, FE, G, R>
-    where FE: FeatureExtractor<'g, G::State, FeatureVector=FV>,
-        R: Regression<FV> + fmt::Debug,
-        G: Game<'g> + 'g {
-  pub fn new(game: &'g G, extractor: FE, regression: R) -> Self {
+impl<G, E, R> FeatureEvaluator<G, E, R>
+where G: Game, E: FeatureExtractor<G::State>, R: Regression {
+  pub fn new(game: &'static G, extractor: E, regression: R) -> Self {
     FeatureEvaluator {
       game,
       extractor,
@@ -122,11 +97,8 @@ impl<'g, FV, FE, G, R> FeatureEvaluator<'g, FV, FE, G, R>
   }
 }
 
-impl<'g, FV, FE, G, R> Evaluator<'g, G::State>
-    for FeatureEvaluator<'g, FV, FE, G, R>
-    where FE: FeatureExtractor<'g, G::State, FeatureVector=FV>,
-          R: Regression<FV>,
-          G: Game<'g> + 'g {
+impl<G, E, R> Evaluator<G::State> for FeatureEvaluator<G, E, R>
+where G: Game, E: FeatureExtractor<G::State>, R: Regression {
   fn evaluate(&self, state: &G::State) -> f32 {
     if let Some(score) = state.get_payoff() {
       return score;
@@ -149,10 +121,10 @@ use subtractor::{Subtractor, SubtractorFeatureExtractor};
 
 #[test]
 fn train_linear_regression_subtractor() {
-  let game = Subtractor::new(21, 4);
+  let game = Subtractor::default(21, 4);
   let extractor = SubtractorFeatureExtractor::new(10);
   let regression = LinearRegression::new(vec![0.0; 10], (0.1, 0.001));
-  let mut evaluator = FeatureEvaluator::new(&game, extractor, regression);
+  let mut evaluator = FeatureEvaluator::new(game, extractor, regression);
   evaluator.train(5000, 0.999, 0.01, &|_, _| ());
 
   for i in 0..12 {

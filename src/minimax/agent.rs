@@ -1,37 +1,31 @@
 use rand;
-use std::borrow::Borrow;
-use std::marker::PhantomData;
 use std::time::{Duration, Instant};
 
 use def::{Agent, AgentReport, State, Evaluator};
 use minimax::search::{MinimaxSearch, SearchResult};
 use minimax::report::MinimaxReport;
 
-pub struct MinimaxAgent<'g, S: State<'g>> {
-  _s: PhantomData<S>,
-  _l: PhantomData<&'g ()>,
-  evaluator: Box<Evaluator<'g, S> + 'g>,
+pub struct MinimaxAgent<S: State> {
+  evaluator: Box<Evaluator<S>>,
   max_depth: u32,
   time_limit: Option<Duration>
 }
 
-impl<'g, S: State<'g>> MinimaxAgent<'g, S> {
+impl<S: State> MinimaxAgent<S> {
   pub fn new_boxed(
-      evaluator: Box<Evaluator<'g, S> + 'g>,
+      evaluator: Box<Evaluator<S>>,
       max_depth: u32,
       time_limit: Option<Duration>
   ) -> Self {
     assert!(max_depth > 0);
     MinimaxAgent {
-      _s: PhantomData,
-      _l: PhantomData,
       evaluator: evaluator,
       max_depth: max_depth,
       time_limit
     }
   }
 
-  pub fn new<E: Evaluator<'g, S> + 'g>(
+  pub fn new<E: Evaluator<S> + 'static>(
       evaluator: E,
       max_depth: u32,
       time_limit: Option<Duration>
@@ -40,10 +34,9 @@ impl<'g, S: State<'g>> MinimaxAgent<'g, S> {
   }
 }
 
-impl<'g, S: State<'g>> Agent<'g, S> for MinimaxAgent<'g, S> {
-  fn select_move(
-      &mut self, state: &S
-  ) -> Result<Box<AgentReport<S::Move>>, &'static str> {
+impl<S: State> Agent<S> for MinimaxAgent<S> {
+  fn select_move(&mut self, state: &S)
+      -> Result<Box<AgentReport<S::Move>>, &'static str> {
     if state.is_terminal() {
       return Err("Terminal state");
     }
@@ -54,7 +47,7 @@ impl<'g, S: State<'g>> Agent<'g, S> for MinimaxAgent<'g, S> {
       None => None
     };
 
-    let mut minimax = MinimaxSearch::new(self.evaluator.borrow(), 1, 0.999, deadline);
+    let mut minimax = MinimaxSearch::new(&*self.evaluator, 1, 0.999, deadline);
     let mut report = MinimaxReport {
       score: 0.0,
       pv: vec![state.get_random_move(&mut rand::weak_rng()).unwrap()],
