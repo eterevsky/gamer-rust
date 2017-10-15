@@ -1,4 +1,5 @@
 use def::{Evaluator, State};
+use spec::EvaluatorSpec;
 
 #[derive(Clone, Debug)]
 pub struct TerminalEvaluator {}
@@ -16,6 +17,10 @@ impl<S: State> Evaluator<S> for TerminalEvaluator {
     } else {
       0.0
     }
+  }
+
+  fn spec(&self) -> EvaluatorSpec {
+    EvaluatorSpec::Terminal
   }
 }
 

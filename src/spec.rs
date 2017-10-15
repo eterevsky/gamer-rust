@@ -39,7 +39,8 @@ pub enum EvaluatorSpec {
   Terminal,
   Features {
     extractor: FeatureExtractorSpec,
-    regression: RegressionSpec
+    regression: RegressionSpec,
+    training_minimax_depth: u32
   }
 }
 
@@ -100,6 +101,10 @@ pub fn load_evaluator_spec(s: &str) -> Result<EvaluatorSpec, String> {
       |e| format!("Error while parsing EvaluatorSpec: {}", e))
 }
 
+pub fn agent_spec_to_json(agent_spec: &AgentSpec) -> String {
+  serde_json::to_string_pretty(&agent_spec).unwrap()
+}
+
 #[cfg(test)]
 mod test {
 
@@ -118,7 +123,8 @@ fn to_json_from_json() {
         speed: 0.001,
         regularization: 0.001,
         b: vec![0.1, 0.2, 0.3]
-      }
+      },
+      training_minimax_depth: 1
     }
   };
 

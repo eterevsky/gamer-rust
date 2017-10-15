@@ -3,6 +3,8 @@
 use rand;
 use std::fmt;
 
+use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec};
+
 /// A trait for a game rules set.
 pub trait Game: 'static {
   type State: State;
@@ -54,12 +56,22 @@ pub trait Agent<S: State> {
   /// Returns a pair of a move and agent report if
   fn select_move(&mut self, state: &S)
       -> Result<Box<AgentReport<S::Move>>, &'static str>;
+
+  fn spec(&self) -> AgentSpec;
 }
 
 pub trait Evaluator<S: State> {
   /// Evaluates the state and returns the score for the first player, regardless
   /// whose turn it is.
   fn evaluate(&self, state: &S) -> f32;
+
+  /// For training evaluators -- train for a number of steps. For non-training
+  /// evaluators -- keep non-implemented.
+  fn train(&mut self, _steps: u64) {
+    unreachable!()
+  }
+
+  fn spec(&self) -> EvaluatorSpec;
 }
 
 pub trait FeatureExtractor<S: State> {
@@ -68,4 +80,6 @@ pub trait FeatureExtractor<S: State> {
   /// Returns a feature vector for a given position from the point of view of
   /// the acting player.
   fn extract(&self, state: &S) -> Vec<f32>;
+
+  fn spec(&self) -> FeatureExtractorSpec;
 }

@@ -5,6 +5,7 @@ use std::fmt;
 use std::fmt::Display;
 
 use def::{Agent, AgentReport, State};
+use spec::AgentSpec;
 
 #[derive(Debug)]
 pub struct RandomAgentReport<M> {
@@ -42,5 +43,9 @@ impl<S: State> Agent<S> for RandomAgent {
       Some(m) => Ok(Box::new(RandomAgentReport{m, player: state.get_player()})),
       None => Err("Terminal position")
     }
+  }
+
+  fn spec(&self) -> AgentSpec {
+    AgentSpec::Random
   }
 }

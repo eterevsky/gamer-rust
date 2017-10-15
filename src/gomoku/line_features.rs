@@ -3,6 +3,7 @@
 
 use def::{FeatureExtractor, State};
 use gomoku::gomoku::{BOARD_LEN, SIZE, GomokuState, PointState};
+use spec::FeatureExtractorSpec;
 
 #[derive(Clone, Copy, Debug)]
 pub struct LineRange {
@@ -163,6 +164,10 @@ impl FeatureExtractor<GomokuState> for GomokuLineFeatureExtractor {
     }
 
     features
+  }
+
+  fn spec(&self) -> FeatureExtractorSpec {
+    FeatureExtractorSpec::GomokuLines
   }
 }
 

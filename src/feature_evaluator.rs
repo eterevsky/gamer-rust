@@ -5,6 +5,7 @@ use rand::Rng;
 
 use def::{AgentReport, Game, Evaluator, FeatureExtractor, State};
 use minimax::minimax_fixed_depth;
+use spec::{EvaluatorSpec, RegressionSpec};
 
 pub trait Regression : std::fmt::Debug {
   type Hyperparameters;
@@ -13,6 +14,7 @@ pub trait Regression : std::fmt::Debug {
   fn evaluate(&self, features: &Vec<f32>) -> f32;
   fn train1(&mut self, features: &Vec<f32>, expected: f32);
   fn init<S: State, E: FeatureExtractor<S>>(&mut self, extractor: &E);
+  fn spec(&self) -> RegressionSpec;
 }
 
 #[derive(Debug)]
@@ -60,48 +62,32 @@ impl Regression for LinearRegression {
       assert_eq!(self.b.len(), extractor.nfeatures());
     }
   }
+
+  fn spec(&self) -> RegressionSpec {
+    RegressionSpec {
+      speed: self.speed,
+      regularization: self.regularization,
+      b: self.b.clone()
+    }
+  }
 }
 
 pub struct FeatureEvaluator<G, E, R>
 where G: Game, E: FeatureExtractor<G::State>, R: Regression {
   game: &'static G,
   extractor: E,
-  regression: R
+  regression: R,
+  training_minimax_depth: u32
 }
 
 impl<G, E, R> FeatureEvaluator<G, E, R>
 where G: Game, E: FeatureExtractor<G::State>, R: Regression {
-  pub fn new(game: &'static G, extractor: E, regression: R) -> Self {
+  pub fn new(game: &'static G, extractor: E, regression: R, training_minimax_depth: u32) -> Self {
     FeatureEvaluator {
       game,
       extractor,
-      regression
-    }
-  }
-
-  pub fn train(
-      &mut self, nmoves: u32, discount: f32, random_prob: f32,
-      callback: &Fn(&Self, u32)) {
-    let mut state = self.game.new_game();
-    let mut rng = rand::weak_rng();
-
-    for step in 0..nmoves {
-      if state.is_terminal() {
-        state = self.game.new_game();
-      }
-
-      let report = minimax_fixed_depth(&state, self, 1, discount);
-      let score = if state.get_player() { report.score } else { -report.score };
-      self.regression.train1(&self.extractor.extract(&state), score);
-
-      if rng.next_f32() < random_prob {
-        let m = state.get_random_move(&mut rng).unwrap();
-        state.play(m).unwrap();
-      } else {
-        state.play(report.get_move()).unwrap();
-      }
-
-      callback(self, step);
+      regression,
+      training_minimax_depth
     }
   }
 }
@@ -120,6 +106,41 @@ where G: Game, E: FeatureExtractor<G::State>, R: Regression {
       -player_score
     }
   }
+
+  fn train(&mut self, steps: u64) {
+    let discount = 0.999;
+    let random_prob = 0.1;
+    let callback = &|&_, _| ();
+    let mut state = self.game.new_game();
+    let mut rng = rand::weak_rng();
+
+    for step in 0..steps {
+      if state.is_terminal() {
+        state = self.game.new_game();
+      }
+
+      let report = minimax_fixed_depth(&state, self, self.training_minimax_depth, discount);
+      let score = if state.get_player() { report.score } else { -report.score };
+      self.regression.train1(&self.extractor.extract(&state), score);
+
+      if rng.next_f32() < random_prob {
+        let m = state.get_random_move(&mut rng).unwrap();
+        state.play(m).unwrap();
+      } else {
+        state.play(report.get_move()).unwrap();
+      }
+
+      callback(self, step);
+    }
+  }
+
+  fn spec(&self) -> EvaluatorSpec {
+    EvaluatorSpec::Features {
+      extractor: self.extractor.spec(),
+      regression: self.regression.spec(),
+      training_minimax_depth: self.training_minimax_depth
+    }
+  }
 }
 
 #[cfg(test)]
@@ -133,8 +154,8 @@ fn train_linear_regression_subtractor() {
   let game = Subtractor::default(21, 4);
   let extractor = SubtractorFeatureExtractor::new(10);
   let regression = LinearRegression::new(vec![0.0; 10], (0.1, 0.001));
-  let mut evaluator = FeatureEvaluator::new(game, extractor, regression);
-  evaluator.train(5000, 0.999, 0.01, &|_, _| ());
+  let mut evaluator = FeatureEvaluator::new(game, extractor, regression, 1);
+  evaluator.train(5000);
 
   for i in 0..12 {
     let game = Subtractor::new(i, 4);

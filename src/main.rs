@@ -1,11 +1,13 @@
 extern crate clap;
-
 extern crate gamer;
 
 use clap::{App, Arg, SubCommand};
+use std::fs::File;
+use std::io::Write;
 
-use gamer::play::play_spec;
-use gamer::spec::{GameSpec, load_agent_spec, load_evaluator_spec};
+use gamer::play::{play_spec, train_spec};
+use gamer::spec::{GameSpec, agent_spec_to_json, load_agent_spec,
+                  load_evaluator_spec};
 
 // fn train_gomoku() {
 //   let extractor = GomokuLineFeatureExtractor::new();
@@ -126,9 +128,18 @@ fn main() {
     ("train", Some(train_args)) => {
       let evaluator_spec =
           load_evaluator_spec(train_args.value_of("input").unwrap()).unwrap();
-      println!("Evaluator spec: {:?}\n", evaluator_spec);
-      // let steps: u64 = train_args.value_of("steps").unwrap().parse().unwrap();
-      // let agent = train_spec(&game_spec, &evaluator_spec, );
+      println!("Evaluator spec: {:?}", evaluator_spec);
+      let steps: u64 = train_args.value_of("steps").unwrap().parse().unwrap();
+      println!("Steps: {}", steps);
+      let agent = train_spec(&game_spec, &evaluator_spec, steps);
+      let agent_json = agent_spec_to_json(&agent);
+      match train_args.value_of("output") {
+        None => println!("{}", agent_json),
+        Some(path) => {
+          let mut f = File::create(path).unwrap();
+          f.write(&agent_json.into_bytes()).unwrap();
+        }
+      }
     },
     _ => panic!("Unknown subcommand.")
   }

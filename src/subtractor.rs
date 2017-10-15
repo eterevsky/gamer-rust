@@ -7,6 +7,7 @@ use std::cmp;
 use std::fmt;
 
 use def::{FeatureExtractor, Game, State};
+use spec::FeatureExtractorSpec;
 
 lazy_static! {
   static ref INSTANCE_21_4: Subtractor = Subtractor::new(21, 4);
@@ -128,6 +129,10 @@ impl FeatureExtractor<SubtractorState> for SubtractorFeatureExtractor {
     (1..(self.nfeatures + 1))
         .map(|x| if state.number % (x as u32) == 0 { 1.0 } else { 0.0 })
         .collect()
+  }
+
+  fn spec(&self) -> FeatureExtractorSpec {
+    FeatureExtractorSpec::Subtractor(self.nfeatures)
   }
 }
 

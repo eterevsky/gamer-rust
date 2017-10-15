@@ -3,6 +3,7 @@ use std::io;
 use std::io::Write;
 
 use def::{Agent, AgentReport, State};
+use spec::AgentSpec;
 
 pub struct HumanAgentReport<M: Copy + fmt::Display> {
   m: M
@@ -37,5 +38,9 @@ impl<S: State> Agent<S> for HumanAgent {
         println!("Illegal move.");
       }
     }
+  }
+
+  fn spec(&self) -> AgentSpec {
+    AgentSpec::Human
   }
 }

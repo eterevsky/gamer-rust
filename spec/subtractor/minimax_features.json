@@ -1,0 +1,28 @@
+{
+  "type": "Minimax",
+  "depth": 1000,
+  "time_per_move": 0.0,
+  "evaluator": {
+    "type": "Features",
+    "extractor": {
+      "type": "Subtractor",
+      "content": 10
+    },
+    "regression": {
+      "speed": 0.001,
+      "regularization": 0.001,
+      "b": [
+        1.1989182,
+        0.00002398128,
+        0.03029754,
+        -2.1990192,
+        -0.102510266,
+        -0.12553774,
+        -0.14496043,
+        -0.049534593,
+        -0.058222055,
+        0.0061979746
+      ]
+    }
+  }
+}

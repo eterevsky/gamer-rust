@@ -1,5 +1,5 @@
 {
-  "type": "FeatureEvaluator",
+  "type": "Features",
   "extractor": {
     "type": "Subtractor",
     "content": 10
@@ -8,5 +8,6 @@
     "speed": 0.001,
     "regularization": 0.001,
     "b": []
-  }
+  },
+  "training_minimax_depth": 3
 }

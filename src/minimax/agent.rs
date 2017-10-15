@@ -4,6 +4,7 @@ use std::time::{Duration, Instant};
 use def::{Agent, AgentReport, State, Evaluator};
 use minimax::search::{MinimaxSearch, SearchResult};
 use minimax::report::MinimaxReport;
+use spec::AgentSpec;
 
 pub struct MinimaxAgent<S: State> {
   evaluator: Box<Evaluator<S>>,
@@ -79,8 +80,22 @@ impl<S: State> Agent<S> for MinimaxAgent<S> {
 
     Ok(Box::new(report))
   }
+
+  fn spec(&self) -> AgentSpec {
+    AgentSpec::Minimax {
+      depth: self.max_depth,
+      time_per_move: convert_duration(self.time_limit),
+      evaluator: self.evaluator.spec()
+    }
+  }
 }
 
+fn convert_duration(duration: Option<Duration>) -> f64 {
+  match duration {
+    None => 0.0,
+    Some(d) => d.as_secs() as f64 + d.subsec_nanos() as f64 * 1E-9
+  }
+}
 
 #[cfg(test)]
 mod test {

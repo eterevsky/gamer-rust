@@ -1,9 +1,9 @@
 use def::{Agent, Game, State};
 use gomoku::Gomoku;
 use hexapawn::Hexapawn;
-// use minimax::MinimaxAgent;
-use registry::create_agent;
-use spec::{GameSpec, AgentSpec};
+use minimax::MinimaxAgent;
+use registry::{create_agent, create_evaluator};
+use spec::{AgentSpec, EvaluatorSpec, GameSpec};
 use subtractor::Subtractor;
 
 pub fn play<G: Game>(
@@ -56,30 +56,54 @@ pub fn play_spec(
   }
 }
 
-// fn train_game<'g, G: Game<'g>>(
-//     game: &'g G, evaluator_spec: &EvaluatorSpec, steps: u64
-// ) -> AgentSpec {
-//   let mut evaluator = create_training_evaluator(game, evaluator_spec);
-//   evaluator.train(steps);
-//   let minimax = MinimaxAgent::new(evaluator, 1000, None);
-//   minimax.spec()
-// }
+fn train_game<G: Game>(
+    game: &'static G, evaluator_spec: &EvaluatorSpec, steps: u64
+) -> AgentSpec {
+  let mut evaluator = create_evaluator(game, evaluator_spec);
+  evaluator.train(steps);
+  let minimax = MinimaxAgent::new_boxed(evaluator, 1000, None);
+  minimax.spec()
+}
 
-// pub fn train_spec(
-//     game_spec: &GameSpec, evaluator_spec: &EvaluatorSpec, steps: u64
-// ) -> AgentSpec {
-//   match game_spec {
-//     &GameSpec::Gomoku => {
-//       let game = Gomoku::default();
-//       train_game(game, evaluator_spec, steps)
-//     },
-//     &GameSpec::Hexapawn(width, height) => {
-//       let game = Hexapawn::new(width, height);
-//       train_game(game, evaluator_spec, steps)
-//     },
-//     &GameSpec::Subtractor(start, max_sub) => {
-//       let game = Subtractor::new(start, max_sub);
-//       train_game(game, evaluator_spec, steps)
-//     }
-//   }
-// }
+pub fn train_spec(
+    game_spec: &GameSpec, evaluator_spec: &EvaluatorSpec, steps: u64
+) -> AgentSpec {
+  match game_spec {
+    &GameSpec::Gomoku => {
+      let game = Gomoku::default();
+      train_game(game, evaluator_spec, steps)
+    },
+    &GameSpec::Hexapawn(width, height) => {
+      let game = Hexapawn::default(width, height);
+      train_game(game, evaluator_spec, steps)
+    },
+    &GameSpec::Subtractor(start, max_sub) => {
+      let game = Subtractor::default(start, max_sub);
+      train_game(game, evaluator_spec, steps)
+    }
+  }
+}
+
+#[cfg(test)]
+mod test {
+
+use spec::*;
+use super::*;
+
+#[test]
+fn play_hexapawn() {
+  let game_spec = GameSpec::Hexapawn(3, 3);
+  let agent1_spec = AgentSpec::Minimax {
+    depth: 3,
+    time_per_move: 0.0,
+    evaluator: EvaluatorSpec::Terminal
+  };
+  let agent2_spec = AgentSpec::Minimax {
+    depth: 10,
+    time_per_move: 0.0,
+    evaluator: EvaluatorSpec::Terminal
+  };
+  assert_eq!(-1.0, play_spec(&game_spec, &agent1_spec, &agent2_spec));
+}
+
+}

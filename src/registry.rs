@@ -32,14 +32,15 @@ pub fn create_agent<G: Game>(game: &'static G, spec: &AgentSpec)
   }
 }
 
-fn create_evaluator<G: Game>(game: &'static G, spec: &EvaluatorSpec)
+pub fn create_evaluator<G: Game>(game: &'static G, spec: &EvaluatorSpec)
     -> Box<Evaluator<G::State>> {
   match spec {
     &EvaluatorSpec::Terminal => Box::new(TerminalEvaluator::new()),
 
     &EvaluatorSpec::Features{
       extractor: ref extractor_spec,
-      regression: ref regression_spec
+      regression: ref regression_spec,
+      training_minimax_depth
     } => {
       let mut regression = LinearRegression::new(
           regression_spec.b.clone(),
@@ -51,7 +52,7 @@ fn create_evaluator<G: Game>(game: &'static G, spec: &EvaluatorSpec)
           let subtractor: &Subtractor =
               (game as &Any).downcast_ref().unwrap();
           let evaluator = FeatureEvaluator::new(
-              subtractor, extractor, regression);
+              subtractor, extractor, regression, training_minimax_depth);
           unsafe{ transmute::<Box<Evaluator<SubtractorState>>,
                               Box<Evaluator<G::State>>>(Box::new(evaluator)) }
         },
@@ -59,7 +60,7 @@ fn create_evaluator<G: Game>(game: &'static G, spec: &EvaluatorSpec)
           let extractor = GomokuLineFeatureExtractor::new();
           regression.init(&extractor);
           let gomoku: &Gomoku = (game as &Any).downcast_ref().unwrap();
-          let evaluator = FeatureEvaluator::new(gomoku, extractor, regression);
+          let evaluator = FeatureEvaluator::new(gomoku, extractor, regression, training_minimax_depth);
           unsafe{ transmute::<Box<Evaluator<GomokuState>>,
                               Box<Evaluator<G::State>>>(Box::new(evaluator)) }
         }
@@ -126,7 +127,8 @@ fn subtractor_features() {
         speed: 0.001,
         regularization: 0.001,
         b: vec![0.1, 0.2, 0.3]
-      }
+      },
+      training_minimax_depth: 1
     }
   };
 
@@ -149,7 +151,8 @@ fn gomoku_features() {
         speed: 0.001,
         regularization: 0.001,
         b: vec![]
-      }
+      },
+      training_minimax_depth: 1
     }
   };
 
