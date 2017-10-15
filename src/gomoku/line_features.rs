@@ -151,6 +151,8 @@ impl GomokuLineFeatureExtractor {
 }
 
 impl FeatureExtractor<GomokuState> for GomokuLineFeatureExtractor {
+  fn nfeatures(&self) -> usize { 33 }
+
   fn extract(&self, state: &GomokuState) -> Vec<f32> {
     // Length 1-4, 1 or 2 open ends, straight or diagonal,
     let mut features = vec![0.0; 33];

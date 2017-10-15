@@ -1,151 +1,162 @@
+use std::any::Any;
+use std::mem::transmute;
 use std::time::Duration;
 
-use def::{Agent, Game};
-// use feature_evaluator::{FeatureEvaluator, LinearRegression, Regression};
-// use gomoku::{Gomoku, GomokuLineFeatureExtractor, GomokuState};
-// use hexapawn::{Hexapawn, HexapawnState};
-// use human_agent::HumanAgent;
-// use minimax::MinimaxAgent;
+use def::{Agent, Evaluator, Game};
+use feature_evaluator::{FeatureEvaluator, LinearRegression, Regression};
+use gomoku::{Gomoku, GomokuLineFeatureExtractor, GomokuState};
+use human_agent::HumanAgent;
+use minimax::MinimaxAgent;
 use random_agent::RandomAgent;
-use spec::AgentSpec;
-// use subtractor::{Subtractor, SubtractorFeatureExtractor, SubtractorState};
-// use terminal_evaluator::TerminalEvaluator;
+use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec};
+use subtractor::{Subtractor, SubtractorFeatureExtractor, SubtractorState};
+use terminal_evaluator::TerminalEvaluator;
 
 
-pub fn create_agent<G: Game>(_game: &G, player_spec: &AgentSpec) -> Box<Agent<G::State>> {
-  Box::new(RandomAgent::new())
+pub fn create_agent<G: Game>(game: &'static G, spec: &AgentSpec)
+    -> Box<Agent<G::State>> {
+  match spec {
+    &AgentSpec::Random => Box::new(RandomAgent::new()),
+
+    &AgentSpec::Human => Box::new(HumanAgent{}),
+
+    &AgentSpec::Minimax{
+      depth,
+      time_per_move,
+      evaluator: ref evaluator_spec
+    } => {
+      let evaluator = create_evaluator(game, evaluator_spec);
+      let duration = convert_duration(time_per_move);
+      Box::new(MinimaxAgent::new_boxed(evaluator, depth, duration))
+    }
+  }
+}
+
+fn create_evaluator<G: Game>(game: &'static G, spec: &EvaluatorSpec)
+    -> Box<Evaluator<G::State>> {
+  match spec {
+    &EvaluatorSpec::Terminal => Box::new(TerminalEvaluator::new()),
+
+    &EvaluatorSpec::Features{
+      extractor: ref extractor_spec,
+      regression: ref regression_spec
+    } => {
+      let mut regression = LinearRegression::new(
+          regression_spec.b.clone(),
+          (regression_spec.speed, regression_spec.regularization));
+      match extractor_spec {
+        &FeatureExtractorSpec::Subtractor(nfeatures) => {
+          let extractor = SubtractorFeatureExtractor::new(nfeatures);
+          regression.init(&extractor);
+          let subtractor: &Subtractor =
+              (game as &Any).downcast_ref().unwrap();
+          let evaluator = FeatureEvaluator::new(
+              subtractor, extractor, regression);
+          unsafe{ transmute::<Box<Evaluator<SubtractorState>>,
+                              Box<Evaluator<G::State>>>(Box::new(evaluator)) }
+        },
+        &FeatureExtractorSpec::GomokuLines => {
+          let extractor = GomokuLineFeatureExtractor::new();
+          regression.init(&extractor);
+          let gomoku: &Gomoku = (game as &Any).downcast_ref().unwrap();
+          let evaluator = FeatureEvaluator::new(gomoku, extractor, regression);
+          unsafe{ transmute::<Box<Evaluator<GomokuState>>,
+                              Box<Evaluator<G::State>>>(Box::new(evaluator)) }
+        }
+      }
+    }
+  }
 }
 
 fn convert_duration(seconds: f64) -> Option<Duration> {
   if seconds <= 0.0 {
     None
   } else {
-    Some(Duration::new(seconds.trunc() as u64, (seconds.fract() * 1E9) as u32))
+    Some(Duration::new(seconds.trunc() as u64,
+                       (seconds.fract() * 1E9) as u32))
   }
 }
 
-// trait Creating<'g, G: Game<'g>> {
-//   fn agent(game: &'g G, spec: &AgentSpec)
-//       -> Box<Agent<'g, G::State> + 'g> {
-//     match spec {
-//       &AgentSpec::Random => Box::new(RandomAgent::new()),
 
-//       &AgentSpec::Human => Box::new(HumanAgent{}),
+#[cfg(test)]
+mod test {
 
-//       &AgentSpec::Minimax(ref minimax_spec) => {
-//         let evaluator: Box<Evaluator<'g, G::State> + 'g> =
-//             match minimax_spec.evaluator {
-//               EvaluatorSpec::TerminalEvaluator =>
-//                   Box::new(TerminalEvaluator::new()),
-//               _ => Self::training_evaluator(game, &minimax_spec.evaluator)
-//             };
-//         let duration = convert_duration(minimax_spec.time_per_move);
-//         Box::new(MinimaxAgent::new(evaluator, minimax_spec.depth, duration))
-//       }
-//     }
-//   }
+use def::State;
+use gomoku::Gomoku;
+use hexapawn::Hexapawn;
+use spec::*;
+use subtractor::Subtractor;
+use super::*;
 
-//   fn training_evaluator(game: &'g G, spec: &EvaluatorSpec)
-//       -> Box<TrainingEvaluator<'g, G::State> + 'g> {
-//     match spec {
-//       &EvaluatorSpec::FeatureEvaluator(ref fespec) => {
-//         Self::evaluator_feature_extractor(game, spec, fespec)
-//       },
-//       _ => unreachable!()
-//     }
-//   }
+#[test]
+fn hexapawn_random() {
+  let game = Hexapawn::default(3, 3);
+  let agent_spec = AgentSpec::Random;
+  let mut agent = create_agent(game, &agent_spec);
+  let mut state = game.new_game();
+  let report = agent.select_move(&state).unwrap();
+  assert!(state.play(report.get_move()).is_ok())
+}
 
-//   fn evaluator_feature_extractor(
-//       game: &'g G, evaluator_spec: &EvaluatorSpec, spec: &FeatureExtractorSpec)
-//       -> Box<TrainingEvaluator<'g, G::State> + 'g>;
+#[test]
+fn hexapawn_terminal() {
+  let game = Hexapawn::default(3, 3);
+  let agent_spec = AgentSpec::Minimax {
+    depth: 10,
+    time_per_move: 0.0,
+    evaluator: EvaluatorSpec::Terminal
+  };
+  let mut agent = create_agent(game, &agent_spec);
+  let mut state = game.new_game();
+  let report = agent.select_move(&state).unwrap();
+  assert!(state.play(report.get_move()).is_ok());
+  let report_str = format!("{}", report);
+  assert!(report_str.contains("score"));
+}
 
-//   fn evaluator_with_extractor<FE>(
-//       game: &'g G, spec: &EvaluatorSpec, extractor: FE)
-//       -> Box<TrainingEvaluator<'g, G::State> + 'g>
-//       where FE: FeatureExtractor<'g, G::State, FeatureVector=Vec<f32>> + 'g {
-//     if let EvaluatorSpec::FeatureEvaluator(ref fe_spec) = spec.evaluator {
-//       let regression = LinearRegression::new(
-//           fe_spec.regression.b.clone(),
-//           (fe_spec.regression.speed, fe_spec.regression.regularization));
-//       FeatureEvaluator::new(game, extractor, regression)
-//     } else {
-//       unreachable!()
-//     }
-//   }
-// }
+#[test]
+fn subtractor_features() {
+  let game = Subtractor::default(21, 4);
+  let agent_spec = AgentSpec::Minimax {
+    depth: 3,
+    time_per_move: 0.0,
+    evaluator: EvaluatorSpec::Features {
+      extractor: FeatureExtractorSpec::Subtractor(3),
+      regression: RegressionSpec {
+        speed: 0.001,
+        regularization: 0.001,
+        b: vec![0.1, 0.2, 0.3]
+      }
+    }
+  };
 
-// struct Creator {}
+  let mut agent = create_agent(game, &agent_spec);
+  let mut state = game.new_game();
+  let report = agent.select_move(&state).unwrap();
+  assert!(state.play(report.get_move()).is_ok())
+}
 
-// impl<'g> Creating<'g, Gomoku<'g>> for Creator {
-//   fn evaluator_feature_extractor(
-//       game: &'g Gomoku<'g>, evaluator_spec: &EvaluatorSpec,
-//       spec: &FeatureExtractorSpec)
-//       -> Box<TrainingEvaluator<'g, GomokuState<'g>> + 'g> {
-//     match spec {
-//       &FeatureExtractorSpec::GomokuLineFeatureExtractor => {
-//           let extractor = GomokuLineFeatureExtractor::new();
-//           Self::evaluator_with_extractor(game, evaluator_spec, extractor)
-//       },
-//       _ => panic!("Invalid feature extractor for Gomoku game: {:?}", spec)
-//     };
-//   }
-// }
+#[test]
+fn gomoku_features() {
+  let game = Gomoku::default();
 
-// impl<'g> Creating<'g, Hexapawn> for Creator {
-//   fn evaluator_feature_extractor(
-//       game: &'g Hexapawn, evaluator_spec: &EvaluatorSpec,
-//       spec: &FeatureExtractorSpec)
-//       -> Box<TrainingEvaluator<'g, HexapawnState> + 'g> {
-//     panic!("Invalid feature extractor for Hexapawn game: {:?}", spec)
-//   }
-// }
+  let agent_spec = AgentSpec::Minimax {
+    depth: 1,
+    time_per_move: 0.0,
+    evaluator: EvaluatorSpec::Features {
+      extractor: FeatureExtractorSpec::GomokuLines,
+      regression: RegressionSpec {
+        speed: 0.001,
+        regularization: 0.001,
+        b: vec![]
+      }
+    }
+  };
 
-// impl<'g> Creating<'g, Subtractor> for Creator {
-//   fn evaluator_feature_extractor(
-//       game: &'g Subtractor, evaluator_spec: &EvaluatorSpec,
-//       spec: &FeatureExtractorSpec)
-//       -> Box<TrainingEvaluator<'g, SubtractorState> + 'g> {
-//     match spec {
-//       &FeatureExtractorSpec::SubtractorFeatureExtractor(nfeatures) => {
-//           let extractor = SubtractorFeatureExtractor::new(nfeatures);
-//           Self::evaluator_with_extractor(game, evaluator_spec, extractor)
-//       },
-//       _ => panic!("Invalid feature extractor for Subtractor game: {:?}", spec)
-//     };
-//   }
-// }
+  let mut agent = create_agent(game, &agent_spec);
+  let mut state = game.new_game();
+  let report = agent.select_move(&state).unwrap();
+  assert!(state.play(report.get_move()).is_ok())
+}
 
-
-// #[cfg(test)]
-// mod test {
-
-// use spec::*;
-// use super::*;
-
-// #[test]
-// fn agent_from_spec() {
-//   let game_spec = GameSpec::Subtractor(21, 4);
-
-//   let agent1_spec = AgentSpec::Minimax(MinimaxSpec {
-//       depth: 1,
-//       time_per_move: 0.0,
-//       evaluator: EvaluatorSpec::FeatureEvaluator(FeatureEvaluatorSpec {
-//         extractor: FeatureExtractorSpec::SubtractorFeatureExtractor(3),
-//         regression: RegressionSpec {
-//           speed: 0.001,
-//           regularization: 0.001,
-//           b: vec![0.1, 0.2, 0.3]
-//         }
-//       })
-//   });
-
-//   let agent2_spec = AgentSpec::Minimax(MinimaxSpec {
-//       depth: 3,
-//       time_per_move: 0.0,
-//       evaluator: EvaluatorSpec::TerminalEvaluator
-//   });
-
-//   assert_eq!(-1.0, play_spec(&game_spec, &agent1_spec, &agent2_spec, 0.0));
-// }
-
-// }  // mod test
+}  // mod test

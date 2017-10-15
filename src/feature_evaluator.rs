@@ -12,6 +12,7 @@ pub trait Regression : std::fmt::Debug {
   fn new(params: Vec<f32>, hyperparams: Self::Hyperparameters) -> Self;
   fn evaluate(&self, features: &Vec<f32>) -> f32;
   fn train1(&mut self, features: &Vec<f32>, expected: f32);
+  fn init<S: State, E: FeatureExtractor<S>>(&mut self, extractor: &E);
 }
 
 #[derive(Debug)]
@@ -49,6 +50,14 @@ impl Regression for LinearRegression {
     let regularization_coef = self.speed * 2.0 * self.regularization;
     for i in 0..self.b.len() {
       self.b[i] -= feature_coef * features[i] + regularization_coef * self.b[i];
+    }
+  }
+
+  fn init<S: State, E: FeatureExtractor<S>>(&mut self, extractor: &E) {
+    if self.b.is_empty() {
+      self.b = vec![0.0; extractor.nfeatures()];
+    } else {
+      assert_eq!(self.b.len(), extractor.nfeatures());
     }
   }
 }

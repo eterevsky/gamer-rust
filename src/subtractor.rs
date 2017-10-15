@@ -122,6 +122,8 @@ impl SubtractorFeatureExtractor {
 }
 
 impl FeatureExtractor<SubtractorState> for SubtractorFeatureExtractor {
+  fn nfeatures(&self) -> usize { self.nfeatures as usize }
+
   fn extract(&self, state: &SubtractorState) -> Vec<f32> {
     (1..(self.nfeatures + 1))
         .map(|x| if state.number % (x as u32) == 0 { 1.0 } else { 0.0 })

@@ -63,6 +63,8 @@ pub trait Evaluator<S: State> {
 }
 
 pub trait FeatureExtractor<S: State> {
+  fn nfeatures(&self) -> usize;
+
   /// Returns a feature vector for a given position from the point of view of
   /// the acting player.
   fn extract(&self, state: &S) -> Vec<f32>;

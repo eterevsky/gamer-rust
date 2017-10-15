@@ -29,7 +29,7 @@ pub fn play<G: Game>(
 }
 
 fn play_game<G: Game>(
-    game: &G, player1_spec: &AgentSpec, player2_spec: &AgentSpec
+    game: &'static G, player1_spec: &AgentSpec, player2_spec: &AgentSpec
 ) -> f32 {
   let mut player1 = create_agent(game, player1_spec);
   let mut player2 = create_agent(game, player2_spec);
@@ -46,12 +46,12 @@ pub fn play_spec(
       play_game(game, player1_spec, player2_spec)
     },
     &GameSpec::Hexapawn(width, height) => {
-      let game = Hexapawn::new(width, height);
-      play_game(&game, player1_spec, player2_spec)
+      let game = Hexapawn::default(width, height);
+      play_game(game, player1_spec, player2_spec)
     },
     &GameSpec::Subtractor(start, max_sub) => {
-      let game = Subtractor::new(start, max_sub);
-      play_game(&game, player1_spec, player2_spec)
+      let game = Subtractor::default(start, max_sub);
+      play_game(game, player1_spec, player2_spec)
     }
   }
 }

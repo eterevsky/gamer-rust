@@ -6,47 +6,11 @@ use board::{Cell, Board, point_to_a};
 use def::{Game, State};
 use status::Status;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum HexapawnCell {
-  Empty,
-  White,
-  Black
-}
-
-impl HexapawnCell {
-  fn is_player(self, player: bool) -> bool {
-    if player { self == HexapawnCell::White } else { self == HexapawnCell::Black }
-  }
-
-  fn player(player: bool) -> HexapawnCell {
-    if player { HexapawnCell::White } else { HexapawnCell::Black }
-  }
-}
-
-impl Cell for HexapawnCell {
-  fn empty() -> HexapawnCell {
-    HexapawnCell::Empty
-  }
-
-  fn is_empty(self) -> bool {
-    self == HexapawnCell::Empty
-  }
-
-  fn ascii(self) -> char {
-    match self {
-      HexapawnCell::Empty => '.',
-      HexapawnCell::White => 'W',
-      HexapawnCell::Black => 'B'
-    }
-  }
-
-  fn unicode(self) -> char {
-    match self {
-      HexapawnCell::Empty => '·',
-      HexapawnCell::White => '♙',
-      HexapawnCell::Black => '♟'
-    }
-  }
+lazy_static! {
+  static ref INSTANCE_3_3: Hexapawn = Hexapawn::new(3, 3);
+  static ref INSTANCE_8_8: Hexapawn = Hexapawn::new(8, 8);
+  static ref MOVE_RE: Regex =
+      Regex::new(r"^([[:alpha:]]\d+)([-x])([[:alpha:]]\d+)$").unwrap();
 }
 
 pub struct Hexapawn {
@@ -58,6 +22,14 @@ impl Hexapawn {
   pub fn new(width: u32, height: u32) -> Hexapawn {
     Hexapawn { width, height }
   }
+
+  pub fn default(width: u32, height: u32) -> &'static Hexapawn {
+    match (width, height) {
+      (3, 3) => &*INSTANCE_3_3,
+      (8, 8) => &*INSTANCE_8_8,
+      _ => unreachable!()
+    }
+  }
 }
 
 impl Game for Hexapawn {
@@ -66,11 +38,6 @@ impl Game for Hexapawn {
   fn new_game(&self) -> HexapawnState {
     HexapawnState::new(self.width, self.height)
   }
-}
-
-lazy_static! {
-  static ref MOVE_RE: Regex =
-      Regex::new(r"^([[:alpha:]]\d+)([-x])([[:alpha:]]\d+)$").unwrap();
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -250,6 +217,49 @@ impl State for HexapawnState {
 impl fmt::Display for HexapawnState {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     write!(f, "{}", self.board.format(false))
+  }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum HexapawnCell {
+  Empty,
+  White,
+  Black
+}
+
+impl HexapawnCell {
+  fn is_player(self, player: bool) -> bool {
+    if player { self == HexapawnCell::White } else { self == HexapawnCell::Black }
+  }
+
+  fn player(player: bool) -> HexapawnCell {
+    if player { HexapawnCell::White } else { HexapawnCell::Black }
+  }
+}
+
+impl Cell for HexapawnCell {
+  fn empty() -> HexapawnCell {
+    HexapawnCell::Empty
+  }
+
+  fn is_empty(self) -> bool {
+    self == HexapawnCell::Empty
+  }
+
+  fn ascii(self) -> char {
+    match self {
+      HexapawnCell::Empty => '.',
+      HexapawnCell::White => 'W',
+      HexapawnCell::Black => 'B'
+    }
+  }
+
+  fn unicode(self) -> char {
+    match self {
+      HexapawnCell::Empty => '·',
+      HexapawnCell::White => '♙',
+      HexapawnCell::Black => '♟'
+    }
   }
 }
 

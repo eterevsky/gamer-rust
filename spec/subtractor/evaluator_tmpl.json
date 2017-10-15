@@ -1,0 +1,12 @@
+{
+  "type": "FeatureEvaluator",
+  "extractor": {
+    "type": "Subtractor",
+    "content": 10
+  },
+  "regression": {
+    "speed": 0.001,
+    "regularization": 0.001,
+    "b": []
+  }
+}
