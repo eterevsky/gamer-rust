@@ -5,14 +5,10 @@ use std::str::FromStr;
 use def::{Game, State};
 use gomoku::gomoku_move::GomokuMove;
 use gomoku::util;
+use status::Status;
 
 pub const SIZE: u32 = 19;
 pub const BOARD_LEN: usize = (SIZE as usize) * (SIZE as usize);
-const PLAYER_MASK: u32 = 1;
-const PLAYER1_WIN_MASK: u32 = 2;
-const PLAYER2_WIN_MASK: u32 = 4;
-const DRAW_MASK: u32 = 8;
-const TERMINAL_MASK: u32 = PLAYER1_WIN_MASK | PLAYER2_WIN_MASK | DRAW_MASK;
 
 lazy_static! {
   static ref GOMOKU_INSTANCE: Gomoku = Gomoku::new();
@@ -113,7 +109,7 @@ impl PointState {
 pub struct GomokuState {
   gomoku: &'static Gomoku,
   pub board: [PointState; BOARD_LEN],
-  status: u32
+  status: Status
 }
 
 impl GomokuState {
@@ -121,7 +117,7 @@ impl GomokuState {
     GomokuState {
       gomoku: Gomoku::default(),
       board: [PointState::Empty; BOARD_LEN],
-      status: 1
+      status: Status::new()
     }
   }
 
@@ -172,19 +168,16 @@ impl GomokuState {
   }
 
   fn play_stone(&mut self, point: usize) {
-    let player = PointState::from_player(self.get_player());
+    let player = self.get_player();
+    let player_stone = PointState::from_player(player);
 
-    self.board[point] = player;
-    if self.player_won(point, player) {
-      if self.get_player() {
-        self.status |= PLAYER1_WIN_MASK;
-      } else {
-        self.status |= PLAYER2_WIN_MASK;
-      }
+    self.board[point] = player_stone;
+    if self.player_won(point, player_stone) {
+      self.status.set_winner(player);
     } else if self.board.iter().all(|&x| x != PointState::Empty) {
-      self.status |= DRAW_MASK;
+      self.status.set_draw();
     }
-    self.status ^= PLAYER_MASK;
+    self.status.switch_player()
   }
 }
 
@@ -215,7 +208,7 @@ impl State for GomokuState {
   type Move = GomokuMove;
 
   fn play(&mut self, gmove: GomokuMove) -> Result<(), &'static str> {
-    if self.status & TERMINAL_MASK != 0 {
+    if self.is_terminal() {
       return Err("Trying to make a move in a terminal state.")
     }
 
@@ -235,8 +228,8 @@ impl State for GomokuState {
       Err("This wasn't the last move")
     } else {
       self.board[point] = PointState::Empty;
-      self.status ^= PLAYER_MASK;
-      self.status &= !TERMINAL_MASK;
+      self.status.switch_player();
+      self.status.undo_terminal();
       Ok(())
     }
   }
@@ -259,20 +252,15 @@ impl State for GomokuState {
   }
 
   fn is_terminal(&self) -> bool {
-    self.status & TERMINAL_MASK != 0
+    self.status.is_terminal()
   }
 
   fn get_player(&self) -> bool {
-    self.status & PLAYER_MASK == 1
+    self.status.get_player()
   }
 
   fn get_payoff(&self) -> Option<f32> {
-    match self.status & TERMINAL_MASK {
-      PLAYER1_WIN_MASK => Some(1.0),
-      PLAYER2_WIN_MASK => Some(-1.0),
-      DRAW_MASK => Some(0.0),
-      _ => return None
-    }
+    self.status.get_payoff()
   }
 
   fn parse_move(&self, move_str: &str) -> Result<GomokuMove, &'static str> {
