@@ -48,7 +48,8 @@ pub enum EvaluatorSpec {
 #[serde(tag = "type", content = "content")]
 pub enum FeatureExtractorSpec {
   Subtractor(u32),
-  GomokuLines
+  GomokuLines,
+  HexapawnNumberOfPawns
 }
 
 #[derive(Serialize, Debug, Deserialize)]

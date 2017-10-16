@@ -1,6 +1,7 @@
 use std::char;
 use std::fmt;
 use std::iter;
+use std::slice::Iter;
 
 pub trait Cell: Copy + fmt::Debug {
   fn empty() -> Self;
@@ -72,6 +73,10 @@ impl<C: Cell> Board<C> {
       Some(&x) => Some(x),
       None => None
     }
+  }
+
+  pub fn iter<'a>(&'a self) -> Iter<'a, C> {
+    self.data.iter()
   }
 
   #[cfg(test)]

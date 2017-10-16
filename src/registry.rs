@@ -5,6 +5,7 @@ use std::time::Duration;
 use def::{Agent, Evaluator, Game};
 use feature_evaluator::{FeatureEvaluator, LinearRegression, Regression};
 use gomoku::{Gomoku, GomokuLineFeatureExtractor, GomokuState};
+use hexapawn::{Hexapawn, HexapawnNumberOfPawnsExtractor, HexapawnState};
 use human_agent::HumanAgent;
 use minimax::MinimaxAgent;
 use random_agent::RandomAgent;
@@ -63,7 +64,15 @@ pub fn create_evaluator<G: Game>(game: &'static G, spec: &EvaluatorSpec)
           let evaluator = FeatureEvaluator::new(gomoku, extractor, regression, training_minimax_depth);
           unsafe{ transmute::<Box<Evaluator<GomokuState>>,
                               Box<Evaluator<G::State>>>(Box::new(evaluator)) }
-        }
+        },
+        &FeatureExtractorSpec::HexapawnNumberOfPawns => {
+          let extractor = HexapawnNumberOfPawnsExtractor::new();
+          regression.init(&extractor);
+          let gomoku: &Hexapawn = (game as &Any).downcast_ref().unwrap();
+          let evaluator = FeatureEvaluator::new(gomoku, extractor, regression, training_minimax_depth);
+          unsafe{ transmute::<Box<Evaluator<HexapawnState>>,
+                              Box<Evaluator<G::State>>>(Box::new(evaluator)) }
+        },
       }
     }
   }
@@ -117,7 +126,6 @@ fn hexapawn_terminal() {
 
 #[test]
 fn subtractor_features() {
-  let game = Subtractor::default(21, 4);
   let agent_spec = AgentSpec::Minimax {
     depth: 3,
     time_per_move: 0.0,
@@ -132,6 +140,7 @@ fn subtractor_features() {
     }
   };
 
+  let game = Subtractor::default(21, 4);
   let mut agent = create_agent(game, &agent_spec);
   let mut state = game.new_game();
   let report = agent.select_move(&state).unwrap();
@@ -140,8 +149,6 @@ fn subtractor_features() {
 
 #[test]
 fn gomoku_features() {
-  let game = Gomoku::default();
-
   let agent_spec = AgentSpec::Minimax {
     depth: 1,
     time_per_move: 0.0,
@@ -156,6 +163,30 @@ fn gomoku_features() {
     }
   };
 
+  let game = Gomoku::default();
+  let mut agent = create_agent(game, &agent_spec);
+  let mut state = game.new_game();
+  let report = agent.select_move(&state).unwrap();
+  assert!(state.play(report.get_move()).is_ok())
+}
+
+#[test]
+fn hexapawn_features() {
+  let agent_spec = AgentSpec::Minimax {
+    depth: 2,
+    time_per_move: 0.0,
+    evaluator: EvaluatorSpec::Features {
+      extractor: FeatureExtractorSpec::HexapawnNumberOfPawns,
+      regression: RegressionSpec {
+        speed: 0.001,
+        regularization: 0.001,
+        b: vec![1.0, -1.0]
+      },
+      training_minimax_depth: 1
+    }
+  };
+
+  let game = Hexapawn::default(3, 3);
   let mut agent = create_agent(game, &agent_spec);
   let mut state = game.new_game();
   let report = agent.select_move(&state).unwrap();

@@ -3,7 +3,8 @@ use regex::Regex;
 use std::fmt;
 
 use board::{Cell, Board, point_to_a};
-use def::{Game, State};
+use def::{FeatureExtractor, Game, State};
+use spec::FeatureExtractorSpec;
 use status::Status;
 
 lazy_static! {
@@ -263,6 +264,38 @@ impl Cell for HexapawnCell {
   }
 }
 
+pub struct HexapawnNumberOfPawnsExtractor {}
+
+impl HexapawnNumberOfPawnsExtractor {
+  pub fn new() -> Self { HexapawnNumberOfPawnsExtractor {} }
+}
+
+impl FeatureExtractor<HexapawnState> for HexapawnNumberOfPawnsExtractor {
+  fn nfeatures(&self) -> usize { 2 }
+
+  fn extract(&self, state: &HexapawnState) -> Vec<f32> {
+    let (whites, blacks) = state.board.iter().fold(
+        (0, 0),
+        |(w, b), &c|
+        match c {
+          HexapawnCell::White => (w + 1, b),
+          HexapawnCell::Black => (w, b + 1),
+          _ => (w, b)
+        }
+    );
+
+    if state.get_player() {
+      vec![whites as f32, blacks as f32]
+    } else {
+      vec![blacks as f32, whites as f32]
+    }
+  }
+
+  fn spec(&self) -> FeatureExtractorSpec {
+    FeatureExtractorSpec::HexapawnNumberOfPawns
+  }
+}
+
 #[cfg(test)]
 mod test {
 use super::*;
@@ -334,6 +367,22 @@ fn random_game() {
   }
 
   assert!(state.is_terminal());
+}
+
+#[test]
+fn extractor() {
+  let mut state = Hexapawn::default(3, 3).new_game();
+  let extractor = HexapawnNumberOfPawnsExtractor::new();
+  assert_eq!(vec![3.0, 3.0], extractor.extract(&state));
+  let m = state.parse_move("a1-a2").unwrap();
+  assert!(state.play(m).is_ok());
+  assert_eq!(vec![3.0, 3.0], extractor.extract(&state));
+  let m = state.parse_move("b3xa2").unwrap();
+  assert!(state.play(m).is_ok());
+  assert_eq!(vec![2.0, 3.0], extractor.extract(&state));
+  let m = state.parse_move("b1-b2").unwrap();
+  assert!(state.play(m).is_ok());
+  assert_eq!(vec![3.0, 2.0], extractor.extract(&state));
 }
 
 }  // mod test
