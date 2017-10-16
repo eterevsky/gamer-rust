@@ -271,7 +271,7 @@ impl HexapawnNumberOfPawnsExtractor {
 }
 
 impl FeatureExtractor<HexapawnState> for HexapawnNumberOfPawnsExtractor {
-  fn nfeatures(&self) -> usize { 2 }
+  fn nfeatures(&self) -> usize { 3 }
 
   fn extract(&self, state: &HexapawnState) -> Vec<f32> {
     let (whites, blacks) = state.board.iter().fold(
@@ -285,9 +285,9 @@ impl FeatureExtractor<HexapawnState> for HexapawnNumberOfPawnsExtractor {
     );
 
     if state.get_player() {
-      vec![whites as f32, blacks as f32]
+      vec![1.0, whites as f32, blacks as f32]
     } else {
-      vec![blacks as f32, whites as f32]
+      vec![1.0, blacks as f32, whites as f32]
     }
   }
 
@@ -373,16 +373,16 @@ fn random_game() {
 fn extractor() {
   let mut state = Hexapawn::default(3, 3).new_game();
   let extractor = HexapawnNumberOfPawnsExtractor::new();
-  assert_eq!(vec![3.0, 3.0], extractor.extract(&state));
+  assert_eq!(vec![1.0, 3.0, 3.0], extractor.extract(&state));
   let m = state.parse_move("a1-a2").unwrap();
   assert!(state.play(m).is_ok());
-  assert_eq!(vec![3.0, 3.0], extractor.extract(&state));
+  assert_eq!(vec![1.0, 3.0, 3.0], extractor.extract(&state));
   let m = state.parse_move("b3xa2").unwrap();
   assert!(state.play(m).is_ok());
-  assert_eq!(vec![2.0, 3.0], extractor.extract(&state));
+  assert_eq!(vec![1.0, 2.0, 3.0], extractor.extract(&state));
   let m = state.parse_move("b1-b2").unwrap();
   assert!(state.play(m).is_ok());
-  assert_eq!(vec![3.0, 2.0], extractor.extract(&state));
+  assert_eq!(vec![1.0, 3.0, 2.0], extractor.extract(&state));
 }
 
 }  // mod test

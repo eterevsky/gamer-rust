@@ -180,7 +180,7 @@ fn hexapawn_features() {
       regression: RegressionSpec {
         speed: 0.001,
         regularization: 0.001,
-        b: vec![1.0, -1.0]
+        b: vec![0.0, 1.0, -1.0]
       },
       training_minimax_depth: 1
     }
