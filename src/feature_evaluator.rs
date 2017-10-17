@@ -112,10 +112,10 @@ where G: Game, E: FeatureExtractor<G::State>, R: Regression {
 
   fn train(&mut self, steps: u64, time_limit: Duration) {
     let discount = 0.999;
-    let random_prob = 0.1;
-    let callback = &|&_, _| ();
+    let random_prob = 1.0;
     let mut state = self.game.new_game();
     let mut rng = rand::weak_rng();
+    let mut last_report = Instant::now();
 
     let deadline = if time_limit != Duration::new(0, 0) {
       Some(Instant::now() + time_limit)
@@ -123,7 +123,7 @@ where G: Game, E: FeatureExtractor<G::State>, R: Regression {
       None
     };
 
-    for step in 0..steps {
+    for _step in 0..steps {
       if let Some(d) = deadline {
         if Instant::now() >= d {
           break;
@@ -145,7 +145,10 @@ where G: Game, E: FeatureExtractor<G::State>, R: Regression {
         state.play(report.get_move()).unwrap();
       }
 
-      callback(self, step);
+      if Instant::now() - last_report > Duration::new(10, 0) {
+        self.extractor.report(self.regression.spec());
+        last_report = Instant::now();
+      }
     }
   }
 

@@ -3,7 +3,7 @@
 
 use def::{FeatureExtractor, State};
 use gomoku::gomoku::{BOARD_LEN, SIZE, GomokuState, PointState};
-use spec::FeatureExtractorSpec;
+use spec::{FeatureExtractorSpec, RegressionSpec};
 
 #[derive(Clone, Copy, Debug)]
 pub struct LineRange {
@@ -22,7 +22,8 @@ pub struct LineRange {
 ///  - whether there's an empty space on one or both sides of the line.
 #[derive(Clone)]
 pub struct GomokuLineFeatureExtractor {
-  lines: Vec<LineRange>
+  lines: Vec<LineRange>,
+//  skip_len_1: bool
 }
 
 lazy_static! {
@@ -33,7 +34,7 @@ lazy_static! {
 impl GomokuLineFeatureExtractor {
   pub fn new() -> GomokuLineFeatureExtractor {
     GomokuLineFeatureExtractor {
-      lines: Self::gen_lines()
+      lines: Self::gen_lines(),
     }
   }
 
@@ -168,6 +169,24 @@ impl FeatureExtractor<GomokuState> for GomokuLineFeatureExtractor {
 
   fn spec(&self) -> FeatureExtractorSpec {
     FeatureExtractorSpec::GomokuLines
+  }
+
+  fn report(&self, regression: RegressionSpec) {
+    let b = regression.b;
+    println!("closed straight / closed diagonal / open straight / open diagonal");
+    for &player in &[true, false] {
+      for len in 1..5 {
+        println!("{} {}: {:.3} {:.3} {:.3} {:.3}",
+                 (if player { "self" } else { "other" }),
+                 len,
+                 b[Self::encode(len, false, false, player)],
+                 b[Self::encode(len, false, true, player)],
+                 b[Self::encode(len, true, false, player)],
+                 b[Self::encode(len, true, true, player)]
+        );
+      }
+    }
+    println!("bias: {:.3}\n", b[32]);
   }
 }
 

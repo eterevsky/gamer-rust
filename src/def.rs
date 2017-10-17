@@ -4,7 +4,7 @@ use rand;
 use std::fmt;
 use std::time::Duration;
 
-use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec};
+use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec, RegressionSpec};
 
 /// A trait for a game rules set.
 pub trait Game: 'static {
@@ -83,4 +83,6 @@ pub trait FeatureExtractor<S: State> {
   fn extract(&self, state: &S) -> Vec<f32>;
 
   fn spec(&self) -> FeatureExtractorSpec;
+
+  fn report(&self, _regression_spec: RegressionSpec) { }
 }
