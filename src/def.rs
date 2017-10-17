@@ -2,6 +2,7 @@
 
 use rand;
 use std::fmt;
+use std::time::Duration;
 
 use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec};
 
@@ -67,7 +68,7 @@ pub trait Evaluator<S: State> {
 
   /// For training evaluators -- train for a number of steps. For non-training
   /// evaluators -- keep non-implemented.
-  fn train(&mut self, _steps: u64) {
+  fn train(&mut self, _steps: u64, _time_limit: Duration) {
     unreachable!()
   }
 

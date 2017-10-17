@@ -41,7 +41,8 @@ pub fn create_evaluator<G: Game>(game: &'static G, spec: &EvaluatorSpec)
     &EvaluatorSpec::Features{
       extractor: ref extractor_spec,
       regression: ref regression_spec,
-      training_minimax_depth
+      training_minimax_depth,
+      steps
     } => {
       let mut regression = LinearRegression::new(
           regression_spec.b.clone(),
@@ -53,7 +54,7 @@ pub fn create_evaluator<G: Game>(game: &'static G, spec: &EvaluatorSpec)
           let subtractor: &Subtractor =
               (game as &Any).downcast_ref().unwrap();
           let evaluator = FeatureEvaluator::new(
-              subtractor, extractor, regression, training_minimax_depth);
+              subtractor, extractor, regression, training_minimax_depth, steps);
           unsafe{ transmute::<Box<Evaluator<SubtractorState>>,
                               Box<Evaluator<G::State>>>(Box::new(evaluator)) }
         },
@@ -61,7 +62,7 @@ pub fn create_evaluator<G: Game>(game: &'static G, spec: &EvaluatorSpec)
           let extractor = GomokuLineFeatureExtractor::new();
           regression.init(&extractor);
           let gomoku: &Gomoku = (game as &Any).downcast_ref().unwrap();
-          let evaluator = FeatureEvaluator::new(gomoku, extractor, regression, training_minimax_depth);
+          let evaluator = FeatureEvaluator::new(gomoku, extractor, regression, training_minimax_depth, steps);
           unsafe{ transmute::<Box<Evaluator<GomokuState>>,
                               Box<Evaluator<G::State>>>(Box::new(evaluator)) }
         },
@@ -69,7 +70,7 @@ pub fn create_evaluator<G: Game>(game: &'static G, spec: &EvaluatorSpec)
           let extractor = HexapawnNumberOfPawnsExtractor::new();
           regression.init(&extractor);
           let gomoku: &Hexapawn = (game as &Any).downcast_ref().unwrap();
-          let evaluator = FeatureEvaluator::new(gomoku, extractor, regression, training_minimax_depth);
+          let evaluator = FeatureEvaluator::new(gomoku, extractor, regression, training_minimax_depth, steps);
           unsafe{ transmute::<Box<Evaluator<HexapawnState>>,
                               Box<Evaluator<G::State>>>(Box::new(evaluator)) }
         },
@@ -136,7 +137,8 @@ fn subtractor_features() {
         regularization: 0.001,
         b: vec![0.1, 0.2, 0.3]
       },
-      training_minimax_depth: 1
+      training_minimax_depth: 1,
+      steps: 0
     }
   };
 
@@ -159,7 +161,8 @@ fn gomoku_features() {
         regularization: 0.001,
         b: vec![]
       },
-      training_minimax_depth: 1
+      training_minimax_depth: 1,
+      steps: 0
     }
   };
 
@@ -182,7 +185,8 @@ fn hexapawn_features() {
         regularization: 0.001,
         b: vec![0.0, 1.0, -1.0]
       },
-      training_minimax_depth: 1
+      training_minimax_depth: 1,
+      steps: 0
     }
   };
 

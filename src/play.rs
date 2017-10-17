@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use def::{Agent, Game, State};
 use gomoku::Gomoku;
 use hexapawn::Hexapawn;
@@ -57,29 +59,31 @@ pub fn play_spec(
 }
 
 fn train_game<G: Game>(
-    game: &'static G, evaluator_spec: &EvaluatorSpec, steps: u64
+    game: &'static G, evaluator_spec: &EvaluatorSpec, steps: u64,
+    time_limit: Duration
 ) -> AgentSpec {
   let mut evaluator = create_evaluator(game, evaluator_spec);
-  evaluator.train(steps);
+  evaluator.train(steps, time_limit);
   let minimax = MinimaxAgent::new_boxed(evaluator, 1000, None);
   minimax.spec()
 }
 
 pub fn train_spec(
-    game_spec: &GameSpec, evaluator_spec: &EvaluatorSpec, steps: u64
+    game_spec: &GameSpec, evaluator_spec: &EvaluatorSpec, steps: u64,
+    time_limit: Duration
 ) -> AgentSpec {
   match game_spec {
     &GameSpec::Gomoku => {
       let game = Gomoku::default();
-      train_game(game, evaluator_spec, steps)
+      train_game(game, evaluator_spec, steps, time_limit)
     },
     &GameSpec::Hexapawn(width, height) => {
       let game = Hexapawn::default(width, height);
-      train_game(game, evaluator_spec, steps)
+      train_game(game, evaluator_spec, steps, time_limit)
     },
     &GameSpec::Subtractor(start, max_sub) => {
       let game = Subtractor::default(start, max_sub);
-      train_game(game, evaluator_spec, steps)
+      train_game(game, evaluator_spec, steps, time_limit)
     }
   }
 }

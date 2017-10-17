@@ -1,5 +1,6 @@
 use std;
 use std::f32;
+use std::time::{Duration, Instant};
 use rand;
 use rand::Rng;
 
@@ -77,17 +78,19 @@ where G: Game, E: FeatureExtractor<G::State>, R: Regression {
   game: &'static G,
   extractor: E,
   regression: R,
-  training_minimax_depth: u32
+  training_minimax_depth: u32,
+  steps: u64
 }
 
 impl<G, E, R> FeatureEvaluator<G, E, R>
 where G: Game, E: FeatureExtractor<G::State>, R: Regression {
-  pub fn new(game: &'static G, extractor: E, regression: R, training_minimax_depth: u32) -> Self {
+  pub fn new(game: &'static G, extractor: E, regression: R, training_minimax_depth: u32, steps: u64) -> Self {
     FeatureEvaluator {
       game,
       extractor,
       regression,
-      training_minimax_depth
+      training_minimax_depth,
+      steps
     }
   }
 }
@@ -107,14 +110,25 @@ where G: Game, E: FeatureExtractor<G::State>, R: Regression {
     }
   }
 
-  fn train(&mut self, steps: u64) {
+  fn train(&mut self, steps: u64, time_limit: Duration) {
     let discount = 0.999;
     let random_prob = 0.1;
     let callback = &|&_, _| ();
     let mut state = self.game.new_game();
     let mut rng = rand::weak_rng();
 
+    let deadline = if time_limit != Duration::new(0, 0) {
+      Some(Instant::now() + time_limit)
+    } else {
+      None
+    };
+
     for step in 0..steps {
+      if let Some(d) = deadline {
+        if Instant::now() >= d {
+          break;
+        }
+      }
       if state.is_terminal() {
         state = self.game.new_game();
       }
@@ -122,6 +136,7 @@ where G: Game, E: FeatureExtractor<G::State>, R: Regression {
       let report = minimax_fixed_depth(&state, self, self.training_minimax_depth, discount);
       let score = if state.get_player() { report.score } else { -report.score };
       self.regression.train1(&self.extractor.extract(&state), score);
+      self.steps += 1;
 
       if rng.next_f32() < random_prob {
         let m = state.get_random_move(&mut rng).unwrap();
@@ -138,7 +153,8 @@ where G: Game, E: FeatureExtractor<G::State>, R: Regression {
     EvaluatorSpec::Features {
       extractor: self.extractor.spec(),
       regression: self.regression.spec(),
-      training_minimax_depth: self.training_minimax_depth
+      training_minimax_depth: self.training_minimax_depth,
+      steps: self.steps
     }
   }
 }
@@ -154,8 +170,8 @@ fn train_linear_regression_subtractor() {
   let game = Subtractor::default(21, 4);
   let extractor = SubtractorFeatureExtractor::new(10);
   let regression = LinearRegression::new(vec![0.0; 10], (0.1, 0.001));
-  let mut evaluator = FeatureEvaluator::new(game, extractor, regression, 1);
-  evaluator.train(5000);
+  let mut evaluator = FeatureEvaluator::new(game, extractor, regression, 1, 0);
+  evaluator.train(5000, Duration::new(0, 0));
 
   for i in 0..12 {
     let game = Subtractor::new(i, 4);

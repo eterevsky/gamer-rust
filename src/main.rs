@@ -4,33 +4,11 @@ extern crate gamer;
 use clap::{App, Arg, SubCommand};
 use std::fs::File;
 use std::io::Write;
+use std::time::Duration;
 
 use gamer::play::{play_spec, train_spec};
 use gamer::spec::{GameSpec, agent_spec_to_json, load_agent_spec,
                   load_evaluator_spec};
-
-// fn train_gomoku() {
-//   let extractor = GomokuLineFeatureExtractor::new();
-//   let regression = LinearRegression::new(vec![0.0; 33], (0.001, 0.001));
-//   let mut evaluator = FeatureEvaluator::new(Gomoku::default(), extractor, regression);
-
-//   let print_progress = |evaluator: &FeatureEvaluator<'static, Vec<f32>, GomokuLineFeatureExtractor, Gomoku<'static>, LinearRegression>, step| {
-//     if step % 100 == 0 {
-//       let b = &evaluator.regression.b;
-//       println!("Other / straight / closed: {:?}", &b[0..4]);
-//       println!("Other / straight / open:   {:?}", &b[4..8]);
-//       println!("Other / diagonal / closed: {:?}", &b[8..12]);
-//       println!("Other / diagonal / open:   {:?}", &b[12..16]);
-//       println!("Self  / straight / closed: {:?}", &b[16..20]);
-//       println!("Self  / straight / open:   {:?}", &b[20..24]);
-//       println!("Self  / diagonal / closed: {:?}", &b[24..28]);
-//       println!("Self  / diagonal / open:   {:?}", &b[28..32]);
-//       println!("Bias:                      {:?}\n", b[32]);
-//     }
-//   };
-
-//   evaluator.train(1000000, 0.999, 0.1, &print_progress);
-// }
 
 fn args_definition() -> clap::App<'static, 'static> {
   App::new("gamer")
@@ -102,8 +80,17 @@ fn args_definition() -> clap::App<'static, 'static> {
             .long("steps")
             .value_name("STEPS")
             .takes_value(true)
-            .default_value("10000")
+            .default_value("100000000")
             .help("Number of training steps.")
+        )
+        .arg(
+          Arg::with_name("time_limit")
+            .short("t")
+            .long("time")
+            .value_name("SECONDS")
+            .takes_value(true)
+            .default_value("0")
+            .help("Time limit for training.")
         )
     )
 }
@@ -130,8 +117,10 @@ fn main() {
           load_evaluator_spec(train_args.value_of("input").unwrap()).unwrap();
       println!("Evaluator spec: {:?}", evaluator_spec);
       let steps: u64 = train_args.value_of("steps").unwrap().parse().unwrap();
+      let time_limit: f64 = train_args.value_of("time_limit").unwrap().parse().unwrap();
+      let time_limit = Duration::new(time_limit.trunc() as u64, (time_limit.fract() * 1E9) as u32);
       println!("Steps: {}", steps);
-      let agent = train_spec(&game_spec, &evaluator_spec, steps);
+      let agent = train_spec(&game_spec, &evaluator_spec, steps, time_limit);
       let agent_json = agent_spec_to_json(&agent);
       match train_args.value_of("output") {
         None => println!("{}", agent_json),

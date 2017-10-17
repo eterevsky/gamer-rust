@@ -40,7 +40,9 @@ pub enum EvaluatorSpec {
   Features {
     extractor: FeatureExtractorSpec,
     regression: RegressionSpec,
-    training_minimax_depth: u32
+    training_minimax_depth: u32,
+    #[serde(default)]
+    steps: u64
   }
 }
 
@@ -125,7 +127,8 @@ fn to_json_from_json() {
         regularization: 0.001,
         b: vec![0.1, 0.2, 0.3]
       },
-      training_minimax_depth: 1
+      training_minimax_depth: 1,
+      steps: 0
     }
   };
 
