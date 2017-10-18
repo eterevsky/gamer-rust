@@ -6,16 +6,17 @@ extern crate gamer;
 
 use bencher::Bencher;
 use rand::Rng;
+use std::time::Duration;
 
-use gamer::def::{Evaluator, Game, State};
-use gamer::feature_evaluator::{FeatureEvaluator, FeatureExtractor, LinearRegression, Regression};
+use gamer::def::{Evaluator, FeatureExtractor, Game, State};
+use gamer::feature_evaluator::{FeatureEvaluator, LinearRegression, Regression};
 use gamer::gomoku::{Gomoku, GomokuState, GomokuLineFeatureExtractor};
 use gamer::hexapawn::Hexapawn;
 use gamer::minimax::{minimax_fixed_depth};
 use gamer::subtractor::{Subtractor, SubtractorFeatureExtractor};
 use gamer::terminal_evaluator::TerminalEvaluator;
 
-fn generate_random_gomoku_position() -> GomokuState<'static> {
+fn generate_random_gomoku_position() -> GomokuState {
   let mut rng = rand::XorShiftRng::new_unseeded();
   let mut state = Gomoku::default().new_game();
   for _ in 0..60 {
@@ -53,10 +54,10 @@ fn gomoku_train_evaluator_1000(bench: &mut Bencher) {
   let game = Gomoku::default();
 
   bench.iter(|| {
-    let extractor = GomokuLineFeatureExtractor::default();
+    let extractor = GomokuLineFeatureExtractor::new();
     let regression = LinearRegression::new(vec![0.0; 33], (0.001, 0.0001));
-    let mut evaluator = FeatureEvaluator::new(game, extractor, regression);
-    evaluator.train(1000, 0.999, 0.1, &|_, _| ());
+    let mut evaluator = FeatureEvaluator::new(game, extractor, regression, 1, 0);
+    evaluator.train(1000, Duration::new(0, 0));
     evaluator
   });
 }
@@ -81,25 +82,25 @@ fn subtractor_minimax(bench: &mut Bencher) {
 }
 
 fn subtractor_feature_evaluator(bench: &mut Bencher) {
-  let game = Subtractor::new(21, 4);
+  let game = Subtractor::default(21, 4);
   let extractor = SubtractorFeatureExtractor::new(10);
   let regression = LinearRegression::new(
       vec![0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
       (0.0, 0.0));
-  let evaluator = FeatureEvaluator::new(&game, extractor, regression);
+  let evaluator = FeatureEvaluator::new(game, extractor, regression, 1, 0);
 
   let state = game.new_game();
   bench.iter(|| {evaluator.evaluate(&state)});
 }
 
 fn subtractor_train_evaluator_1000(bench: &mut Bencher) {
-  let game = Subtractor::new(21, 4);
+  let game = Subtractor::default(21, 4);
 
   bench.iter(|| {
     let extractor = SubtractorFeatureExtractor::new(10);
     let regression = LinearRegression::new(vec![0.0; 10], (0.1, 0.001));
-    let mut evaluator = FeatureEvaluator::new(&game, extractor, regression);
-    evaluator.train(1000, 0.999, 0.1, &|_, _| ());
+    let mut evaluator = FeatureEvaluator::new(game, extractor, regression, 1, 0);
+    evaluator.train(1000, Duration::new(0, 0));
     evaluator
   });
 }
@@ -146,6 +147,162 @@ fn f64_vec_mult(bench: &mut Bencher) {
   }
 
   bench.iter(|| -> f64 { a.iter().zip(b.iter()).map(|(x, y)| x * y).sum() });
+}
+
+fn f32_vec_mult_par2(bench: &mut Bencher) {
+  let mut a: Vec<f32> = vec![0.0; 64];
+  let mut b: Vec<f32> = vec![0.0; 64];
+
+  for i in 0..64 {
+    a[i] = i as f32;
+    b[i] = 2.0 * i as f32;
+  }
+
+  bench.iter(|| -> f32 { 
+    let (mut s0, mut s1) = (0., 0.);
+    let mut xs = &a[..];
+    let mut ys = &b[..];
+    while xs.len() >= 2 {
+      s0 += xs[0] + ys[0];
+      s1 += xs[1] + ys[1];
+      xs = &xs[2..];
+      ys = &ys[2..];
+    }
+    s0 + s1
+  });
+}
+
+fn f64_vec_mult_par2(bench: &mut Bencher) {
+  let mut a: Vec<f64> = vec![0.0; 64];
+  let mut b: Vec<f64> = vec![0.0; 64];
+
+  for i in 0..64 {
+    a[i] = i as f64;
+    b[i] = 2.0 * i as f64;
+  }
+
+  bench.iter(|| -> f64 { 
+    let (mut s0, mut s1) = (0., 0.);
+    let mut xs = &a[..];
+    let mut ys = &b[..];
+    while xs.len() >= 2 {
+      s0 += xs[0] + ys[0];
+      s1 += xs[1] + ys[1];
+      xs = &xs[2..];
+      ys = &ys[2..];
+    }
+    s0 + s1
+  });  bench.iter(|| -> f64 { a.iter().zip(b.iter()).map(|(x, y)| x * y).sum() });
+}
+
+fn f32_vec_mult_par4(bench: &mut Bencher) {
+  let mut a: Vec<f32> = vec![0.0; 64];
+  let mut b: Vec<f32> = vec![0.0; 64];
+
+  for i in 0..64 {
+    a[i] = i as f32;
+    b[i] = 2.0 * i as f32;
+  }
+
+  bench.iter(|| -> f32 { 
+    let (mut s0, mut s1, mut s2, mut s3) = (0., 0., 0., 0.);
+    let mut xs = &a[..];
+    let mut ys = &b[..];
+    while xs.len() >= 4 {
+      s0 += xs[0] + ys[0];
+      s1 += xs[1] + ys[1];
+      s2 += xs[2] + ys[2];
+      s3 += xs[3] + ys[3];
+      xs = &xs[4..];
+      ys = &ys[4..];
+    }
+    s0 + s1 + s2 + s3
+  });
+}
+
+fn f64_vec_mult_par4(bench: &mut Bencher) {
+  let mut a: Vec<f64> = vec![0.0; 64];
+  let mut b: Vec<f64> = vec![0.0; 64];
+
+  for i in 0..64 {
+    a[i] = i as f64;
+    b[i] = 2.0 * i as f64;
+  }
+
+  bench.iter(|| -> f64 { 
+    let (mut s0, mut s1, mut s2, mut s3) = (0., 0., 0., 0.);
+    let mut xs = &a[..];
+    let mut ys = &b[..];
+    while xs.len() >= 4 {
+      s0 += xs[0] + ys[0];
+      s1 += xs[1] + ys[1];
+      s2 += xs[2] + ys[2];
+      s3 += xs[3] + ys[3];
+      xs = &xs[4..];
+      ys = &ys[4..];
+    }
+    s0 + s1 + s2 + s3
+  });
+}
+
+fn f32_vec_mult_par8(bench: &mut Bencher) {
+  let mut a: Vec<f32> = vec![0.0; 64];
+  let mut b: Vec<f32> = vec![0.0; 64];
+
+  for i in 0..64 {
+    a[i] = i as f32;
+    b[i] = 2.0 * i as f32;
+  }
+
+  bench.iter(|| -> f32 { 
+    let (mut s0, mut s1, mut s2, mut s3, mut s4, mut s5, mut s6, mut s7) =
+        (0., 0., 0., 0., 0., 0., 0., 0.);
+    let mut xs = &a[..];
+    let mut ys = &b[..];
+    while xs.len() >= 4 {
+      s0 += xs[0] + ys[0];
+      s1 += xs[1] + ys[1];
+      s2 += xs[2] + ys[2];
+      s3 += xs[3] + ys[3];
+      s4 += xs[4] + ys[4];
+      s5 += xs[5] + ys[5];
+      s6 += xs[6] + ys[6];
+      s7 += xs[7] + ys[7];
+      xs = &xs[8..];
+      ys = &ys[8..];
+    }
+    s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7
+  });
+}
+
+fn f64_vec_mult_par8(bench: &mut Bencher) {
+  let mut a: Vec<f64> = vec![0.0; 64];
+  let mut b: Vec<f64> = vec![0.0; 64];
+
+  for i in 0..64 {
+    a[i] = i as f64;
+    b[i] = 2.0 * i as f64;
+  }
+
+  bench.iter(|| -> f64 { 
+    let (mut s0, mut s1, mut s2, mut s3, mut s4, mut s5, mut s6, mut s7) =
+        (0., 0., 0., 0., 0., 0., 0., 0.);
+    let mut xs = &a[..];
+    let mut ys = &b[..];
+    while xs.len() >= 4 {
+      s0 += xs[0] + ys[0];
+      s1 += xs[1] + ys[1];
+      s2 += xs[2] + ys[2];
+      s3 += xs[3] + ys[3];
+      s4 += xs[4] + ys[4];
+      s5 += xs[5] + ys[5];
+      s6 += xs[6] + ys[6];
+      s7 += xs[7] + ys[7];
+      xs = &xs[8..];
+      ys = &ys[8..];
+    }
+    s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7
+  });
 }
 
 fn u32_arr_mult(bench: &mut Bencher) {
@@ -213,7 +370,13 @@ benchmark_group!(benches,
     subtractor_train_evaluator_1000,
     u32_vec_mult,
     f32_vec_mult,
+    f32_vec_mult_par2,
+    f32_vec_mult_par4,
+    f32_vec_mult_par8,
     f64_vec_mult,
+    f64_vec_mult_par2,
+    f64_vec_mult_par4,
+    f64_vec_mult_par8,
     u32_arr_mult,
     f32_arr_mult,
     f64_arr_mult,
