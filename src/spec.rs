@@ -20,7 +20,7 @@ impl GameSpec {
   }
 }
 
-#[derive(Serialize, Debug, Deserialize)]
+#[derive(Clone, Serialize, Debug, Deserialize)]
 #[serde(tag = "type")]
 pub enum AgentSpec {
   Random,
@@ -33,7 +33,7 @@ pub enum AgentSpec {
   }
 }
 
-#[derive(Serialize, Debug, Deserialize)]
+#[derive(Clone, Serialize, Debug, Deserialize)]
 #[serde(tag = "type")]
 pub enum EvaluatorSpec {
   Terminal,
@@ -46,7 +46,7 @@ pub enum EvaluatorSpec {
   }
 }
 
-#[derive(Serialize, Debug, Deserialize)]
+#[derive(Clone, Serialize, Debug, Deserialize)]
 #[serde(tag = "type", content = "content")]
 pub enum FeatureExtractorSpec {
   Subtractor(u32),
@@ -54,7 +54,7 @@ pub enum FeatureExtractorSpec {
   HexapawnNumberOfPawns
 }
 
-#[derive(Serialize, Debug, Deserialize)]
+#[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct RegressionSpec {
   pub speed: f32,
   pub regularization: f32,

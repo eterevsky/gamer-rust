@@ -13,6 +13,7 @@ pub mod feature_evaluator;
 pub mod gomoku;
 pub mod hexapawn;
 mod human_agent;
+pub mod ladder;
 pub mod minimax;
 pub mod play;
 pub mod random_agent;
