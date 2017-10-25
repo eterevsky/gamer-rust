@@ -1,15 +1,15 @@
+use rand::{Rng, weak_rng};
 use std::clone::Clone;
 use std::fmt;
 
-use def::{Agent, Game, State};
+use def::{Game, State};
 use gomoku::Gomoku;
 use hexapawn::Hexapawn;
 use registry::create_agent;
 use spec::{AgentSpec, GameSpec};
 use subtractor::Subtractor;
 
-struct Participant<G: Game> {
-  game: &'static G,
+struct Participant {
   id: usize,
   agent_spec: AgentSpec
 }
@@ -27,35 +27,23 @@ struct Worker<G: Game> {
 
 impl<G: Game> Worker<G> {
   fn new(game: &'static G) -> Self {
-    Worker { 
+    Worker {
       game
     }
   }
 
-  fn get_agent(&self, _id: usize, spec: &AgentSpec) -> Box<Agent<G::State>> {
-    create_agent(self.game, spec)
-    
-    // if let agent = Some(self.agents.get(id)) {
-    //   agent.borrow_mut()
-    // } else {
-    //   let agent = create_agent(self.game, spec);
-    //   self.agents.insert(id, agent);
-    //   self.agents.get(id).unwrap().borrow_mut()
-    // }
-  }
-
-  fn run_game(&mut self, player1: &Participant<G>, player2: &Participant<G>)
+  fn run_game(&mut self, player1: &Participant, player2: &Participant)
       -> GameResult {
-    let agent1 = self.get_agent(player1.id, &player1.agent_spec);
-    let agent2 = self.get_agent(player2.id, &player2.agent_spec);
+    let agent1 = create_agent(self.game, &player1.agent_spec);
+    let agent2 = create_agent(self.game, &player2.agent_spec);
     let mut state = self.game.new_game();
     while !state.is_terminal() {
-      let m = if state.get_player() {
+      let report = if state.get_player() {
         agent1.select_move(&state)
       } else {
         agent2.select_move(&state)
       };
-      let m = m.unwrap().get_move();
+      let m = report.unwrap().get_move();
       state.play(m).unwrap();
     }
 
@@ -91,16 +79,22 @@ impl Ratings {
 
     let rating_diff = self.ratings[player1_id] - self.ratings[player2_id];
     let expected_payoff = (rating_diff / 400.0).tanh();
+    let payoff_err = payoff - expected_payoff;
 
-    self.ratings[player1_id] += 400.0 / self.played_games[player1_id] * (payoff - expected_payoff);
-    self.ratings[player2_id] -= 400.0 / self.played_games[player2_id] * (payoff - expected_payoff);
+    self.ratings[player1_id] +=
+        400.0 / self.played_games[player1_id] * payoff_err;
+    self.ratings[player2_id] -=
+        400.0 / self.played_games[player2_id] * payoff_err;
   }
 }
 
 impl fmt::Display for Ratings {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-    for i in 0..self.ratings.len() {
-      writeln!(f, "{}  {:.1}  {}", i, self.ratings[i], self.played_games[i])?;      
+    let mut indices: Vec<_> = (0..self.ratings.len()).collect();
+    indices.sort_unstable_by(
+        |&i, &j| self.ratings[j].partial_cmp(&self.ratings[i]).unwrap());
+    for i in indices {
+      writeln!(f, "{}  {:.1}  {}", i, self.ratings[i], self.played_games[i])?;
     }
     Ok(())
   }
@@ -108,12 +102,11 @@ impl fmt::Display for Ratings {
 
 pub trait ILadder {
   fn add_participant(&mut self, agent_spec: &AgentSpec);
-  fn run_full_round(&mut self);  
+  fn run_full_round(&mut self);
 }
 
 pub struct Ladder<G: Game> {
-  game: &'static G,
-  participants: Vec<Participant<G>>,
+  participants: Vec<Participant>,
   results: Vec<GameResult>,
   workers: Vec<Worker<G>>,
   ratings: Ratings
@@ -122,7 +115,7 @@ pub struct Ladder<G: Game> {
 impl<G: Game> Ladder<G> {
   pub fn new(game: &'static G) -> Self {
     Ladder {
-      game,
+      // game,
       participants: Vec::new(),
       results: Vec::new(),
       workers: vec![Worker::new(game)],
@@ -134,35 +127,33 @@ impl<G: Game> Ladder<G> {
 impl<G: Game> ILadder for Ladder<G> {
   fn add_participant(&mut self, agent_spec: &AgentSpec) {
     let id = self.participants.len();
-    self.participants.push(Participant {
-      game: self.game,
-      id,
-      agent_spec: (*agent_spec).clone()})
+    self.participants.push(
+        Participant { id, agent_spec: (*agent_spec).clone() })
   }
 
   fn run_full_round(&mut self) {
-    for ref player1 in self.participants.iter() {
-      for ref player2 in self.participants.iter() {
-        if player1.id == player2.id { continue };
-        let result = self.workers[0].run_game(player1, player2);
-        self.results.push(result);
-        println!("{:?}", result);
-        self.ratings.add_game(player1.id, player2.id, result.payoff);
-        println!("{}", self.ratings);
+    let mut pairs = vec![];
+    for i in 0..self.participants.len() {
+      for j in 0..self.participants.len() {
+        if i != j {
+          pairs.push((i, j));
+        }
       }
+    }
+
+    weak_rng().shuffle(&mut pairs);
+
+    for (i, j) in pairs {
+      let player1 = &self.participants[i];
+      let player2 = &self.participants[j];
+      let result = self.workers[0].run_game(player1, player2);
+      self.results.push(result);
+      println!("{:?}", result);
+      self.ratings.add_game(player1.id, player2.id, result.payoff);
+      println!("{}", self.ratings);
     }
   }
 }
-
-// impl<G: Game> Drop for Ladder<G> {
-//   fn drop(&mut self) {
-//     for worker in &mut self.workers {
-//       if let Some(some_worker) = worker.take() {
-//         some_worker.join().unwrap();
-//       }
-//     }
-//   }
-// }
 
 pub fn ladder_for_game(game_spec: &GameSpec) -> Box<ILadder> {
   match game_spec {
@@ -185,23 +176,19 @@ use spec::{AgentSpec, EvaluatorSpec};
 fn run_game() {
   let game = Subtractor::default(21, 4);
   let participant1 = Participant {
-    game,
     id: 0,
     agent_spec: AgentSpec::Random,
-    rating: 0.0
   };
   let participant2 = Participant {
-    game,
     id: 1,
     agent_spec: AgentSpec::Minimax {
       depth: 3,
       time_per_move: 0.0,
       evaluator: EvaluatorSpec::Terminal
     },
-    rating: 0.0
   };
   let mut worker = Worker::new(game);
-  let result = worker.run_game(participant1, participant2);
+  let result = worker.run_game(&participant1, &participant2);
   assert_eq!(0, result.player1_id);
   assert_eq!(1, result.player2_id);
   assert_eq!(-1.0, result.payoff);
