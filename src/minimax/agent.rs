@@ -36,7 +36,7 @@ impl<S: State> MinimaxAgent<S> {
 }
 
 impl<S: State> Agent<S> for MinimaxAgent<S> {
-  fn select_move(&mut self, state: &S)
+  fn select_move(&self, state: &S)
       -> Result<Box<AgentReport<S::Move>>, &'static str> {
     if state.is_terminal() {
       return Err("Terminal state");
@@ -107,7 +107,7 @@ use super::*;
 
 #[test]
 fn subtractor() {
-  let mut agent = MinimaxAgent::new(TerminalEvaluator::new(), 10, None);
+  let agent = MinimaxAgent::new(TerminalEvaluator::new(), 10, None);
   let game = Subtractor::new(10, 4);
   let mut state = game.new_game();
 

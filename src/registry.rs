@@ -103,7 +103,7 @@ use super::*;
 fn hexapawn_random() {
   let game = Hexapawn::default(3, 3);
   let agent_spec = AgentSpec::Random;
-  let mut agent = create_agent(game, &agent_spec);
+  let agent = create_agent(game, &agent_spec);
   let mut state = game.new_game();
   let report = agent.select_move(&state).unwrap();
   assert!(state.play(report.get_move()).is_ok())
@@ -117,7 +117,7 @@ fn hexapawn_terminal() {
     time_per_move: 0.0,
     evaluator: EvaluatorSpec::Terminal
   };
-  let mut agent = create_agent(game, &agent_spec);
+  let agent = create_agent(game, &agent_spec);
   let mut state = game.new_game();
   let report = agent.select_move(&state).unwrap();
   assert!(state.play(report.get_move()).is_ok());
@@ -143,7 +143,7 @@ fn subtractor_features() {
   };
 
   let game = Subtractor::default(21, 4);
-  let mut agent = create_agent(game, &agent_spec);
+  let agent = create_agent(game, &agent_spec);
   let mut state = game.new_game();
   let report = agent.select_move(&state).unwrap();
   assert!(state.play(report.get_move()).is_ok())
@@ -167,7 +167,7 @@ fn gomoku_features() {
   };
 
   let game = Gomoku::default();
-  let mut agent = create_agent(game, &agent_spec);
+  let agent = create_agent(game, &agent_spec);
   let mut state = game.new_game();
   let report = agent.select_move(&state).unwrap();
   assert!(state.play(report.get_move()).is_ok())
@@ -191,7 +191,7 @@ fn hexapawn_features() {
   };
 
   let game = Hexapawn::default(3, 3);
-  let mut agent = create_agent(game, &agent_spec);
+  let agent = create_agent(game, &agent_spec);
   let mut state = game.new_game();
   let report = agent.select_move(&state).unwrap();
   assert!(state.play(report.get_move()).is_ok())

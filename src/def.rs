@@ -55,7 +55,7 @@ pub trait AgentReport<M>: fmt::Display {
 
 pub trait Agent<S: State> {
   /// Returns a pair of a move and agent report if
-  fn select_move(&mut self, state: &S)
+  fn select_move(&self, state: &S)
       -> Result<Box<AgentReport<S::Move>>, &'static str>;
 
   fn spec(&self) -> AgentSpec;

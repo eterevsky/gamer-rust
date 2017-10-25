@@ -24,7 +24,7 @@ impl<M: Copy + fmt::Display> fmt::Display for HumanAgentReport<M> {
 pub struct HumanAgent {}
 
 impl<S: State> Agent<S> for HumanAgent {
-  fn select_move(&mut self, state: &S)
+  fn select_move(&self, state: &S)
       -> Result<Box<AgentReport<S::Move>>, &'static str> {
     loop {
       print!("Player {} move: ", if  state.get_player() { 1 } else { 2 });

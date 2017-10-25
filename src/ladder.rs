@@ -50,8 +50,8 @@ impl<G: Game> Worker<G> {
 
   fn run_game(&mut self, player1: Participant<G>, player2: Participant<G>)
       -> GameResult {
-    let mut agent1 = self.get_agent(player1.id, &player1.agent_spec);
-    let mut agent2 = self.get_agent(player2.id, &player2.agent_spec);
+    let agent1 = self.get_agent(player1.id, &player1.agent_spec);
+    let agent2 = self.get_agent(player2.id, &player2.agent_spec);
     let mut state = self.game.new_game();
     while !state.is_terminal() {
       let m = if state.get_player() {
@@ -123,31 +123,29 @@ use subtractor::Subtractor;
 use spec::{AgentSpec, EvaluatorSpec};
 
 #[test]
-fn subtractor() {
-  let mut ladder = Ladder::new(Subtractor::default(21, 4));
-}
-
-#[test]
 fn run_game() {
   let game = Subtractor::default(21, 4);
-  let participant1 = Participant{
+  let participant1 = Participant {
     game,
     id: 0,
     agent_spec: AgentSpec::Random,
     rating: 0.0
   };
-  let participant2 = Participant{
+  let participant2 = Participant {
     game,
     id: 1,
     agent_spec: AgentSpec::Minimax {
-      depth: 2,
+      depth: 3,
       time_per_move: 0.0,
       evaluator: EvaluatorSpec::Terminal
     },
     rating: 0.0
   };
   let mut worker = Worker::new(game);
-  let payoff = worker.run_game(participant1, participant2);
+  let result = worker.run_game(participant1, participant2);
+  assert_eq!(0, result.player1_id);
+  assert_eq!(1, result.player2_id);
+  assert_eq!(-1.0, result.payoff);
 }
 
 }  // mod tests
