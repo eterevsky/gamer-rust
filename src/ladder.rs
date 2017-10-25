@@ -1,27 +1,23 @@
 use std::clone::Clone;
+use std::fmt;
 
 use def::{Agent, Game, State};
+use gomoku::Gomoku;
+use hexapawn::Hexapawn;
 use registry::create_agent;
-use spec::AgentSpec;
+use spec::{AgentSpec, GameSpec};
+use subtractor::Subtractor;
 
 struct Participant<G: Game> {
   game: &'static G,
-  id: u32,
-  agent_spec: AgentSpec,
-  rating: f32
+  id: usize,
+  agent_spec: AgentSpec
 }
 
-struct GameJob {
-  stop: bool,
-  player1_id: u32,
-  player1_spec: AgentSpec,
-  player2_id: u32,
-  player2_spec: AgentSpec
-}
-
+#[derive(Clone, Copy, Debug)]
 struct GameResult {
-  player1_id: u32,
-  player2_id: u32,
+  player1_id: usize,
+  player2_id: usize,
   payoff: f32
 }
 
@@ -36,7 +32,7 @@ impl<G: Game> Worker<G> {
     }
   }
 
-  fn get_agent(&self, _id: u32, spec: &AgentSpec) -> Box<Agent<G::State>> {
+  fn get_agent(&self, _id: usize, spec: &AgentSpec) -> Box<Agent<G::State>> {
     create_agent(self.game, spec)
     
     // if let agent = Some(self.agents.get(id)) {
@@ -48,7 +44,7 @@ impl<G: Game> Worker<G> {
     // }
   }
 
-  fn run_game(&mut self, player1: Participant<G>, player2: Participant<G>)
+  fn run_game(&mut self, player1: &Participant<G>, player2: &Participant<G>)
       -> GameResult {
     let agent1 = self.get_agent(player1.id, &player1.agent_spec);
     let agent2 = self.get_agent(player2.id, &player2.agent_spec);
@@ -71,10 +67,56 @@ impl<G: Game> Worker<G> {
   }
 }
 
-struct Ladder<G: Game> {
+struct Ratings {
+  ratings: Vec<f32>,
+  played_games: Vec<f32>
+}
+
+impl Ratings {
+  fn new() -> Self {
+    Ratings {
+      ratings: vec![],
+      played_games: vec![]
+    }
+  }
+
+  fn add_game(&mut self, player1_id: usize, player2_id: usize, payoff: f32) {
+    while self.ratings.len() <= player1_id || self.ratings.len() <= player2_id {
+      self.ratings.push(0.0);
+      self.played_games.push(0.0);
+    }
+
+    self.played_games[player1_id] += 1.0;
+    self.played_games[player2_id] += 1.0;
+
+    let rating_diff = self.ratings[player1_id] - self.ratings[player2_id];
+    let expected_payoff = (rating_diff / 400.0).tanh();
+
+    self.ratings[player1_id] += 400.0 / self.played_games[player1_id] * (payoff - expected_payoff);
+    self.ratings[player2_id] -= 400.0 / self.played_games[player2_id] * (payoff - expected_payoff);
+  }
+}
+
+impl fmt::Display for Ratings {
+  fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+    for i in 0..self.ratings.len() {
+      writeln!(f, "{}  {:.1}  {}", i, self.ratings[i], self.played_games[i])?;      
+    }
+    Ok(())
+  }
+}
+
+pub trait ILadder {
+  fn add_participant(&mut self, agent_spec: &AgentSpec);
+  fn run_full_round(&mut self);  
+}
+
+pub struct Ladder<G: Game> {
   game: &'static G,
   participants: Vec<Participant<G>>,
   results: Vec<GameResult>,
+  workers: Vec<Worker<G>>,
+  ratings: Ratings
 }
 
 impl<G: Game> Ladder<G> {
@@ -82,24 +124,31 @@ impl<G: Game> Ladder<G> {
     Ladder {
       game,
       participants: Vec::new(),
-      results: Vec::new()
+      results: Vec::new(),
+      workers: vec![Worker::new(game)],
+      ratings: Ratings::new()
     }
   }
+}
 
-  pub fn add_participant(&mut self, agent_spec: &AgentSpec) {
+impl<G: Game> ILadder for Ladder<G> {
+  fn add_participant(&mut self, agent_spec: &AgentSpec) {
     let id = self.participants.len();
     self.participants.push(Participant {
       game: self.game,
-      id: id as u32,
-      agent_spec: (*agent_spec).clone(),
-      rating: 0.0 })
+      id,
+      agent_spec: (*agent_spec).clone()})
   }
 
-  pub fn run_full_round(&self) {
+  fn run_full_round(&mut self) {
     for ref player1 in self.participants.iter() {
       for ref player2 in self.participants.iter() {
-        println!("player1: {:?}", player1.agent_spec);
-        println!("player2: {:?}", player2.agent_spec);
+        if player1.id == player2.id { continue };
+        let result = self.workers[0].run_game(player1, player2);
+        self.results.push(result);
+        println!("{:?}", result);
+        self.ratings.add_game(player1.id, player2.id, result.payoff);
+        println!("{}", self.ratings);
       }
     }
   }
@@ -114,6 +163,16 @@ impl<G: Game> Ladder<G> {
 //     }
 //   }
 // }
+
+pub fn ladder_for_game(game_spec: &GameSpec) -> Box<ILadder> {
+  match game_spec {
+    &GameSpec::Gomoku => Box::new(Ladder::new(Gomoku::default())),
+    &GameSpec::Hexapawn(width, height) =>
+        Box::new(Ladder::new(Hexapawn::default(width, height))),
+    &GameSpec::Subtractor(start, max_sub) =>
+        Box::new(Ladder::new(Subtractor::default(start, max_sub)))
+  }
+}
 
 #[cfg(test)]
 mod test {

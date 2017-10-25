@@ -1,5 +1,7 @@
 {
   "type": "Minimax",
   "depth": 4,
-  "evaluator": "Terminal"
+  "evaluator": {
+    "type": "Terminal"
+  }
 }

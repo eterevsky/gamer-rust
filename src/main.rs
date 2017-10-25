@@ -6,6 +6,7 @@ use std::fs::File;
 use std::io::Write;
 use std::time::Duration;
 
+use gamer::ladder::{ILadder, ladder_for_game};
 use gamer::play::{play_spec, train_spec};
 use gamer::spec::{GameSpec, agent_spec_to_json, load_agent_spec,
                   load_evaluator_spec};
@@ -93,6 +94,17 @@ fn args_definition() -> clap::App<'static, 'static> {
             .help("Time limit for training.")
         )
     )
+    .subcommand(
+      SubCommand::with_name("tournament")
+        .about("Tournament between agents.")
+        .arg(
+          Arg::with_name("AGENT")
+            .index(1)
+            .multiple(true)
+            .required(true)
+            .help("A file with agent spec.")
+        )
+    )
 }
 
 fn main() {
@@ -130,6 +142,19 @@ fn main() {
         }
       }
     },
+    ("tournament", Some(tournament_args)) => {
+      let agents: Vec<_> = tournament_args
+          .values_of("AGENT").unwrap()
+          .map(|a| load_agent_spec(a, 1.0).unwrap())
+          .collect();
+      let mut ladder = ladder_for_game(&game_spec);
+      for (i, a) in agents.iter().enumerate() {
+        println!("{}  {:?}", i, a);
+        ladder.add_participant(a);
+      }
+
+      ladder.run_full_round();
+    }
     _ => panic!("Unknown subcommand.")
   }
 }
