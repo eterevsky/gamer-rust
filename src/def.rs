@@ -7,7 +7,7 @@ use std::time::Duration;
 use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec, RegressionSpec};
 
 /// A trait for a game rules set.
-pub trait Game: 'static {
+pub trait Game: 'static + Sync {
   type State: State;
 
   /// Starts a new game and return the game state before the first move of

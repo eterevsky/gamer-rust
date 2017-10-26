@@ -178,9 +178,7 @@ fn main() {
         ladder.add_participant(a);
       }
 
-      for _ in 0..rounds {
-        ladder.run_full_round();
-      }
+      ladder.run_full_round(rounds);
     }
     _ => panic!("Unknown subcommand.")
   }
