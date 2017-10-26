@@ -1,9 +1,9 @@
 use rand::{weak_rng, Rng};
 use std::clone::Clone;
 use std::fmt;
+use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
-use std::sync::mpsc::{Receiver, Sender, channel};
-use std::thread::{JoinHandle, spawn};
+use std::thread::{spawn, JoinHandle};
 
 use def::{Game, State};
 use gomoku::Gomoku;
@@ -27,29 +27,33 @@ struct GameResult {
 
 enum Job {
   Stop,
-  Play(Participant, Participant)
+  Play(Participant, Participant),
 }
 
 struct Worker<G: Game> {
   game: &'static G,
   jobs_receiver: Arc<Mutex<Receiver<Job>>>,
-  results_sender: Sender<GameResult>
+  results_sender: Sender<GameResult>,
 }
 
 impl<G: Game> Worker<G> {
   fn new(
-      game: &'static G,
-      jobs_receiver: Arc<Mutex<Receiver<Job>>>,
-      results_sender: Sender<GameResult>) -> Self {
+    game: &'static G,
+    jobs_receiver: Arc<Mutex<Receiver<Job>>>,
+    results_sender: Sender<GameResult>,
+  ) -> Self {
     Worker {
       game,
       jobs_receiver,
-      results_sender
+      results_sender,
     }
   }
 
-  fn run_game(&self, player1: &Participant, player2: &Participant)
-      -> GameResult {
+  fn run_game(
+    &self,
+    player1: &Participant,
+    player2: &Participant,
+  ) -> GameResult {
     let agent1 = create_agent(self.game, &player1.agent_spec);
     let agent2 = create_agent(self.game, &player2.agent_spec);
     let mut state = self.game.new_game();
@@ -85,9 +89,10 @@ impl<G: Game> Worker<G> {
 }
 
 fn start_worker<G: Game>(
-    game: &'static G,
-    jobs_receiver: Arc<Mutex<Receiver<Job>>>,
-    results_sender: Sender<GameResult>) -> JoinHandle<()> {
+  game: &'static G,
+  jobs_receiver: Arc<Mutex<Receiver<Job>>>,
+  results_sender: Sender<GameResult>,
+) -> JoinHandle<()> {
   spawn(move || {
     let mut worker = Worker::new(game, jobs_receiver, results_sender);
     worker.run()
@@ -96,7 +101,7 @@ fn start_worker<G: Game>(
 
 struct Ratings {
   ratings: Vec<f32>,
-  played_games: Vec<f32>,
+  played_games: Vec<u32>,
 }
 
 impl Ratings {
@@ -110,20 +115,24 @@ impl Ratings {
   fn add_game(&mut self, player1_id: usize, player2_id: usize, payoff: f32) {
     while self.ratings.len() <= player1_id || self.ratings.len() <= player2_id {
       self.ratings.push(0.0);
-      self.played_games.push(0.0);
+      self.played_games.push(0);
     }
 
-    self.played_games[player1_id] += 1.0;
-    self.played_games[player2_id] += 1.0;
+    self.played_games[player1_id] += 1;
+    self.played_games[player2_id] += 1;
 
     let rating_diff = self.ratings[player1_id] - self.ratings[player2_id];
     let expected_payoff = (rating_diff / 400.0).tanh();
     let payoff_err = payoff - expected_payoff;
 
     self.ratings[player1_id] +=
-        400.0 / self.played_games[player1_id].sqrt() * payoff_err;
+      400.0 / (self.played_games[player1_id] as f32).sqrt() * payoff_err;
     self.ratings[player2_id] -=
-        400.0 / self.played_games[player2_id].sqrt() * payoff_err;
+      400.0 / (self.played_games[player2_id] as f32).sqrt() * payoff_err;
+  }
+
+  fn get_rating(&self, player_id: usize) -> f32 {
+    self.ratings[player_id] - self.ratings[0]
   }
 }
 
@@ -134,8 +143,13 @@ impl fmt::Display for Ratings {
       self.ratings[j].partial_cmp(&self.ratings[i]).unwrap()
     });
     for i in indices {
-      writeln!(f, "{}  {:.1}  {}", i, self.ratings[i] - self.ratings[0],
-               self.played_games[i])?;
+      writeln!(
+        f,
+        "{}  {:.1}  {}",
+        i,
+        self.ratings[i] - self.ratings[0],
+        self.played_games[i]
+      )?;
     }
     Ok(())
   }
@@ -152,7 +166,7 @@ pub struct Ladder {
   threads: Vec<JoinHandle<()>>,
   ratings: Ratings,
   jobs_sender: Sender<Job>,
-  results_receiver: Receiver<GameResult>
+  results_receiver: Receiver<GameResult>,
 }
 
 impl Ladder {
@@ -163,8 +177,11 @@ impl Ladder {
 
     let mut threads = vec![];
     for _ in 0..nthreads {
-      threads.push(
-          start_worker(game, jobs_receiver.clone(), results_sender.clone()));
+      threads.push(start_worker(
+        game,
+        jobs_receiver.clone(),
+        results_sender.clone(),
+      ));
     }
 
     Ladder {
@@ -173,16 +190,21 @@ impl Ladder {
       ratings: Ratings::new(),
       threads,
       jobs_sender,
-      results_receiver
+      results_receiver,
     }
   }
 
-  pub fn add_participant(&mut self, agent_spec: &AgentSpec) {
+  pub fn add_participant(&mut self, agent_spec: &AgentSpec) -> usize {
     let id = self.participants.len();
     self.participants.push(Participant {
       id,
       agent_spec: (*agent_spec).clone(),
-    })
+    });
+    id
+  }
+
+  pub fn get_rating(&self, id: usize) -> f32 {
+    self.ratings.get_rating(id)
   }
 
   pub fn run_full_round(&mut self, nrounds: u32) {
@@ -200,8 +222,8 @@ impl Ladder {
       rng.shuffle(&mut pairs);
 
       for &(i, j) in pairs.iter() {
-        let job = Job::Play(self.participants[i].clone(),
-                            self.participants[j].clone());
+        let job =
+          Job::Play(self.participants[i].clone(), self.participants[j].clone());
         self.jobs_sender.send(job).unwrap();
       }
     }
@@ -211,7 +233,10 @@ impl Ladder {
       self.results.push(result);
       println!("{:?}", result);
       self.ratings.add_game(
-          result.player1_id, result.player2_id, result.payoff);
+        result.player1_id,
+        result.player2_id,
+        result.payoff,
+      );
       println!("{}", self.ratings);
     }
   }
@@ -232,23 +257,32 @@ impl Drop for Ladder {
 pub fn ladder_for_game(game_spec: &GameSpec) -> Ladder {
   match game_spec {
     &GameSpec::Gomoku => Ladder::new(Gomoku::default(), 8),
-    &GameSpec::Hexapawn(width, height) =>
-        Ladder::new(Hexapawn::default(width, height), 8),
-    &GameSpec::Subtractor(start, max_sub) =>
-        Ladder::new(Subtractor::default(start, max_sub), 8)
+    &GameSpec::Hexapawn(width, height) => {
+      Ladder::new(Hexapawn::default(width, height), 8)
+    }
+    &GameSpec::Subtractor(start, max_sub) => {
+      Ladder::new(Subtractor::default(start, max_sub), 8)
+    }
   }
 }
 
 #[cfg(test)]
 mod test {
 
+  use std::sync::mpsc::channel;
+
   use super::*;
   use subtractor::Subtractor;
   use spec::{AgentSpec, EvaluatorSpec};
 
+
   #[test]
-  fn run_game() {
+  fn subtractor_worker() {
     let game = Subtractor::default(21, 4);
+    let (jobs_sender, jobs_receiver) = channel();
+    let jobs_receiver = Arc::new(Mutex::new(jobs_receiver));
+    let (results_sender, results_receiver) = channel();
+
     let participant1 = Participant {
       id: 0,
       agent_spec: AgentSpec::Random,
@@ -261,11 +295,38 @@ mod test {
         evaluator: EvaluatorSpec::Terminal,
       },
     };
-    let mut worker = Worker::new(game);
-    let result = worker.run_game(&participant1, &participant2);
+
+    let thread = start_worker(game, jobs_receiver, results_sender);
+
+    jobs_sender
+      .send(Job::Play(participant1, participant2))
+      .unwrap();
+    let result = results_receiver.recv().unwrap();
+
     assert_eq!(0, result.player1_id);
     assert_eq!(1, result.player2_id);
     assert_eq!(-1.0, result.payoff);
+
+    jobs_sender.send(Job::Stop).unwrap();
+    thread.join().unwrap();
+  }
+
+  #[test]
+  fn subtractor_ladder() {
+    let mut ladder = ladder_for_game(&GameSpec::Subtractor(21, 4));
+    let random_id = ladder.add_participant(&AgentSpec::Random);
+    let minimax_id = ladder.add_participant(&AgentSpec::Minimax {
+      depth: 5,
+      time_per_move: 0.0,
+      evaluator: EvaluatorSpec::Terminal
+    });
+
+    ladder.run_full_round(2);
+
+    assert_eq!(0.0, ladder.get_rating(random_id));
+    assert!(ladder.get_rating(minimax_id) > 400.0);
+
+    assert_eq!(4, ladder.ratings.played_games[random_id]);
   }
 
 } // mod tests
