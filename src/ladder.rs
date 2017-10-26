@@ -133,7 +133,8 @@ impl fmt::Display for Ratings {
     indices.sort_unstable_by(
         |&i, &j| self.ratings[j].partial_cmp(&self.ratings[i]).unwrap());
     for i in indices {
-      writeln!(f, "{}  {:.1}  {}", i, self.ratings[i], self.played_games[i])?;
+      writeln!(f, "{}  {:.1}  {}", i, self.ratings[i] - self.ratings[0],
+               self.played_games[i])?;
     }
     Ok(())
   }
