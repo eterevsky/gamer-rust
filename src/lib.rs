@@ -10,6 +10,8 @@ extern crate serde_json;
 mod board;
 pub mod def;
 pub mod feature_evaluator;
+#[macro_use]
+pub mod games;
 pub mod gomoku;
 pub mod hexapawn;
 mod human_agent;

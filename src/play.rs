@@ -30,7 +30,7 @@ pub fn play<G: Game>(
   payoff
 }
 
-fn play_game<G: Game>(
+pub fn play_game<G: Game>(
     game: &'static G, player1_spec: &AgentSpec, player2_spec: &AgentSpec
 ) -> f32 {
   let mut player1 = create_agent(game, player1_spec);
@@ -58,7 +58,7 @@ pub fn play_spec(
   }
 }
 
-fn train_game<G: Game>(
+pub fn train_game<G: Game>(
     game: &'static G, evaluator_spec: &EvaluatorSpec, steps: u64,
     time_limit: Duration
 ) -> AgentSpec {

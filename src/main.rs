@@ -1,27 +1,29 @@
 extern crate clap;
+#[macro_use]
 extern crate gamer;
 
-use clap::{App, Arg, SubCommand};
+use clap::{App, Arg, ArgMatches, SubCommand};
 use std::fs::File;
 use std::io::Write;
 use std::time::Duration;
 
-use gamer::ladder::ladder_for_game;
-use gamer::play::{play_spec, train_spec};
-use gamer::spec::{GameSpec, agent_spec_to_json, load_agent_spec,
-                  load_evaluator_spec};
+use gamer::def::Game;
+use gamer::ladder::Ladder;
+use gamer::play::{play_game, train_game};
+use gamer::spec::{agent_spec_to_json, load_agent_spec, load_evaluator_spec,
+                  GameSpec};
 
 fn args_definition() -> clap::App<'static, 'static> {
   App::new("gamer")
-    .version("0.1")
+    .version(env!("CARGO_PKG_VERSION"))
     .arg(
       Arg::with_name("game")
+        .required(true)
         .short("g")
         .long("game")
         .value_name("GAME")
         .takes_value(true)
-        .possible_values(&["gomoku", "subtractor", "hexapawn"])
-        .default_value("gomoku")
+        .possible_values(&["gomoku", "hexapawn", "subtractor"])
         .help("The game to be played."),
     )
     .subcommand(
@@ -29,21 +31,21 @@ fn args_definition() -> clap::App<'static, 'static> {
         .about("Play a single game")
         .arg(
           Arg::with_name("player1")
-            .short("1")
-            .long("player1")
-            .value_name("PLAYER")
+            .index(1)
+            .required(true)
+            .value_name("PLAYER1")
             .takes_value(true)
             .default_value("random")
-            .help("Specification of the first player.")
+            .help("Specification of the first player."),
         )
         .arg(
           Arg::with_name("player2")
-            .short("2")
-            .long("player2")
-            .value_name("PLAYER")
+            .index(2)
+            .required(true)
+            .value_name("PLAYER2")
             .takes_value(true)
             .default_value("random")
-            .help("Specification of the second player.")
+            .help("Specification of the second player."),
         )
         .arg(
           Arg::with_name("time_per_move")
@@ -52,7 +54,7 @@ fn args_definition() -> clap::App<'static, 'static> {
             .value_name("SECONDS")
             .takes_value(true)
             .default_value("0")
-            .help("Time per move in seconds. 0 for no time limit.")
+            .help("Time per move in seconds. 0 for no time limit."),
         )
     )
     .subcommand(
@@ -65,7 +67,7 @@ fn args_definition() -> clap::App<'static, 'static> {
             .value_name("PATH")
             .takes_value(true)
             .required(true)
-            .help("A path to initial evaluator spec.")
+            .help("A path to initial evaluator spec."),
         )
         .arg(
           Arg::with_name("output")
@@ -73,7 +75,7 @@ fn args_definition() -> clap::App<'static, 'static> {
             .long("output")
             .value_name("PATH")
             .takes_value(true)
-            .help("A path where the evaluator will be written.")
+            .help("A path where the evaluator will be written."),
         )
         .arg(
           Arg::with_name("steps")
@@ -82,7 +84,7 @@ fn args_definition() -> clap::App<'static, 'static> {
             .value_name("STEPS")
             .takes_value(true)
             .default_value("100000000")
-            .help("Number of training steps.")
+            .help("Number of training steps."),
         )
         .arg(
           Arg::with_name("time_limit")
@@ -91,8 +93,8 @@ fn args_definition() -> clap::App<'static, 'static> {
             .value_name("SECONDS")
             .takes_value(true)
             .default_value("0")
-            .help("Time limit for training.")
-        )
+            .help("Time limit for training."),
+        ),
     )
     .subcommand(
       SubCommand::with_name("tournament")
@@ -102,7 +104,7 @@ fn args_definition() -> clap::App<'static, 'static> {
             .index(1)
             .multiple(true)
             .required(true)
-            .help("A file with agent spec.")
+            .help("A file with agent spec."),
         )
         .arg(
           Arg::with_name("rounds")
@@ -111,7 +113,7 @@ fn args_definition() -> clap::App<'static, 'static> {
             .value_name("NUM")
             .takes_value(true)
             .default_value("1")
-            .help("Number of rounds for the tournament.")
+            .help("Number of rounds for the tournament."),
         )
         .arg(
           Arg::with_name("time_per_move")
@@ -120,9 +122,60 @@ fn args_definition() -> clap::App<'static, 'static> {
             .value_name("SECONDS")
             .takes_value(true)
             .default_value("1")
-            .help("Time limit for one move.")
-        )
+            .help("Time limit for one move."),
+        ),
     )
+}
+
+fn run_play<G: Game>(game: &'static G, args: &ArgMatches) {
+  let t: f64 = args.value_of("time_per_move").unwrap().parse().unwrap();
+  let player1_spec =
+    load_agent_spec(args.value_of("player1").unwrap(), t).unwrap();
+  let player2_spec =
+    load_agent_spec(args.value_of("player2").unwrap(), t).unwrap();
+  println!("Player 1 spec: {:?}", player1_spec);
+  println!("Player 2 spec: {:?}\n", player2_spec);
+  play_game(game, &player1_spec, &player2_spec);
+}
+
+fn run_train<G: Game>(game: &'static G, args: &ArgMatches) {
+  let evaluator_spec =
+    load_evaluator_spec(args.value_of("input").unwrap()).unwrap();
+  println!("Evaluator spec: {:?}", evaluator_spec);
+  let steps: u64 = args.value_of("steps").unwrap().parse().unwrap();
+  let time_limit: f64 =
+    args.value_of("time_limit").unwrap().parse().unwrap();
+  let time_limit = Duration::new(
+    time_limit.trunc() as u64,
+    (time_limit.fract() * 1E9) as u32,
+  );
+  println!("Steps: {}", steps);
+  let agent = train_game(game, &evaluator_spec, steps, time_limit);
+  let agent_json = agent_spec_to_json(&agent);
+  match args.value_of("output") {
+    None => println!("{}", agent_json),
+    Some(path) => {
+      let mut f = File::create(path).unwrap();
+      f.write(&agent_json.into_bytes()).unwrap();
+    }
+  };
+}
+
+fn run_tournament<G: Game>(game: &'static G, args: &ArgMatches) {
+  let rounds: u32 = args.value_of("rounds").unwrap().parse().unwrap();
+  let time_per_move: f64 = args.value_of("time_per_move").unwrap().parse().unwrap();
+  let agents: Vec<_> = args
+    .values_of("AGENT")
+    .unwrap()
+    .map(|a| load_agent_spec(a, time_per_move).unwrap())
+    .collect();
+  let mut ladder = Ladder::new(game, 8);
+  for agent in agents.iter() {
+    let id = ladder.add_participant(agent);
+    println!("{}  {:?}", id, agent);
+  }
+
+  ladder.run_full_round(rounds);
 }
 
 fn main() {
@@ -132,54 +185,9 @@ fn main() {
   println!("Game spec: {:?}", game_spec);
 
   match args.subcommand() {
-    ("play", Some(play_args)) => {
-      let t: f64 =
-          play_args.value_of("time_per_move").unwrap().parse().unwrap();
-      let player1_spec =
-          load_agent_spec(play_args.value_of("player1").unwrap(), t).unwrap();
-      let player2_spec =
-          load_agent_spec(play_args.value_of("player2").unwrap(), t).unwrap();
-      println!("Player 1 spec: {:?}", player1_spec);
-      println!("Player 2 spec: {:?}\n", player2_spec);
-      play_spec(&game_spec, &player1_spec, &player2_spec);
-    },
-    ("train", Some(train_args)) => {
-      let evaluator_spec =
-          load_evaluator_spec(train_args.value_of("input").unwrap()).unwrap();
-      println!("Evaluator spec: {:?}", evaluator_spec);
-      let steps: u64 = train_args.value_of("steps").unwrap().parse().unwrap();
-      let time_limit: f64 =
-          train_args.value_of("time_limit").unwrap().parse().unwrap();
-      let time_limit = Duration::new(
-          time_limit.trunc() as u64, (time_limit.fract() * 1E9) as u32);
-      println!("Steps: {}", steps);
-      let agent = train_spec(&game_spec, &evaluator_spec, steps, time_limit);
-      let agent_json = agent_spec_to_json(&agent);
-      match train_args.value_of("output") {
-        None => println!("{}", agent_json),
-        Some(path) => {
-          let mut f = File::create(path).unwrap();
-          f.write(&agent_json.into_bytes()).unwrap();
-        }
-      }
-    },
-    ("tournament", Some(tournament_args)) => {
-      let rounds: u32 =
-          tournament_args.value_of("rounds").unwrap().parse().unwrap();
-      let time_per_move: f64 =
-          tournament_args.value_of("time_per_move").unwrap().parse().unwrap();
-      let agents: Vec<_> = tournament_args
-          .values_of("AGENT").unwrap()
-          .map(|a| load_agent_spec(a, time_per_move).unwrap())
-          .collect();
-      let mut ladder = ladder_for_game(&game_spec);
-      for (i, a) in agents.iter().enumerate() {
-        println!("{}  {:?}", i, a);
-        ladder.add_participant(a);
-      }
-
-      ladder.run_full_round(rounds);
-    }
-    _ => panic!("Unknown subcommand.")
+    ("play", Some(subargs)) => call_with_game!(run_play, &game_spec, subargs),
+    ("train", Some(subargs)) => call_with_game!(run_train, &game_spec, subargs),
+    ("tournament", Some(subargs)) => call_with_game!(run_tournament, &game_spec, subargs),
+    _ => panic!("Error parsing subcommand."),
   }
 }
