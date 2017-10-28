@@ -20,5 +20,4 @@ mod random_agent;
 pub mod registry;
 pub mod spec;
 mod status;
-pub mod subtractor;
 mod terminal_evaluator;

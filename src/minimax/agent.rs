@@ -101,7 +101,7 @@ fn convert_duration(duration: Option<Duration>) -> f64 {
 mod test {
 
 use def::{Agent, Game};
-use subtractor::Subtractor;
+use games::Subtractor;
 use terminal_evaluator::TerminalEvaluator;
 use super::*;
 

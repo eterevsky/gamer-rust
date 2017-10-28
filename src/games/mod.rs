@@ -1,6 +1,8 @@
 mod hexapawn;
+mod subtractor;
 
 pub use self::hexapawn::{Hexapawn, HexapawnNumberOfPawnsExtractor};
+pub use self::subtractor::{Subtractor, SubtractorFeatureExtractor};
 
 #[macro_export]
 macro_rules! call_with_game {
@@ -13,7 +15,7 @@ macro_rules! call_with_game {
         $func($crate::games::Hexapawn::default(width, height), $( $arg ),*)
       },
       &$crate::spec::GameSpec::Subtractor(start, max_sub) => {
-        $func($crate::subtractor::Subtractor::default(start, max_sub), $( $arg ),*)
+        $func($crate::games::Subtractor::default(start, max_sub), $( $arg ),*)
       },
     }
   }

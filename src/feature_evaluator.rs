@@ -166,7 +166,7 @@ where G: Game, E: FeatureExtractor<G::State>, R: Regression {
 mod test {
 
 use super::*;
-use subtractor::{Subtractor, SubtractorFeatureExtractor};
+use games::{Subtractor, SubtractorFeatureExtractor};
 
 #[test]
 fn train_linear_regression_subtractor() {

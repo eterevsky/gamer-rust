@@ -157,7 +157,7 @@ pub fn minimax_fixed_depth<S: State, E: Evaluator<S>>(
 mod test {
 
 use def::{AgentReport, Game};
-use subtractor::Subtractor;
+use games::Subtractor;
 use terminal_evaluator::TerminalEvaluator;
 use super::*;
 

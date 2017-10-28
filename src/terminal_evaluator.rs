@@ -30,7 +30,7 @@ mod test {
 use def::Game;
 use def::Evaluator;
 use gomoku::Gomoku;
-use subtractor::Subtractor;
+use games::Subtractor;
 use super::*;
 
 #[test]

@@ -6,11 +6,10 @@ use std::sync::{Arc, Mutex};
 use std::thread::{spawn, JoinHandle};
 
 use def::{Game, State};
-use games::Hexapawn;
+use games::{Hexapawn, Subtractor};
 use gomoku::Gomoku;
 use registry::create_agent;
 use spec::{AgentSpec, GameSpec};
-use subtractor::Subtractor;
 
 #[derive(Clone)]
 struct Participant {
@@ -30,7 +29,12 @@ enum Job {
   Play(Participant, Participant),
 }
 
-pub fn play_game<G: Game>(game: &'static G, player1: &AgentSpec, player2: &AgentSpec, output: bool) -> f32 {
+pub fn play_game<G: Game>(
+  game: &'static G,
+  player1: &AgentSpec,
+  player2: &AgentSpec,
+  output: bool,
+) -> f32 {
   let agent1 = create_agent(game, player1);
   let agent2 = create_agent(game, player2);
   let mut state = game.new_game();
@@ -48,7 +52,7 @@ pub fn play_game<G: Game>(game: &'static G, player1: &AgentSpec, player2: &Agent
       println!("{}", report);
     }
     state.play(report.get_move()).unwrap();
-  };
+  }
   let payoff = state.get_payoff().unwrap();
   if output {
     println!("{}\nPayoff: {}", state, payoff);
@@ -80,12 +84,13 @@ impl<G: Game> Worker<G> {
     player1: &Participant,
     player2: &Participant,
   ) -> GameResult {
-    let payoff = play_game(self.game, &player1.agent_spec, &player2.agent_spec, false);
+    let payoff =
+      play_game(self.game, &player1.agent_spec, &player2.agent_spec, false);
 
     GameResult {
       player1_id: player1.id,
       player2_id: player2.id,
-      payoff
+      payoff,
     }
   }
 
@@ -287,8 +292,7 @@ mod test {
   use std::sync::mpsc::channel;
 
   use super::*;
-  use games::Hexapawn;
-  use subtractor::Subtractor;
+  use games::{Hexapawn, Subtractor};
   use spec::{AgentSpec, EvaluatorSpec};
 
 
@@ -298,12 +302,12 @@ mod test {
     let agent1_spec = AgentSpec::Minimax {
       depth: 3,
       time_per_move: 0.0,
-      evaluator: EvaluatorSpec::Terminal
+      evaluator: EvaluatorSpec::Terminal,
     };
     let agent2_spec = AgentSpec::Minimax {
       depth: 10,
       time_per_move: 0.0,
-      evaluator: EvaluatorSpec::Terminal
+      evaluator: EvaluatorSpec::Terminal,
     };
     assert_eq!(-1.0, play_game(game, &agent1_spec, &agent2_spec, false));
   }
@@ -350,7 +354,7 @@ mod test {
     let minimax_id = ladder.add_participant(&AgentSpec::Minimax {
       depth: 5,
       time_per_move: 0.0,
-      evaluator: EvaluatorSpec::Terminal
+      evaluator: EvaluatorSpec::Terminal,
     });
 
     ladder.run_full_round(2);

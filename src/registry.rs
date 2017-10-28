@@ -4,13 +4,12 @@ use std::time::Duration;
 
 use def::{Agent, Evaluator, Game};
 use feature_evaluator::{FeatureEvaluator, LinearRegression, Regression};
-use games::{Hexapawn, HexapawnNumberOfPawnsExtractor};
+use games::{Hexapawn, HexapawnNumberOfPawnsExtractor, Subtractor, SubtractorFeatureExtractor};
 use gomoku::{Gomoku, GomokuLineFeatureExtractor, GomokuState};
 use human_agent::HumanAgent;
 use minimax::MinimaxAgent;
 use random_agent::RandomAgent;
 use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec};
-use subtractor::{Subtractor, SubtractorFeatureExtractor, SubtractorState};
 use terminal_evaluator::TerminalEvaluator;
 
 
@@ -55,7 +54,7 @@ pub fn create_evaluator<G: Game>(game: &'static G, spec: &EvaluatorSpec)
               (game as &Any).downcast_ref().unwrap();
           let evaluator = FeatureEvaluator::new(
               subtractor, extractor, regression, training_minimax_depth, steps);
-          unsafe{ transmute::<Box<Evaluator<SubtractorState>>,
+          unsafe{ transmute::<Box<Evaluator<<Subtractor as Game>::State>>,
                               Box<Evaluator<G::State>>>(Box::new(evaluator)) }
         },
         &FeatureExtractorSpec::GomokuLines => {
@@ -93,10 +92,9 @@ fn convert_duration(seconds: f64) -> Option<Duration> {
 mod test {
 
 use def::State;
-use games::Hexapawn;
+use games::{Hexapawn, Subtractor};
 use gomoku::Gomoku;
 use spec::*;
-use subtractor::Subtractor;
 use super::*;
 
 #[test]
