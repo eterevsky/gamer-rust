@@ -9,7 +9,7 @@ extern crate serde_json;
 
 mod board;
 pub mod def;
-pub mod feature_evaluator;
+mod feature_evaluator;
 #[macro_use]
 pub mod games;
 pub mod gomoku;
@@ -17,10 +17,9 @@ pub mod hexapawn;
 mod human_agent;
 pub mod ladder;
 pub mod minimax;
-pub mod play;
-pub mod random_agent;
-mod registry;
+mod random_agent;
+pub mod registry;
 pub mod spec;
 mod status;
 pub mod subtractor;
-pub mod terminal_evaluator;
+mod terminal_evaluator;

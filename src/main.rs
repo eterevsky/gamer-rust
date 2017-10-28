@@ -1,15 +1,17 @@
 extern crate clap;
 #[macro_use]
 extern crate gamer;
+extern crate num_cpus;
 
 use clap::{App, Arg, ArgMatches, SubCommand};
 use std::fs::File;
 use std::io::Write;
 use std::time::Duration;
 
-use gamer::def::Game;
-use gamer::ladder::Ladder;
-use gamer::play::{play_game, train_game};
+use gamer::def::{Agent, Game};
+use gamer::ladder::{play_game, Ladder};
+use gamer::minimax::MinimaxAgent;
+use gamer::registry::create_evaluator;
 use gamer::spec::{agent_spec_to_json, load_agent_spec, load_evaluator_spec,
                   GameSpec};
 
@@ -55,7 +57,7 @@ fn args_definition() -> clap::App<'static, 'static> {
             .takes_value(true)
             .default_value("0")
             .help("Time per move in seconds. 0 for no time limit."),
-        )
+        ),
     )
     .subcommand(
       SubCommand::with_name("train")
@@ -123,38 +125,61 @@ fn args_definition() -> clap::App<'static, 'static> {
             .takes_value(true)
             .default_value("1")
             .help("Time limit for one move."),
-        ),
+        )
+        .arg(
+          Arg::with_name("threads")
+            .short("j")
+            .long("threads")
+            .value_name("THREADS")
+            .takes_value(true)
+            .default_value("0")
+            .hide_default_value(true)
+            .help("The number of threads to run the games in parallel. \
+                   By default use all available cores.")
+        )
     )
 }
 
+fn parse_time_arg(arg: Option<&str>) -> Duration {
+  let t: f64 = arg.unwrap().parse().unwrap();
+  Duration::new(t.trunc() as u64, (t.fract() * 1E9) as u32)
+}
+
+fn format_duration(t: Duration) -> String {
+  format!("{:.1}s", t.as_secs() as f64 + t.subsec_nanos() as f64 * 1E-9)
+}
+
 fn run_play<G: Game>(game: &'static G, args: &ArgMatches) {
-  let t: f64 = args.value_of("time_per_move").unwrap().parse().unwrap();
+  let t = parse_time_arg(args.value_of("time_per_move"));
+  println!("Time per move: {}", format_duration(t));
   let player1_spec =
     load_agent_spec(args.value_of("player1").unwrap(), t).unwrap();
+  println!("Player 1: {:?}", player1_spec);
   let player2_spec =
     load_agent_spec(args.value_of("player2").unwrap(), t).unwrap();
-  println!("Player 1 spec: {:?}", player1_spec);
-  println!("Player 2 spec: {:?}\n", player2_spec);
-  play_game(game, &player1_spec, &player2_spec);
+  println!("Player 2: {:?}\n", player2_spec);
+
+  play_game(game, &player1_spec, &player2_spec, true);
 }
 
 fn run_train<G: Game>(game: &'static G, args: &ArgMatches) {
   let evaluator_spec =
     load_evaluator_spec(args.value_of("input").unwrap()).unwrap();
-  println!("Evaluator spec: {:?}", evaluator_spec);
+  println!("Evaluator: {:?}", evaluator_spec);
   let steps: u64 = args.value_of("steps").unwrap().parse().unwrap();
-  let time_limit: f64 =
-    args.value_of("time_limit").unwrap().parse().unwrap();
-  let time_limit = Duration::new(
-    time_limit.trunc() as u64,
-    (time_limit.fract() * 1E9) as u32,
-  );
-  println!("Steps: {}", steps);
-  let agent = train_game(game, &evaluator_spec, steps, time_limit);
-  let agent_json = agent_spec_to_json(&agent);
+  println!("Max steps: {}", steps);
+  let t = parse_time_arg(args.value_of("time_limit"));
+  println!("Time limit: {}", format_duration(t));
+
+  let mut evaluator = create_evaluator(game, &evaluator_spec);
+  evaluator.train(steps, t);
+  let agent_spec = MinimaxAgent::new_boxed(evaluator, 1000, None).spec();
+
+  let agent_json = agent_spec_to_json(&agent_spec);
   match args.value_of("output") {
     None => println!("{}", agent_json),
     Some(path) => {
+      println!("Writing agent spec to {}.", path);
       let mut f = File::create(path).unwrap();
       f.write(&agent_json.into_bytes()).unwrap();
     }
@@ -163,13 +188,17 @@ fn run_train<G: Game>(game: &'static G, args: &ArgMatches) {
 
 fn run_tournament<G: Game>(game: &'static G, args: &ArgMatches) {
   let rounds: u32 = args.value_of("rounds").unwrap().parse().unwrap();
-  let time_per_move: f64 = args.value_of("time_per_move").unwrap().parse().unwrap();
+  let t = parse_time_arg(args.value_of("time_per_move"));
+  println!("Time per move: {}", format_duration(t));
+  let threads: usize = args.value_of("threads").unwrap().parse().unwrap();
+  let threads = if threads == 0 { num_cpus::get() } else { threads };
+  println!("Number of worker threads: {}", threads);
   let agents: Vec<_> = args
     .values_of("AGENT")
     .unwrap()
-    .map(|a| load_agent_spec(a, time_per_move).unwrap())
+    .map(|a| load_agent_spec(a, t).unwrap())
     .collect();
-  let mut ladder = Ladder::new(game, 8);
+  let mut ladder = Ladder::new(game, threads);
   for agent in agents.iter() {
     let id = ladder.add_participant(agent);
     println!("{}  {:?}", id, agent);
@@ -187,7 +216,9 @@ fn main() {
   match args.subcommand() {
     ("play", Some(subargs)) => call_with_game!(run_play, &game_spec, subargs),
     ("train", Some(subargs)) => call_with_game!(run_train, &game_spec, subargs),
-    ("tournament", Some(subargs)) => call_with_game!(run_tournament, &game_spec, subargs),
+    ("tournament", Some(subargs)) => {
+      call_with_game!(run_tournament, &game_spec, subargs)
+    }
     _ => panic!("Error parsing subcommand."),
   }
 }

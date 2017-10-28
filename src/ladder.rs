@@ -30,6 +30,32 @@ enum Job {
   Play(Participant, Participant),
 }
 
+pub fn play_game<G: Game>(game: &'static G, player1: &AgentSpec, player2: &AgentSpec, output: bool) -> f32 {
+  let agent1 = create_agent(game, player1);
+  let agent2 = create_agent(game, player2);
+  let mut state = game.new_game();
+  while !state.is_terminal() {
+    if output {
+      println!("{}", state);
+    }
+    let report = if state.get_player() {
+      agent1.select_move(&state)
+    } else {
+      agent2.select_move(&state)
+    };
+    let report = report.unwrap();
+    if output {
+      println!("{}", report);
+    }
+    state.play(report.get_move()).unwrap();
+  };
+  let payoff = state.get_payoff().unwrap();
+  if output {
+    println!("{}\nPayoff: {}", state, payoff);
+  }
+  payoff
+}
+
 struct Worker<G: Game> {
   game: &'static G,
   jobs_receiver: Arc<Mutex<Receiver<Job>>>,
@@ -54,23 +80,12 @@ impl<G: Game> Worker<G> {
     player1: &Participant,
     player2: &Participant,
   ) -> GameResult {
-    let agent1 = create_agent(self.game, &player1.agent_spec);
-    let agent2 = create_agent(self.game, &player2.agent_spec);
-    let mut state = self.game.new_game();
-    while !state.is_terminal() {
-      let report = if state.get_player() {
-        agent1.select_move(&state)
-      } else {
-        agent2.select_move(&state)
-      };
-      let m = report.unwrap().get_move();
-      state.play(m).unwrap();
-    }
+    let payoff = play_game(self.game, &player1.agent_spec, &player2.agent_spec, false);
 
     GameResult {
       player1_id: player1.id,
       player2_id: player2.id,
-      payoff: state.get_payoff().unwrap(),
+      payoff
     }
   }
 
@@ -170,7 +185,7 @@ pub struct Ladder {
 }
 
 impl Ladder {
-  pub fn new<G: Game>(game: &'static G, nthreads: u32) -> Self {
+  pub fn new<G: Game>(game: &'static G, nthreads: usize) -> Self {
     let (jobs_sender, jobs_receiver) = channel();
     let jobs_receiver = Arc::new(Mutex::new(jobs_receiver));
     let (results_sender, results_receiver) = channel();
@@ -272,9 +287,26 @@ mod test {
   use std::sync::mpsc::channel;
 
   use super::*;
+  use hexapawn::Hexapawn;
   use subtractor::Subtractor;
   use spec::{AgentSpec, EvaluatorSpec};
 
+
+  #[test]
+  fn play_hexapawn() {
+    let game = Hexapawn::default(3, 3);
+    let agent1_spec = AgentSpec::Minimax {
+      depth: 3,
+      time_per_move: 0.0,
+      evaluator: EvaluatorSpec::Terminal
+    };
+    let agent2_spec = AgentSpec::Minimax {
+      depth: 10,
+      time_per_move: 0.0,
+      evaluator: EvaluatorSpec::Terminal
+    };
+    assert_eq!(-1.0, play_game(game, &agent1_spec, &agent2_spec, false));
+  }
 
   #[test]
   fn subtractor_worker() {
