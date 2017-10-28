@@ -1,7 +1,7 @@
 use std::fmt;
 use std::str::FromStr;
 
-use gomoku::util;
+use super::util;
 
 #[derive(Clone, Copy, Debug)]
 pub struct GomokuMove(pub usize);
@@ -37,7 +37,7 @@ impl fmt::Display for GomokuMove {
 mod test {
 
 use std::string::ToString;
-use gomoku::gomoku::SIZE;
+use super::super::gomoku::SIZE;
 use super::*;
 
 #[test]

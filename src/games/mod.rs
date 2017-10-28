@@ -1,6 +1,8 @@
+mod gomoku;
 mod hexapawn;
 mod subtractor;
 
+pub use self::gomoku::{Gomoku, GomokuLineFeatureExtractor};
 pub use self::hexapawn::{Hexapawn, HexapawnNumberOfPawnsExtractor};
 pub use self::subtractor::{Subtractor, SubtractorFeatureExtractor};
 
@@ -9,7 +11,7 @@ macro_rules! call_with_game {
   ($func:expr, $game_spec:expr, $( $arg:expr ),* ) => {
     match $game_spec {
       &$crate::spec::GameSpec::Gomoku => {
-        $func($crate::gomoku::Gomoku::default(), $( $arg ),*)
+        $func($crate::games::Gomoku::default(), $( $arg ),*)
       },
       &$crate::spec::GameSpec::Hexapawn(width, height) => {
         $func($crate::games::Hexapawn::default(width, height), $( $arg ),*)

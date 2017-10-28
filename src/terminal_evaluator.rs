@@ -29,8 +29,7 @@ mod test {
 
 use def::Game;
 use def::Evaluator;
-use gomoku::Gomoku;
-use games::Subtractor;
+use games::{Gomoku, Subtractor};
 use super::*;
 
 #[test]

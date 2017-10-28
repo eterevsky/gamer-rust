@@ -2,7 +2,7 @@
 //! of the same color.
 
 use def::{FeatureExtractor, State};
-use gomoku::gomoku::{BOARD_LEN, SIZE, GomokuState, PointState};
+use super::gomoku::{BOARD_LEN, SIZE, GomokuState, PointState};
 use spec::{FeatureExtractorSpec, RegressionSpec};
 
 #[derive(Clone, Copy, Debug)]
@@ -193,8 +193,8 @@ impl FeatureExtractor<GomokuState> for GomokuLineFeatureExtractor {
 #[cfg(test)]
 mod test {
 
-use gomoku::gomoku_test::run_game;
-use gomoku::Gomoku;
+use super::super::gomoku_test::run_game;
+use super::super::gomoku::Gomoku;
 use def::Game;
 use super::*;
 

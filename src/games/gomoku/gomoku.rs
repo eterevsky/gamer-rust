@@ -3,8 +3,8 @@ use std::fmt;
 use std::str::FromStr;
 
 use def::{Game, State};
-use gomoku::gomoku_move::GomokuMove;
-use gomoku::util;
+use super::gomoku_move::GomokuMove;
+use super::util;
 use status::Status;
 
 pub const SIZE: u32 = 19;

@@ -1,6 +1,6 @@
 use std::char;
 
-use gomoku::gomoku::SIZE;
+use super::gomoku::SIZE;
 
 pub fn xy_to_point(col: u32, row: u32) -> usize {
   (row * SIZE + col) as usize
@@ -59,7 +59,7 @@ pub fn parse_point(s: &str) -> Option<usize> {
 #[cfg(test)]
 mod test {
 
-use gomoku::gomoku::BOARD_LEN;
+use super::super::gomoku::BOARD_LEN;
 use super::*;
 
 #[test]

@@ -6,10 +6,8 @@ use std::sync::{Arc, Mutex};
 use std::thread::{spawn, JoinHandle};
 
 use def::{Game, State};
-use games::{Hexapawn, Subtractor};
-use gomoku::Gomoku;
 use registry::create_agent;
-use spec::{AgentSpec, GameSpec};
+use spec::AgentSpec;
 
 #[derive(Clone)]
 struct Participant {
@@ -274,18 +272,6 @@ impl Drop for Ladder {
   }
 }
 
-pub fn ladder_for_game(game_spec: &GameSpec) -> Ladder {
-  match game_spec {
-    &GameSpec::Gomoku => Ladder::new(Gomoku::default(), 8),
-    &GameSpec::Hexapawn(width, height) => {
-      Ladder::new(Hexapawn::default(width, height), 8)
-    }
-    &GameSpec::Subtractor(start, max_sub) => {
-      Ladder::new(Subtractor::default(start, max_sub), 8)
-    }
-  }
-}
-
 #[cfg(test)]
 mod test {
 
@@ -349,7 +335,7 @@ mod test {
 
   #[test]
   fn subtractor_ladder() {
-    let mut ladder = ladder_for_game(&GameSpec::Subtractor(21, 4));
+    let mut ladder = Ladder::new(Subtractor::default(21, 4), 2);
     let random_id = ladder.add_participant(&AgentSpec::Random);
     let minimax_id = ladder.add_participant(&AgentSpec::Minimax {
       depth: 5,

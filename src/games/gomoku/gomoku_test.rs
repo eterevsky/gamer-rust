@@ -3,13 +3,9 @@ use std::str::FromStr;
 
 use def::Game;
 use def::State;
-use gomoku::gomoku_move::GomokuMove;
-use gomoku::gomoku::Gomoku;
-use gomoku::gomoku::GomokuState;
-use gomoku::gomoku::PointState;
-use gomoku::gomoku::BOARD_LEN;
-use gomoku::gomoku::SIZE;
-use gomoku::util;
+use super::gomoku_move::GomokuMove;
+use super::gomoku::{Gomoku, GomokuState, PointState, BOARD_LEN, SIZE};
+use super::util;
 
 pub fn run_game(moves_str: &str, result: f32) -> GomokuState {
   let mut state = Gomoku::default().new_game();
