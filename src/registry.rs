@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use def::{Agent, Evaluator, Game};
 use feature_evaluator::{FeatureEvaluator, LinearRegression, Regression};
+use games::{Hexapawn, HexapawnNumberOfPawnsExtractor};
 use gomoku::{Gomoku, GomokuLineFeatureExtractor, GomokuState};
-use hexapawn::{Hexapawn, HexapawnNumberOfPawnsExtractor, HexapawnState};
 use human_agent::HumanAgent;
 use minimax::MinimaxAgent;
 use random_agent::RandomAgent;
@@ -71,7 +71,7 @@ pub fn create_evaluator<G: Game>(game: &'static G, spec: &EvaluatorSpec)
           regression.init(&extractor);
           let gomoku: &Hexapawn = (game as &Any).downcast_ref().unwrap();
           let evaluator = FeatureEvaluator::new(gomoku, extractor, regression, training_minimax_depth, steps);
-          unsafe{ transmute::<Box<Evaluator<HexapawnState>>,
+          unsafe{ transmute::<Box<Evaluator<<Hexapawn as Game>::State>>,
                               Box<Evaluator<G::State>>>(Box::new(evaluator)) }
         },
       }
@@ -93,8 +93,8 @@ fn convert_duration(seconds: f64) -> Option<Duration> {
 mod test {
 
 use def::State;
+use games::Hexapawn;
 use gomoku::Gomoku;
-use hexapawn::Hexapawn;
 use spec::*;
 use subtractor::Subtractor;
 use super::*;

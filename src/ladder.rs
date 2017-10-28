@@ -6,8 +6,8 @@ use std::sync::{Arc, Mutex};
 use std::thread::{spawn, JoinHandle};
 
 use def::{Game, State};
+use games::Hexapawn;
 use gomoku::Gomoku;
-use hexapawn::Hexapawn;
 use registry::create_agent;
 use spec::{AgentSpec, GameSpec};
 use subtractor::Subtractor;
@@ -287,7 +287,7 @@ mod test {
   use std::sync::mpsc::channel;
 
   use super::*;
-  use hexapawn::Hexapawn;
+  use games::Hexapawn;
   use subtractor::Subtractor;
   use spec::{AgentSpec, EvaluatorSpec};
 
