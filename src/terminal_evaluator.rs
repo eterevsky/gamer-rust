@@ -36,7 +36,7 @@ use super::*;
 fn subtractor() {
   let game = Subtractor::new(4, 4);
   let mut state = game.new_game();
-  let evaluator: TerminalEvaluator = TerminalEvaluator::new();
+  let evaluator = TerminalEvaluator::new();
 
   assert_eq!(0.0, evaluator.evaluate(&state));
   state.play(3).unwrap();

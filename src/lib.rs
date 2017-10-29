@@ -16,6 +16,7 @@ pub mod ladder;
 pub mod minimax;
 mod random_agent;
 pub mod registry;
+mod sampler_evaluator;
 pub mod spec;
 mod status;
 mod terminal_evaluator;

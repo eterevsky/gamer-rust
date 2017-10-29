@@ -43,6 +43,10 @@ pub enum EvaluatorSpec {
     training_minimax_depth: u32,
     #[serde(default)] steps: u64,
   },
+  Sampler {
+    nsamples: usize,
+    discount: f32,
+  }
 }
 
 #[derive(Clone, Serialize, Debug, Deserialize)]

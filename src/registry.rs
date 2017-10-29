@@ -10,6 +10,7 @@ use games::{Gomoku, GomokuLineFeatureExtractor, Hexapawn,
 use human_agent::HumanAgent;
 use minimax::MinimaxAgent;
 use random_agent::RandomAgent;
+use sampler_evaluator::SamplerEvaluator;
 use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec};
 use terminal_evaluator::TerminalEvaluator;
 
@@ -108,6 +109,10 @@ pub fn create_evaluator<G: Game>(
           }
         }
       }
+    },
+
+    &EvaluatorSpec::Sampler { nsamples, discount } => {
+      Box::new(SamplerEvaluator::new(nsamples, discount))
     }
   }
 }
