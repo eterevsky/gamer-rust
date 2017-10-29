@@ -111,8 +111,8 @@ pub fn create_evaluator<G: Game>(
       }
     },
 
-    &EvaluatorSpec::Sampler { nsamples, discount } => {
-      Box::new(SamplerEvaluator::new(nsamples, discount))
+    &EvaluatorSpec::Sampler { samples, discount } => {
+      Box::new(SamplerEvaluator::new(samples, discount))
     }
   }
 }

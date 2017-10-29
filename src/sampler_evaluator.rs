@@ -44,7 +44,7 @@ impl<S: State> Evaluator<S> for SamplerEvaluator {
 
   fn spec(&self) -> EvaluatorSpec {
     EvaluatorSpec::Sampler {
-      nsamples: self.nsamples,
+      samples: self.nsamples,
       discount: self.discount as f32,
     }
   }

@@ -44,7 +44,7 @@ pub enum EvaluatorSpec {
     #[serde(default)] steps: u64,
   },
   Sampler {
-    nsamples: usize,
+    samples: usize,
     discount: f32,
   }
 }
