@@ -1,0 +1,9 @@
+{
+  "type": "Minimax",
+  "depth": 1000,
+  "evaluator": {
+    "type": "Sampler",
+    "discount": 0.999,
+    "samples": 16
+  }
+}
