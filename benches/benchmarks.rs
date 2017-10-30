@@ -10,13 +10,11 @@ use std::time::Duration;
 
 use gamer::def::{Evaluator, FeatureExtractor, Game, State};
 use gamer::feature_evaluator::{FeatureEvaluator, LinearRegression, Regression};
-use gamer::gomoku::{Gomoku, GomokuState, GomokuLineFeatureExtractor};
-use gamer::hexapawn::Hexapawn;
+use gamer::games::{Gomoku, GomokuLineFeatureExtractor, Hexapawn, Subtractor, SubtractorFeatureExtractor};
 use gamer::minimax::{minimax_fixed_depth};
-use gamer::subtractor::{Subtractor, SubtractorFeatureExtractor};
 use gamer::terminal_evaluator::TerminalEvaluator;
 
-fn generate_random_gomoku_position() -> GomokuState {
+fn generate_random_gomoku_position() -> <Gomoku as Game>::State {
   let mut rng = rand::XorShiftRng::new_unseeded();
   let mut state = Gomoku::default().new_game();
   for _ in 0..60 {
@@ -113,58 +111,66 @@ fn hexapawn_minimax(bench: &mut Bencher) {
   bench.iter(|| {minimax_fixed_depth(&state, &evaluator, 10, 0.999)});
 }
 
-fn u32_vec_mult(bench: &mut Bencher) {
-  let mut a: Vec<u32> = vec![0; 64];
-  let mut b: Vec<u32> = vec![0; 64];
+fn init_vecs_u32() -> (Vec<u32>, Vec<u32>) {
+  let mut a = vec![0; 64];
+  let mut b = vec![0; 64];
 
   for i in 0..64 {
     a[i] = i as u32;
-    b[i] = 2 * i as u32;
+    b[i] = (2 * i) as u32;
   }
 
-  bench.iter(|| -> u32 { a.iter().zip(b.iter()).map(|(x, y)| (x * y)).sum() });
+  (a, b)
 }
 
-fn f32_vec_mult(bench: &mut Bencher) {
-  let mut a: Vec<f32> = vec![0.0; 64];
-  let mut b: Vec<f32> = vec![0.0; 64];
+fn init_vecs_f32() -> (Vec<f32>, Vec<f32>) {
+  let mut a = vec![0.0; 64];
+  let mut b = vec![0.0; 64];
 
   for i in 0..64 {
     a[i] = i as f32;
-    b[i] = 2.0 * i as f32;
+    b[i] = (2 * i) as f32;
   }
 
-  bench.iter(|| -> f32 { a.iter().zip(b.iter()).map(|(x, y)| x * y).sum() });
+  (a, b)
 }
 
-fn f64_vec_mult(bench: &mut Bencher) {
-  let mut a: Vec<f64> = vec![0.0; 64];
-  let mut b: Vec<f64> = vec![0.0; 64];
+fn init_vecs_f64() -> (Vec<f64>, Vec<f64>) {
+  let mut a = vec![0.0; 64];
+  let mut b = vec![0.0; 64];
 
   for i in 0..64 {
     a[i] = i as f64;
-    b[i] = 2.0 * i as f64;
+    b[i] = (2 * i) as f64;
   }
 
-  bench.iter(|| -> f64 { a.iter().zip(b.iter()).map(|(x, y)| x * y).sum() });
+  (a, b)
+}
+
+fn f32_vec_mult(bench: &mut Bencher) {
+  let (a, b) = init_vecs_f32();
+  let (xs, ys): (&[f32], &[f32]) = (&a, &b);
+
+  bench.iter(|| -> f32 { xs.iter().zip(ys.iter()).map(|(x, y)| x * y).sum() });
+}
+
+fn f64_vec_mult(bench: &mut Bencher) {
+  let (a, b) = init_vecs_f64();
+  let (xs, ys): (&[f64], &[f64]) = (&a, &b);
+
+  bench.iter(|| -> f64 { xs.iter().zip(ys.iter()).map(|(x, y)| x * y).sum() });
 }
 
 fn f32_vec_mult_par2(bench: &mut Bencher) {
-  let mut a: Vec<f32> = vec![0.0; 64];
-  let mut b: Vec<f32> = vec![0.0; 64];
+  let (a, b) = init_vecs_f32();
+  let (xs, ys): (&[f32], &[f32]) = (&a, &b);
 
-  for i in 0..64 {
-    a[i] = i as f32;
-    b[i] = 2.0 * i as f32;
-  }
-
-  bench.iter(|| -> f32 { 
+  bench.iter(|| -> f32 {
     let (mut s0, mut s1) = (0., 0.);
-    let mut xs = &a[..];
-    let mut ys = &b[..];
+    let (mut xs, mut ys) = (xs, ys);
     while xs.len() >= 2 {
-      s0 += xs[0] + ys[0];
-      s1 += xs[1] + ys[1];
+      s0 += xs[0] * ys[0];
+      s1 += xs[1] * ys[1];
       xs = &xs[2..];
       ys = &ys[2..];
     }
@@ -173,46 +179,34 @@ fn f32_vec_mult_par2(bench: &mut Bencher) {
 }
 
 fn f64_vec_mult_par2(bench: &mut Bencher) {
-  let mut a: Vec<f64> = vec![0.0; 64];
-  let mut b: Vec<f64> = vec![0.0; 64];
+  let (a, b) = init_vecs_f64();
+  let (xs, ys): (&[f64], &[f64]) = (&a, &b);
 
-  for i in 0..64 {
-    a[i] = i as f64;
-    b[i] = 2.0 * i as f64;
-  }
-
-  bench.iter(|| -> f64 { 
+  bench.iter(|| -> f64 {
     let (mut s0, mut s1) = (0., 0.);
-    let mut xs = &a[..];
-    let mut ys = &b[..];
+    let (mut xs, mut ys) = (xs, ys);
     while xs.len() >= 2 {
-      s0 += xs[0] + ys[0];
-      s1 += xs[1] + ys[1];
+      s0 += xs[0] * ys[0];
+      s1 += xs[1] * ys[1];
       xs = &xs[2..];
       ys = &ys[2..];
     }
     s0 + s1
-  });  bench.iter(|| -> f64 { a.iter().zip(b.iter()).map(|(x, y)| x * y).sum() });
+  });
 }
 
 fn f32_vec_mult_par4(bench: &mut Bencher) {
-  let mut a: Vec<f32> = vec![0.0; 64];
-  let mut b: Vec<f32> = vec![0.0; 64];
+  let (a, b) = init_vecs_f32();
+  let (xs, ys): (&[f32], &[f32]) = (&a, &b);
 
-  for i in 0..64 {
-    a[i] = i as f32;
-    b[i] = 2.0 * i as f32;
-  }
-
-  bench.iter(|| -> f32 { 
+  bench.iter(|| -> f32 {
     let (mut s0, mut s1, mut s2, mut s3) = (0., 0., 0., 0.);
-    let mut xs = &a[..];
-    let mut ys = &b[..];
+    let (mut xs, mut ys) = (xs, ys);
     while xs.len() >= 4 {
-      s0 += xs[0] + ys[0];
-      s1 += xs[1] + ys[1];
-      s2 += xs[2] + ys[2];
-      s3 += xs[3] + ys[3];
+      s0 += xs[0] * ys[0];
+      s1 += xs[1] * ys[1];
+      s2 += xs[2] * ys[2];
+      s3 += xs[3] * ys[3];
       xs = &xs[4..];
       ys = &ys[4..];
     }
@@ -220,24 +214,80 @@ fn f32_vec_mult_par4(bench: &mut Bencher) {
   });
 }
 
-fn f64_vec_mult_par4(bench: &mut Bencher) {
-  let mut a: Vec<f64> = vec![0.0; 64];
-  let mut b: Vec<f64> = vec![0.0; 64];
+fn f32_vec_mult_par4_2(bench: &mut Bencher) {
+  let (a, b) = init_vecs_f32();
+  let (xs, ys): (&[f32], &[f32]) = (&a, &b);
 
-  for i in 0..64 {
-    a[i] = i as f64;
-    b[i] = 2.0 * i as f64;
-  }
+  bench.iter(|| -> f32 { xs.chunks(4).zip(ys.chunks(4)).map(|(xx, yy)| {
+    unsafe {
+      xx.get_unchecked(0) * yy.get_unchecked(0) +
+      xx.get_unchecked(1) * yy.get_unchecked(1) +
+      xx.get_unchecked(2) * yy.get_unchecked(2) +
+      xx.get_unchecked(3) * yy.get_unchecked(3)
+    }
+  }).sum() });
+}
 
-  bench.iter(|| -> f64 { 
+fn f32_vec_mult_par4_3(bench: &mut Bencher) {
+  let (a, b) = init_vecs_f32();
+  let (xs, ys): (&[f32], &[f32]) = (&a, &b);
+
+  bench.iter(|| -> f32 { xs.chunks(4).zip(ys.chunks(4)).map(|(xx, yy)| {
+    xx[0] * yy[0] + xx[1] * yy[1] + xx[2] * yy[2] + xx[3] * yy[3]
+  }).sum() });
+}
+
+fn f32_vec_mult_par4_4(bench: &mut Bencher) {
+  let (a, b) = init_vecs_f32();
+  let (xs, ys): (&[f32], &[f32]) = (&a, &b);
+
+  bench.iter(|| -> f32 {
     let (mut s0, mut s1, mut s2, mut s3) = (0., 0., 0., 0.);
-    let mut xs = &a[..];
-    let mut ys = &b[..];
+    let (mut xs, mut ys) = (xs, ys);
     while xs.len() >= 4 {
-      s0 += xs[0] + ys[0];
-      s1 += xs[1] + ys[1];
-      s2 += xs[2] + ys[2];
-      s3 += xs[3] + ys[3];
+      unsafe {
+        s0 += xs.get_unchecked(0) * ys.get_unchecked(0);
+        s1 += xs.get_unchecked(1) * ys.get_unchecked(1);
+        s2 += xs.get_unchecked(2) * ys.get_unchecked(2);
+        s3 += xs.get_unchecked(3) * ys.get_unchecked(3);
+        xs = &xs[4..];
+        ys = &ys[4..];
+      }
+    }
+    s0 + s1 + s2 + s3
+  });
+}
+
+// fn f32_vec_mult_par4_simd(bench: &mut Bencher) {
+//   let (a, b): (Vec<f32>, Vec<f32>) = init_vecs_f32();
+//   let aslice = a.as_slice();
+//   let bslice = b.as_slice();
+
+//   bench.iter(|| -> f32 {
+//     let mut partial_sum = simd::f32x4::splat(0.0);
+//     let mut i = 0;
+//     while i < a.len() {
+//       let xs = simd::f32x4::load(aslice, i);
+//       let ys = simd::f32x4::load(bslice, i);
+//       partial_sum = partial_sum + xs * ys;
+//       i += 4;
+//     }
+//     partial_sum.extract(0) + partial_sum.extract(1) + partial_sum.extract(2) + partial_sum.extract(3)
+//   });
+// }
+
+fn f64_vec_mult_par4(bench: &mut Bencher) {
+  let (a, b) = init_vecs_f64();
+  let (xs, ys): (&[f64], &[f64]) = (&a, &b);
+
+  bench.iter(|| -> f64 {
+    let (mut s0, mut s1, mut s2, mut s3) = (0., 0., 0., 0.);
+    let (mut xs, mut ys) = (xs, ys);
+    while xs.len() >= 4 {
+      s0 += xs[0] * ys[0];
+      s1 += xs[1] * ys[1];
+      s2 += xs[2] * ys[2];
+      s3 += xs[3] * ys[3];
       xs = &xs[4..];
       ys = &ys[4..];
     }
@@ -246,28 +296,22 @@ fn f64_vec_mult_par4(bench: &mut Bencher) {
 }
 
 fn f32_vec_mult_par8(bench: &mut Bencher) {
-  let mut a: Vec<f32> = vec![0.0; 64];
-  let mut b: Vec<f32> = vec![0.0; 64];
+  let (a, b) = init_vecs_f32();
+  let (xs, ys): (&[f32], &[f32]) = (&a, &b);
 
-  for i in 0..64 {
-    a[i] = i as f32;
-    b[i] = 2.0 * i as f32;
-  }
-
-  bench.iter(|| -> f32 { 
+  bench.iter(|| -> f32 {
     let (mut s0, mut s1, mut s2, mut s3, mut s4, mut s5, mut s6, mut s7) =
         (0., 0., 0., 0., 0., 0., 0., 0.);
-    let mut xs = &a[..];
-    let mut ys = &b[..];
+    let (mut xs, mut ys) = (xs, ys);
     while xs.len() >= 4 {
-      s0 += xs[0] + ys[0];
-      s1 += xs[1] + ys[1];
-      s2 += xs[2] + ys[2];
-      s3 += xs[3] + ys[3];
-      s4 += xs[4] + ys[4];
-      s5 += xs[5] + ys[5];
-      s6 += xs[6] + ys[6];
-      s7 += xs[7] + ys[7];
+      s0 += xs[0] * ys[0];
+      s1 += xs[1] * ys[1];
+      s2 += xs[2] * ys[2];
+      s3 += xs[3] * ys[3];
+      s4 += xs[4] * ys[4];
+      s5 += xs[5] * ys[5];
+      s6 += xs[6] * ys[6];
+      s7 += xs[7] * ys[7];
       xs = &xs[8..];
       ys = &ys[8..];
     }
@@ -276,28 +320,22 @@ fn f32_vec_mult_par8(bench: &mut Bencher) {
 }
 
 fn f64_vec_mult_par8(bench: &mut Bencher) {
-  let mut a: Vec<f64> = vec![0.0; 64];
-  let mut b: Vec<f64> = vec![0.0; 64];
+  let (a, b) = init_vecs_f64();
+  let (xs, ys): (&[f64], &[f64]) = (&a, &b);
 
-  for i in 0..64 {
-    a[i] = i as f64;
-    b[i] = 2.0 * i as f64;
-  }
-
-  bench.iter(|| -> f64 { 
+  bench.iter(|| -> f64 {
     let (mut s0, mut s1, mut s2, mut s3, mut s4, mut s5, mut s6, mut s7) =
         (0., 0., 0., 0., 0., 0., 0., 0.);
-    let mut xs = &a[..];
-    let mut ys = &b[..];
+    let (mut xs, mut ys) = (xs, ys);
     while xs.len() >= 4 {
-      s0 += xs[0] + ys[0];
-      s1 += xs[1] + ys[1];
-      s2 += xs[2] + ys[2];
-      s3 += xs[3] + ys[3];
-      s4 += xs[4] + ys[4];
-      s5 += xs[5] + ys[5];
-      s6 += xs[6] + ys[6];
-      s7 += xs[7] + ys[7];
+      s0 += xs[0] * ys[0];
+      s1 += xs[1] * ys[1];
+      s2 += xs[2] * ys[2];
+      s3 += xs[3] * ys[3];
+      s4 += xs[4] * ys[4];
+      s5 += xs[5] * ys[5];
+      s6 += xs[6] * ys[6];
+      s7 += xs[7] * ys[7];
       xs = &xs[8..];
       ys = &ys[8..];
     }
@@ -305,16 +343,83 @@ fn f64_vec_mult_par8(bench: &mut Bencher) {
   });
 }
 
-fn u32_arr_mult(bench: &mut Bencher) {
-  let mut a: [u32; 64] = [0; 64];
-  let mut b: [u32; 64] = [0; 64];
+// Yay!
+fn f32_vec_mult_par8_2(bench: &mut Bencher) {
+  let (a, b) = init_vecs_f32();
+  let (xs, ys): (&[f32], &[f32]) = (&a, &b);
 
-  for i in 0..64 {
-    a[i] = i as u32;
-    b[i] = 2 * i as u32;
-  }
+  bench.iter(|| -> f32 {
+    let (mut s0, mut s1, mut s2, mut s3, mut s4, mut s5, mut s6, mut s7) =
+        (0., 0., 0., 0., 0., 0., 0., 0.);
+    let (mut xs, mut ys) = (xs, ys);
+    while xs.len() >= 8 {
+      unsafe {
+        s0 += xs.get_unchecked(0) * ys.get_unchecked(0);
+        s1 += xs.get_unchecked(1) * ys.get_unchecked(1);
+        s2 += xs.get_unchecked(2) * ys.get_unchecked(2);
+        s3 += xs.get_unchecked(3) * ys.get_unchecked(3);
+        s4 += xs.get_unchecked(4) * ys.get_unchecked(4);
+        s5 += xs.get_unchecked(5) * ys.get_unchecked(5);
+        s6 += xs.get_unchecked(6) * ys.get_unchecked(6);
+        s7 += xs.get_unchecked(7) * ys.get_unchecked(7);
+        xs = &xs[8..];
+        ys = &ys[8..];
+      }
+    }
+    s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7
+  });
+}
 
-  bench.iter(|| -> u32 { a.iter().zip(b.iter()).map(|(x, y)| x * y).sum() });
+fn f64_vec_mult_par8_2(bench: &mut Bencher) {
+  let (a, b) = init_vecs_f64();
+  let (xs, ys): (&[f64], &[f64]) = (&a, &b);
+
+  bench.iter(|| -> f64 {
+    let (mut s0, mut s1, mut s2, mut s3, mut s4, mut s5, mut s6, mut s7) =
+        (0., 0., 0., 0., 0., 0., 0., 0.);
+    let (mut xs, mut ys) = (xs, ys);
+    while xs.len() >= 8 {
+      unsafe {
+        s0 += xs.get_unchecked(0) * ys.get_unchecked(0);
+        s1 += xs.get_unchecked(1) * ys.get_unchecked(1);
+        s2 += xs.get_unchecked(2) * ys.get_unchecked(2);
+        s3 += xs.get_unchecked(3) * ys.get_unchecked(3);
+        s4 += xs.get_unchecked(4) * ys.get_unchecked(4);
+        s5 += xs.get_unchecked(5) * ys.get_unchecked(5);
+        s6 += xs.get_unchecked(6) * ys.get_unchecked(6);
+        s7 += xs.get_unchecked(7) * ys.get_unchecked(7);
+        xs = &xs[8..];
+        ys = &ys[8..];
+      }
+    }
+    s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7
+  });
+}
+
+fn u32_vec_mult_par8_2(bench: &mut Bencher) {
+  let (a, b) = init_vecs_u32();
+  let (xs, ys): (&[u32], &[u32]) = (&a, &b);
+
+  bench.iter(|| -> u32 {
+    let (mut s0, mut s1, mut s2, mut s3, mut s4, mut s5, mut s6, mut s7) =
+        (0, 0, 0, 0, 0, 0, 0, 0);
+    let (mut xs, mut ys) = (xs, ys);
+    while xs.len() >= 8 {
+      unsafe {
+        s0 += xs.get_unchecked(0) * ys.get_unchecked(0);
+        s1 += xs.get_unchecked(1) * ys.get_unchecked(1);
+        s2 += xs.get_unchecked(2) * ys.get_unchecked(2);
+        s3 += xs.get_unchecked(3) * ys.get_unchecked(3);
+        s4 += xs.get_unchecked(4) * ys.get_unchecked(4);
+        s5 += xs.get_unchecked(5) * ys.get_unchecked(5);
+        s6 += xs.get_unchecked(6) * ys.get_unchecked(6);
+        s7 += xs.get_unchecked(7) * ys.get_unchecked(7);
+        xs = &xs[8..];
+        ys = &ys[8..];
+      }
+    }
+    s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7
+  });
 }
 
 fn f32_arr_mult(bench: &mut Bencher) {
@@ -359,27 +464,31 @@ fn xorshift_rng_gen1(bench: &mut Bencher) {
 }
 
 benchmark_group!(benches,
-    gomoku_random,
-    gomoku_lines_feature_extractor_start,
+    f32_arr_mult,
+    f32_vec_mult,
+    f32_vec_mult_par2,
+    f32_vec_mult_par4,
+    f32_vec_mult_par4_2,
+    f32_vec_mult_par4_3,
+    f32_vec_mult_par4_4,
+    f32_vec_mult_par8,
+    f32_vec_mult_par8_2,
+    f64_arr_mult,
+    f64_vec_mult,
+    f64_vec_mult_par2,
+    f64_vec_mult_par4,
+    f64_vec_mult_par8,
+    f64_vec_mult_par8_2,
+    u32_vec_mult_par8_2,
     gomoku_lines_feature_extractor_rand_position,
+    gomoku_lines_feature_extractor_start,
+    gomoku_random,
     // gomoku_train_evaluator_1000,
     hexapawn_minimax,
     subtractor_random,
     subtractor_minimax,
     subtractor_feature_evaluator,
     subtractor_train_evaluator_1000,
-    u32_vec_mult,
-    f32_vec_mult,
-    f32_vec_mult_par2,
-    f32_vec_mult_par4,
-    f32_vec_mult_par8,
-    f64_vec_mult,
-    f64_vec_mult_par2,
-    f64_vec_mult_par4,
-    f64_vec_mult_par8,
-    u32_arr_mult,
-    f32_arr_mult,
-    f64_arr_mult,
     xorshift_rng_new,
     xorshift_rng_new_unseeded,
     xorshift_rng_new_gen1,

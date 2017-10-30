@@ -9,7 +9,7 @@ extern crate serde_json;
 
 mod board;
 pub mod def;
-mod feature_evaluator;
+pub mod feature_evaluator;
 pub mod games;
 mod human_agent;
 pub mod ladder;
@@ -19,4 +19,4 @@ pub mod registry;
 mod sampler_evaluator;
 pub mod spec;
 mod status;
-mod terminal_evaluator;
+pub mod terminal_evaluator;
