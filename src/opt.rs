@@ -1,19 +1,21 @@
 use std::iter::repeat;
 
-fn norm(v: &[f32]) -> f32 {
-  v.iter().map(|x| x * x).sum()
+fn norm(v: &[f32]) -> f64 {
+  v.iter().map(|&x| x as f64 * x as f64).sum()
 }
 
 pub fn minimize(
-  f: &Fn(&[f32]) -> f32,
+  _f: &Fn(&[f32]) -> f32,
   g: &Fn(&[f32]) -> Vec<f32>,
   init: &[f32],
 ) -> Vec<f32> {
   let mut optimizer = AdamOptimizer::new(init);
   optimizer.set_step(0.1);
-  for step in 0..100000000 {
+  loop {
     let grad = g(optimizer.params());
-    if norm(&grad) < 1E-10 * (1. + norm(optimizer.params())) {
+    // optimizer.report(grad.as_slice());
+    // println!("value: {}", f(optimizer.params()));
+    if norm(&grad) < 1E-12 * (1. + norm(optimizer.params())) {
       break;
     };
     optimizer.gradient_step(grad.as_slice());
@@ -57,14 +59,14 @@ impl AdamOptimizer {
     self.alpha = alpha;
   }
 
-  fn report(&self, gradient: &[f32]) {
-    println!(
-      "t = {} params {:?} grad {:?}",
-      self.t,
-      self.params,
-      gradient
-    );
-  }
+  // fn report(&self, gradient: &[f32]) {
+  //   println!(
+  //     "t = {} params {:?} grad {:?}",
+  //     self.t,
+  //     self.params,
+  //     gradient
+  //   );
+  // }
 }
 
 impl Optimizer for AdamOptimizer {
@@ -73,7 +75,7 @@ impl Optimizer for AdamOptimizer {
   }
 
   fn gradient_step(&mut self, gradient: &[f32]) {
-    self.t.saturating_add(1);
+    self.t = self.t.saturating_add(1);
 
     for i in 0..self.n {
       self.m[i] = self.beta1 * self.m[i] + (1.0 - self.beta1) * gradient[i];

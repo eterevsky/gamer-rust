@@ -1,11 +1,11 @@
 use rand::{weak_rng, Rng};
 use std::clone::Clone;
-use std::fmt;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread::{spawn, JoinHandle};
 
 use def::{Game, State};
+use ratings::Ratings;
 use registry::create_agent;
 use spec::AgentSpec;
 
@@ -16,10 +16,10 @@ struct Participant {
 }
 
 #[derive(Clone, Copy, Debug)]
-struct GameResult {
-  player1_id: usize,
-  player2_id: usize,
-  payoff: f32,
+pub struct GameResult {
+  pub player1_id: usize,
+  pub player2_id: usize,
+  pub payoff: f32,
 }
 
 enum Job {
@@ -117,62 +117,6 @@ fn start_worker<G: Game>(
   })
 }
 
-struct Ratings {
-  ratings: Vec<f32>,
-  played_games: Vec<u32>,
-}
-
-impl Ratings {
-  fn new() -> Self {
-    Ratings {
-      ratings: vec![],
-      played_games: vec![],
-    }
-  }
-
-  fn add_game(&mut self, player1_id: usize, player2_id: usize, payoff: f32) {
-    while self.ratings.len() <= player1_id || self.ratings.len() <= player2_id {
-      self.ratings.push(0.0);
-      self.played_games.push(0);
-    }
-
-    self.played_games[player1_id] += 1;
-    self.played_games[player2_id] += 1;
-
-    let rating_diff = self.ratings[player1_id] - self.ratings[player2_id];
-    let expected_payoff = (rating_diff / 400.0).tanh();
-    let payoff_err = payoff - expected_payoff;
-
-    self.ratings[player1_id] +=
-      400.0 / (self.played_games[player1_id] as f32).sqrt() * payoff_err;
-    self.ratings[player2_id] -=
-      400.0 / (self.played_games[player2_id] as f32).sqrt() * payoff_err;
-  }
-
-  fn get_rating(&self, player_id: usize) -> f32 {
-    self.ratings[player_id] - self.ratings[0]
-  }
-}
-
-impl fmt::Display for Ratings {
-  fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-    let mut indices: Vec<_> = (0..self.ratings.len()).collect();
-    indices.sort_unstable_by(|&i, &j| {
-      self.ratings[j].partial_cmp(&self.ratings[i]).unwrap()
-    });
-    for i in indices {
-      writeln!(
-        f,
-        "{}  {:.1}  {}",
-        i,
-        self.ratings[i] - self.ratings[0],
-        self.played_games[i]
-      )?;
-    }
-    Ok(())
-  }
-}
-
 pub trait ILadder {
   fn add_participant(&mut self, agent_spec: &AgentSpec);
   fn run_full_round(&mut self);
@@ -250,11 +194,8 @@ impl Ladder {
       let result = self.results_receiver.recv().unwrap();
       self.results.push(result);
       println!("{:?}", result);
-      self.ratings.add_game(
-        result.player1_id,
-        result.player2_id,
-        result.payoff,
-      );
+      self.ratings.add_game(result);
+      self.ratings.full_update();
       println!("{}", self.ratings);
     }
   }
@@ -312,7 +253,7 @@ mod test {
     let participant2 = Participant {
       id: 1,
       agent_spec: AgentSpec::Minimax {
-        depth: 3,
+        depth: 5,
         time_per_move: 0.0,
         evaluator: EvaluatorSpec::Terminal,
       },
@@ -347,8 +288,6 @@ mod test {
 
     assert_eq!(0.0, ladder.get_rating(random_id));
     assert!(ladder.get_rating(minimax_id) > 400.0);
-
-    assert_eq!(4, ladder.ratings.played_games[random_id]);
   }
 
 } // mod tests
