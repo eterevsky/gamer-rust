@@ -1,3 +1,6 @@
+#[cfg(test)]
+#[macro_use]
+extern crate approx;
 #[macro_use]
 extern crate lazy_static;
 extern crate rand;
@@ -14,6 +17,7 @@ pub mod games;
 mod human_agent;
 pub mod ladder;
 pub mod minimax;
+mod opt;
 mod random_agent;
 pub mod registry;
 mod sampler_evaluator;
