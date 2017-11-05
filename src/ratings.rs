@@ -5,12 +5,12 @@ use ladder::GameResult;
 use opt::minimize;
 
 pub struct Ratings {
-  k: f64,    // normalization of logistic function
-  reg: f64,  // regularization coefficient
+  k: f64,   // normalization of logistic function
+  reg: f64, // regularization coefficient
   ratings: Vec<f32>,
   played_games: Vec<u32>,
   results: Vec<GameResult>,
-  min_rating: f32
+  min_rating: f32,
 }
 
 impl Ratings {
@@ -21,14 +21,16 @@ impl Ratings {
       ratings: vec![],
       played_games: vec![],
       results: vec![],
-      min_rating: 0.0
+      min_rating: 0.0,
     }
   }
 
   pub fn add_game(&mut self, result: GameResult) {
     self.results.push(result);
 
-    while self.ratings.len() <= result.player1_id || self.ratings.len() <= result.player2_id {
+    while self.ratings.len() <= result.player1_id
+      || self.ratings.len() <= result.player2_id
+    {
       self.ratings.push(0.0);
       self.played_games.push(0);
     }
@@ -38,13 +40,17 @@ impl Ratings {
   }
 
   pub fn full_update(&mut self) {
-    self.ratings = minimize(&|r| self.log_prob(r), &|r| self.log_prob_grad(r), self.ratings.as_slice());
+    self.ratings = minimize(
+      &|r| self.log_prob(r),
+      &|r| self.log_prob_grad(r),
+      self.ratings.as_slice(),
+    );
     self.min_rating = f32::MAX;
     for &r in self.ratings.iter() {
       if r < self.min_rating {
         self.min_rating = r;
       }
-    }    
+    }
   }
 
   fn logistic_function(&self, diff: f64) -> f64 {
@@ -59,10 +65,11 @@ impl Ratings {
   fn log_prob(&self, ratings: &[f32]) -> f32 {
     let mut sum = 0f64;
     for result in self.results.iter() {
-      let diff = ratings[result.player1_id] as f64 - ratings[result.player2_id] as f64;
+      let diff =
+        ratings[result.player1_id] as f64 - ratings[result.player2_id] as f64;
       let prob = self.logistic_function(diff);
-      sum -= 0.5 * (result.payoff as f64 + 1.0) * prob.ln() +
-             0.5 * (result.payoff as f64 - 1.0) * (1. - prob).ln();
+      sum -= 0.5 * (result.payoff as f64 + 1.0) * prob.ln()
+        + 0.5 * (result.payoff as f64 - 1.0) * (1. - prob).ln();
     }
 
     for &r in ratings {
@@ -80,10 +87,13 @@ impl Ratings {
     }
 
     for result in self.results.iter() {
-      let diff = ratings[result.player1_id] as f64 - ratings[result.player2_id] as f64;
+      let diff =
+        ratings[result.player1_id] as f64 - ratings[result.player2_id] as f64;
       let prob = self.logistic_function(diff);
       let deriv = self.logistic_derivative(diff);
-      let d = 0.5 * deriv * ( (result.payoff as f64 + 1.) / prob + (result.payoff as f64 - 1.) / (1. - prob) );
+      let d = 0.5 * deriv
+        * ((result.payoff as f64 + 1.) / prob
+          + (result.payoff as f64 - 1.) / (1. - prob));
       grad[result.player1_id] -= d;
       grad[result.player2_id] += d;
     }
@@ -97,7 +107,8 @@ impl Ratings {
 
   #[cfg(test)]
   fn predict_payoff(&self, player1_id: usize, player2_id: usize) -> f32 {
-    let diff = self.ratings[player1_id] as f64 - self.ratings[player2_id] as f64;
+    let diff =
+      self.ratings[player1_id] as f64 - self.ratings[player2_id] as f64;
     (2.0 * self.logistic_function(diff) - 1.0) as f32
   }
 }
@@ -139,22 +150,31 @@ mod test {
   #[test]
   fn logistic_derivative() {
     let ratings = Ratings::new();
-    assert_relative_eq!(approx_derivative(&|x| ratings.logistic_function(x), 0.),
-                        ratings.logistic_derivative(0.),
-                        max_relative = 1E-4);
-    assert_relative_eq!(approx_derivative(&|x| ratings.logistic_function(x), 200.),
-                        ratings.logistic_derivative(200.),
-                        max_relative = 1E-4);
-    assert_relative_eq!(approx_derivative(&|x| ratings.logistic_function(x), -200.),
-                        ratings.logistic_derivative(-200.),
-                        max_relative = 1E-4);
-    assert_relative_eq!(approx_derivative(&|x| ratings.logistic_function(x), 456.),
-                        ratings.logistic_derivative(456.),
-                        max_relative = 1E-4);
-    assert_relative_eq!(approx_derivative(&|x| ratings.logistic_function(x), -456.),
-                        ratings.logistic_derivative(-456.),
-                        max_relative = 1E-4);
-      
+    assert_relative_eq!(
+      approx_derivative(&|x| ratings.logistic_function(x), 0.),
+      ratings.logistic_derivative(0.),
+      max_relative = 1E-4
+    );
+    assert_relative_eq!(
+      approx_derivative(&|x| ratings.logistic_function(x), 200.),
+      ratings.logistic_derivative(200.),
+      max_relative = 1E-4
+    );
+    assert_relative_eq!(
+      approx_derivative(&|x| ratings.logistic_function(x), -200.),
+      ratings.logistic_derivative(-200.),
+      max_relative = 1E-4
+    );
+    assert_relative_eq!(
+      approx_derivative(&|x| ratings.logistic_function(x), 456.),
+      ratings.logistic_derivative(456.),
+      max_relative = 1E-4
+    );
+    assert_relative_eq!(
+      approx_derivative(&|x| ratings.logistic_function(x), -456.),
+      ratings.logistic_derivative(-456.),
+      max_relative = 1E-4
+    );
   }
 
   #[test]
@@ -174,7 +194,11 @@ mod test {
   #[test]
   fn single_game() {
     let mut ratings = Ratings::new();
-    ratings.add_game(GameResult{player1_id: 0, player2_id: 1, payoff: 1.0});
+    ratings.add_game(GameResult {
+      player1_id: 0,
+      player2_id: 1,
+      payoff: 1.0,
+    });
 
     ratings.full_update();
 
@@ -189,41 +213,81 @@ mod test {
   #[test]
   fn two_to_one() {
     let mut ratings = Ratings::new();
-    ratings.add_game(GameResult{player1_id: 0, player2_id: 1, payoff: 1.0});
-    ratings.add_game(GameResult{player1_id: 0, player2_id: 1, payoff: 1.0});
-    ratings.add_game(GameResult{player1_id: 0, player2_id: 1, payoff: -1.0});
+    ratings.add_game(GameResult {
+      player1_id: 0,
+      player2_id: 1,
+      payoff: 1.0,
+    });
+    ratings.add_game(GameResult {
+      player1_id: 0,
+      player2_id: 1,
+      payoff: 1.0,
+    });
+    ratings.add_game(GameResult {
+      player1_id: 0,
+      player2_id: 1,
+      payoff: -1.0,
+    });
 
     ratings.full_update();
 
     println!("{}", ratings);
     println!("{}", ratings.predict_payoff(0, 1));
 
-    assert!((ratings.predict_payoff(0, 1) - 1./3.).abs() < 0.1);
+    assert!((ratings.predict_payoff(0, 1) - 1. / 3.).abs() < 0.1);
   }
 
   #[test]
   fn three_to_one() {
     let mut ratings = Ratings::new();
-    ratings.add_game(GameResult{player1_id: 0, player2_id: 1, payoff: 1.0});
-    ratings.add_game(GameResult{player1_id: 0, player2_id: 1, payoff: 1.0});
-    ratings.add_game(GameResult{player1_id: 0, player2_id: 1, payoff: 1.0});
-    ratings.add_game(GameResult{player1_id: 0, player2_id: 1, payoff: -1.0});
+    ratings.add_game(GameResult {
+      player1_id: 0,
+      player2_id: 1,
+      payoff: 1.0,
+    });
+    ratings.add_game(GameResult {
+      player1_id: 0,
+      player2_id: 1,
+      payoff: 1.0,
+    });
+    ratings.add_game(GameResult {
+      player1_id: 0,
+      player2_id: 1,
+      payoff: 1.0,
+    });
+    ratings.add_game(GameResult {
+      player1_id: 0,
+      player2_id: 1,
+      payoff: -1.0,
+    });
 
     ratings.full_update();
 
     println!("{}", ratings);
     println!("{}", ratings.predict_payoff(0, 1));
 
-    assert_relative_eq!(200.0, ratings.ratings[0] - ratings.ratings[1], max_relative = 0.1);
+    assert_relative_eq!(
+      200.0,
+      ratings.ratings[0] - ratings.ratings[1],
+      max_relative = 0.1
+    );
   }
 
   #[test]
   fn nine_to_one() {
     let mut ratings = Ratings::new();
     for _ in 0..9 {
-      ratings.add_game(GameResult{player1_id: 0, player2_id: 1, payoff: 1.0});
+      ratings.add_game(GameResult {
+        player1_id: 0,
+        player2_id: 1,
+        payoff: 1.0,
+      });
     }
-    ratings.add_game(GameResult{player1_id: 0, player2_id: 1, payoff: -1.0});
+    ratings.add_game(GameResult {
+      player1_id: 0,
+      player2_id: 1,
+      payoff: -1.0,
+    });
 
     ratings.full_update();
 
@@ -236,9 +300,21 @@ mod test {
   #[test]
   fn three_games() {
     let mut ratings = Ratings::new();
-    ratings.add_game(GameResult{player1_id: 0, player2_id: 1, payoff: -1.0});
-    ratings.add_game(GameResult{player1_id: 1, player2_id: 2, payoff: 1.0});
-    ratings.add_game(GameResult{player1_id: 2, player2_id: 0, payoff: -1.0});
+    ratings.add_game(GameResult {
+      player1_id: 0,
+      player2_id: 1,
+      payoff: -1.0,
+    });
+    ratings.add_game(GameResult {
+      player1_id: 1,
+      player2_id: 2,
+      payoff: 1.0,
+    });
+    ratings.add_game(GameResult {
+      player1_id: 2,
+      player2_id: 0,
+      payoff: -1.0,
+    });
 
     ratings.full_update();
 
@@ -249,4 +325,3 @@ mod test {
   }
 
 } // mod tests
-
