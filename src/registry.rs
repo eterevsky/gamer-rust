@@ -7,9 +7,7 @@ use feature_evaluator::{FeatureEvaluator, LinearRegression, Regression};
 use games::{Gomoku, GomokuLineFeatureExtractor, Hexapawn,
             HexapawnNumberOfPawnsExtractor, Subtractor,
             SubtractorFeatureExtractor};
-use human_agent::HumanAgent;
-use minimax::MinimaxAgent;
-use random_agent::RandomAgent;
+use agents::{HumanAgent, MinimaxAgent, RandomAgent};
 use sampler_evaluator::SamplerEvaluator;
 use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec};
 use terminal_evaluator::TerminalEvaluator;

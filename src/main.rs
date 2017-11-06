@@ -8,12 +8,11 @@ use std::fs::File;
 use std::io::Write;
 use std::time::Duration;
 
-use gamer::def::{Agent, Game};
+use gamer::def::Game;
 use gamer::ladder::{play_game, Ladder};
-use gamer::minimax::MinimaxAgent;
 use gamer::registry::create_evaluator;
 use gamer::spec::{agent_spec_to_json, load_agent_spec, load_evaluator_spec,
-                  GameSpec};
+                  AgentSpec, GameSpec};
 
 fn args_definition() -> clap::App<'static, 'static> {
   App::new("gamer")
@@ -173,7 +172,7 @@ fn run_train<G: Game>(game: &'static G, args: &ArgMatches) {
 
   let mut evaluator = create_evaluator(game, &evaluator_spec);
   evaluator.train(steps, t);
-  let agent_spec = MinimaxAgent::new_boxed(evaluator, 1000, None).spec();
+  let agent_spec = AgentSpec::Minimax {depth: 1000, time_per_move: 0.0, evaluator: evaluator.spec()};
 
   let agent_json = agent_spec_to_json(&agent_spec);
   match args.value_of("output") {

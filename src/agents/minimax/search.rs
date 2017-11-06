@@ -5,7 +5,7 @@ use std::fmt;
 use std::time::Instant;
 
 use def::{Evaluator, State};
-use minimax::MinimaxReport;
+use super::MinimaxReport;
 
 pub struct MinimaxSearch<'e, S: State + 'e> {
   evaluator: &'e Evaluator<S>,

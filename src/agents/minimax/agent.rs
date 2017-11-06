@@ -2,8 +2,8 @@ use rand;
 use std::time::{Duration, Instant};
 
 use def::{Agent, AgentReport, State, Evaluator};
-use minimax::search::{MinimaxSearch, SearchResult};
-use minimax::report::MinimaxReport;
+use super::search::{MinimaxSearch, SearchResult};
+use super::report::MinimaxReport;
 use spec::AgentSpec;
 
 pub struct MinimaxAgent<S: State> {

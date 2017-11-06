@@ -5,7 +5,7 @@ use rand;
 use rand::Rng;
 
 use def::{AgentReport, Game, Evaluator, FeatureExtractor, State};
-use minimax::minimax_fixed_depth;
+use agents::minimax_fixed_depth;
 use spec::{EvaluatorSpec, RegressionSpec};
 
 pub trait Regression : std::fmt::Debug {
