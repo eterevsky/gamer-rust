@@ -3,14 +3,13 @@ use std::mem::transmute;
 use std::time::Duration;
 
 use def::{Agent, Evaluator, Game};
-use feature_evaluator::{FeatureEvaluator, LinearRegression, Regression};
+use evaluators::{FeatureEvaluator, SamplerEvaluator, TerminalEvaluator};
+use evaluators::features::{LinearRegression, Regression};
 use games::{Gomoku, GomokuLineFeatureExtractor, Hexapawn,
             HexapawnNumberOfPawnsExtractor, Subtractor,
             SubtractorFeatureExtractor};
 use agents::{HumanAgent, MinimaxAgent, RandomAgent};
-use sampler_evaluator::SamplerEvaluator;
 use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec};
-use terminal_evaluator::TerminalEvaluator;
 
 
 pub fn create_agent<G: Game>(

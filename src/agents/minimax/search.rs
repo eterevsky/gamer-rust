@@ -158,7 +158,7 @@ mod test {
 
 use def::{AgentReport, Game};
 use games::Subtractor;
-use terminal_evaluator::TerminalEvaluator;
+use evaluators::TerminalEvaluator;
 use super::*;
 
 #[test]

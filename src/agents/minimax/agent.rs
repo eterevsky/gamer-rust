@@ -1,7 +1,7 @@
 use rand;
 use std::time::{Duration, Instant};
 
-use def::{Agent, AgentReport, State, Evaluator};
+use def::{Agent, AgentReport, Evaluator, State};
 use super::search::{MinimaxSearch, SearchResult};
 use super::report::MinimaxReport;
 use spec::AgentSpec;
@@ -9,35 +9,29 @@ use spec::AgentSpec;
 pub struct MinimaxAgent<S: State> {
   evaluator: Box<Evaluator<S>>,
   max_depth: u32,
-  time_limit: Option<Duration>
+  time_limit: Option<Duration>,
 }
 
 impl<S: State> MinimaxAgent<S> {
   pub fn new_boxed(
-      evaluator: Box<Evaluator<S>>,
-      max_depth: u32,
-      time_limit: Option<Duration>
+    evaluator: Box<Evaluator<S>>,
+    max_depth: u32,
+    time_limit: Option<Duration>,
   ) -> Self {
     assert!(max_depth > 0);
     MinimaxAgent {
       evaluator: evaluator,
       max_depth: max_depth,
-      time_limit
+      time_limit,
     }
-  }
-
-  pub fn new<E: Evaluator<S> + 'static>(
-      evaluator: E,
-      max_depth: u32,
-      time_limit: Option<Duration>
-  ) -> Self {
-    Self::new_boxed(Box::new(evaluator), max_depth, time_limit)
   }
 }
 
 impl<S: State> Agent<S> for MinimaxAgent<S> {
-  fn select_move(&self, state: &S)
-      -> Result<Box<AgentReport<S::Move>>, &'static str> {
+  fn select_move(
+    &self,
+    state: &S,
+  ) -> Result<Box<AgentReport<S::Move>>, &'static str> {
     if state.is_terminal() {
       return Err("Terminal state");
     }
@@ -45,7 +39,7 @@ impl<S: State> Agent<S> for MinimaxAgent<S> {
     let start_time = Instant::now();
     let deadline = match self.time_limit {
       Some(d) => Some(start_time + d),
-      None => None
+      None => None,
     };
 
     let mut minimax = MinimaxSearch::new(&*self.evaluator, 1, 0.999, deadline);
@@ -55,7 +49,7 @@ impl<S: State> Agent<S> for MinimaxAgent<S> {
       samples: 0,
       duration: Duration::new(0, 0),
       player: state.get_player(),
-      depth: 0
+      depth: 0,
     };
 
     for depth in 1..(self.max_depth + 1) {
@@ -69,8 +63,8 @@ impl<S: State> Agent<S> for MinimaxAgent<S> {
           report.pv = pv;
           report.samples = minimax.leaves;
           report.depth = depth;
-        },
-        _ => unreachable!()
+        }
+        _ => unreachable!(),
       }
     }
 
@@ -85,7 +79,7 @@ impl<S: State> Agent<S> for MinimaxAgent<S> {
     AgentSpec::Minimax {
       depth: self.max_depth,
       time_per_move: convert_duration(self.time_limit),
-      evaluator: self.evaluator.spec()
+      evaluator: self.evaluator.spec(),
     }
   }
 }
@@ -93,33 +87,34 @@ impl<S: State> Agent<S> for MinimaxAgent<S> {
 fn convert_duration(duration: Option<Duration>) -> f64 {
   match duration {
     None => 0.0,
-    Some(d) => d.as_secs() as f64 + d.subsec_nanos() as f64 * 1E-9
+    Some(d) => d.as_secs() as f64 + d.subsec_nanos() as f64 * 1E-9,
   }
 }
 
 #[cfg(test)]
 mod test {
 
-use def::{Agent, Game};
-use games::Subtractor;
-use terminal_evaluator::TerminalEvaluator;
-use super::*;
+  use def::{Agent, Game};
+  use games::Subtractor;
+  use evaluators::TerminalEvaluator;
+  use super::*;
 
-#[test]
-fn subtractor() {
-  let agent = MinimaxAgent::new(TerminalEvaluator::new(), 10, None);
-  let game = Subtractor::new(10, 4);
-  let mut state = game.new_game();
+  #[test]
+  fn subtractor() {
+    let agent =
+      MinimaxAgent::new_boxed(Box::new(TerminalEvaluator::new()), 10, None);
+    let game = Subtractor::new(10, 4);
+    let mut state = game.new_game();
 
-  let report = agent.select_move(&state).unwrap();
-  println!("{}", report);
-  assert_eq!(2, report.get_move());
+    let report = agent.select_move(&state).unwrap();
+    println!("{}", report);
+    assert_eq!(2, report.get_move());
 
-  state.play(3).unwrap();
+    state.play(3).unwrap();
 
-  let report = agent.select_move(&state).unwrap();
-  println!("{}", report);
-  assert_eq!(3, report.get_move());
-}
+    let report = agent.select_move(&state).unwrap();
+    println!("{}", report);
+    assert_eq!(3, report.get_move());
+  }
 
 }
