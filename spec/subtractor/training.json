@@ -1,0 +1,16 @@
+{
+  "extractor": {
+    "type": "Subtractor",
+    "content": 10
+  },
+  "regression": {
+    "params": [],
+    "regularization": 0.1
+  },
+  "trainer": {
+    "type": "Reinforce",
+    "minimax_depth": 3,
+    "random_prob": 0.1,
+    "alpha": 1.0
+  }
+}
