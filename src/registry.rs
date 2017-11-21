@@ -2,14 +2,15 @@ use std::any::Any;
 use std::mem::transmute;
 use std::time::Duration;
 
-use def::{Agent, Evaluator, Game};
-use evaluators::{FeatureEvaluator, SamplerEvaluator, TerminalEvaluator};
-use evaluators::features::{LinearRegression, Regression};
+use def::{Agent, Evaluator, FeatureExtractor, Game, Regression, State, Trainer};
+use evaluators::{FeatureEvaluator, LinearRegressionTanh, ReinforceTrainer,
+                 SamplerEvaluator, TerminalEvaluator};
 use games::{Gomoku, GomokuLineFeatureExtractor, Hexapawn,
             HexapawnNumberOfPawnsExtractor, Subtractor,
             SubtractorFeatureExtractor};
 use agents::{HumanAgent, MinimaxAgent, RandomAgent};
-use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec};
+use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec, RegressionSpec,
+           TrainerSpec, TrainingSpec};
 
 
 pub fn create_agent<G: Game>(
@@ -33,6 +34,17 @@ pub fn create_agent<G: Game>(
   }
 }
 
+fn create_regression<S: State, FE: FeatureExtractor<S>>(
+  spec: &RegressionSpec,
+  extractor: &FE,
+) -> LinearRegressionTanh {
+  if spec.params.len() == 0 {
+    LinearRegressionTanh::zeros(extractor.nfeatures(), spec.regularization)
+  } else {
+    LinearRegressionTanh::new(spec.params.as_slice(), spec.regularization)
+  }
+}
+
 pub fn create_evaluator<G: Game>(
   game: &'static G,
   spec: &EvaluatorSpec,
@@ -43,67 +55,42 @@ pub fn create_evaluator<G: Game>(
     &EvaluatorSpec::Features {
       extractor: ref extractor_spec,
       regression: ref regression_spec,
-      training_minimax_depth,
-      steps,
-    } => {
-      let mut regression = LinearRegression::new(
-        regression_spec.b.clone(),
-        (regression_spec.speed, regression_spec.regularization),
-      );
-      match extractor_spec {
-        &FeatureExtractorSpec::Subtractor(nfeatures) => {
-          let extractor = SubtractorFeatureExtractor::new(nfeatures);
-          regression.init(&extractor);
-          let subtractor: &Subtractor = (game as &Any).downcast_ref().unwrap();
-          let evaluator = FeatureEvaluator::new(
-            subtractor,
-            extractor,
-            regression,
-            training_minimax_depth,
-            steps,
-          );
-          unsafe {
-            transmute::<
-              Box<Evaluator<<Subtractor as Game>::State>>,
-              Box<Evaluator<G::State>>,
-            >(Box::new(evaluator))
-          }
+    } => match extractor_spec {
+      &FeatureExtractorSpec::Subtractor(nfeatures) => {
+        let extractor = SubtractorFeatureExtractor::new(nfeatures);
+        let regression = create_regression(regression_spec, &extractor);
+        let subtractor: &Subtractor = (game as &Any).downcast_ref().unwrap();
+        let evaluator =
+          FeatureEvaluator::new(subtractor, extractor, regression);
+        unsafe {
+          transmute::<
+            Box<Evaluator<<Subtractor as Game>::State>>,
+            Box<Evaluator<G::State>>,
+          >(Box::new(evaluator))
         }
-        &FeatureExtractorSpec::GomokuLines => {
-          let extractor = GomokuLineFeatureExtractor::new();
-          regression.init(&extractor);
-          let gomoku: &Gomoku = (game as &Any).downcast_ref().unwrap();
-          let evaluator = FeatureEvaluator::new(
-            gomoku,
-            extractor,
-            regression,
-            training_minimax_depth,
-            steps,
-          );
-          unsafe {
-            transmute::<
-              Box<Evaluator<<Gomoku as Game>::State>>,
-              Box<Evaluator<G::State>>,
-            >(Box::new(evaluator))
-          }
+      }
+      &FeatureExtractorSpec::GomokuLines => {
+        let extractor = GomokuLineFeatureExtractor::new();
+        let regression = create_regression(regression_spec, &extractor);
+        let gomoku: &Gomoku = (game as &Any).downcast_ref().unwrap();
+        let evaluator = FeatureEvaluator::new(gomoku, extractor, regression);
+        unsafe {
+          transmute::<
+            Box<Evaluator<<Gomoku as Game>::State>>,
+            Box<Evaluator<G::State>>,
+          >(Box::new(evaluator))
         }
-        &FeatureExtractorSpec::HexapawnNumberOfPawns => {
-          let extractor = HexapawnNumberOfPawnsExtractor::new();
-          regression.init(&extractor);
-          let gomoku: &Hexapawn = (game as &Any).downcast_ref().unwrap();
-          let evaluator = FeatureEvaluator::new(
-            gomoku,
-            extractor,
-            regression,
-            training_minimax_depth,
-            steps,
-          );
-          unsafe {
-            transmute::<
-              Box<Evaluator<<Hexapawn as Game>::State>>,
-              Box<Evaluator<G::State>>,
-            >(Box::new(evaluator))
-          }
+      }
+      &FeatureExtractorSpec::HexapawnNumberOfPawns => {
+        let extractor = HexapawnNumberOfPawnsExtractor::new();
+        let regression = create_regression(regression_spec, &extractor);
+        let gomoku: &Hexapawn = (game as &Any).downcast_ref().unwrap();
+        let evaluator = FeatureEvaluator::new(gomoku, extractor, regression);
+        unsafe {
+          transmute::<
+            Box<Evaluator<<Hexapawn as Game>::State>>,
+            Box<Evaluator<G::State>>,
+          >(Box::new(evaluator))
         }
       }
     },
@@ -111,6 +98,64 @@ pub fn create_evaluator<G: Game>(
     &EvaluatorSpec::Sampler { samples, discount } => {
       Box::new(SamplerEvaluator::new(samples, discount))
     }
+  }
+}
+
+pub fn create_training<G: Game>(
+  game: &'static G,
+  spec: &TrainingSpec,
+) -> Box<Trainer<G>> {
+  match &spec.extractor {
+    &FeatureExtractorSpec::Subtractor(nfeatures) => {
+      let extractor = SubtractorFeatureExtractor::new(nfeatures);
+      let regression = create_regression(&spec.regression, &extractor);
+      let subtractor: &Subtractor = (game as &Any).downcast_ref().unwrap();
+      let trainer =
+        create_trainer(subtractor, extractor, regression, &spec.trainer);
+      unsafe { transmute::<Box<Trainer<Subtractor>>, Box<Trainer<G>>>(trainer) }
+    }
+    &FeatureExtractorSpec::GomokuLines => {
+      let extractor = GomokuLineFeatureExtractor::new();
+      let regression = create_regression(&spec.regression, &extractor);
+      let gomoku: &Gomoku = (game as &Any).downcast_ref().unwrap();
+      let trainer =
+        create_trainer(gomoku, extractor, regression, &spec.trainer);
+      unsafe { transmute::<Box<Trainer<Gomoku>>, Box<Trainer<G>>>(trainer) }
+    }
+    &FeatureExtractorSpec::HexapawnNumberOfPawns => {
+      let extractor = HexapawnNumberOfPawnsExtractor::new();
+      let regression = create_regression(&spec.regression, &extractor);
+      let hexapawn: &Hexapawn = (game as &Any).downcast_ref().unwrap();
+      let trainer =
+        create_trainer(hexapawn, extractor, regression, &spec.trainer);
+      unsafe { transmute::<Box<Trainer<Hexapawn>>, Box<Trainer<G>>>(trainer) }
+    }
+  }
+}
+
+fn create_trainer<
+  G: Game,
+  FE: FeatureExtractor<G::State> + Clone + 'static,
+  R: Regression + 'static,
+>(
+  game: &'static G,
+  extractor: FE,
+  regression: R,
+  spec: &TrainerSpec,
+) -> Box<Trainer<G>> {
+  match spec {
+    &TrainerSpec::Reinforce {
+      minimax_depth,
+      random_prob,
+      alpha,
+    } => Box::new(ReinforceTrainer::new(
+      game,
+      extractor,
+      regression,
+      minimax_depth,
+      random_prob,
+      alpha,
+    )),
   }
 }
 
@@ -168,12 +213,9 @@ mod test {
       evaluator: EvaluatorSpec::Features {
         extractor: FeatureExtractorSpec::Subtractor(3),
         regression: RegressionSpec {
-          speed: 0.001,
           regularization: 0.001,
-          b: vec![0.1, 0.2, 0.3],
+          params: vec![0.1, 0.2, 0.3],
         },
-        training_minimax_depth: 1,
-        steps: 0,
       },
     };
 
@@ -192,12 +234,9 @@ mod test {
       evaluator: EvaluatorSpec::Features {
         extractor: FeatureExtractorSpec::GomokuLines,
         regression: RegressionSpec {
-          speed: 0.001,
+          params: vec![],
           regularization: 0.001,
-          b: vec![],
         },
-        training_minimax_depth: 1,
-        steps: 0,
       },
     };
 
@@ -216,12 +255,9 @@ mod test {
       evaluator: EvaluatorSpec::Features {
         extractor: FeatureExtractorSpec::HexapawnNumberOfPawns,
         regression: RegressionSpec {
-          speed: 0.001,
+          params: vec![0.0, 1.0, -1.0],
           regularization: 0.001,
-          b: vec![0.0, 1.0, -1.0],
         },
-        training_minimax_depth: 1,
-        steps: 0,
       },
     };
 
@@ -230,6 +266,29 @@ mod test {
     let mut state = game.new_game();
     let report = agent.select_move(&state).unwrap();
     assert!(state.play(report.get_move()).is_ok())
+  }
+
+  #[test]
+  fn subtractor_training() {
+    let game = Subtractor::default(21, 4);
+
+    let training_spec = TrainingSpec {
+      extractor: FeatureExtractorSpec::Subtractor(5),
+      regression: RegressionSpec {
+        params: vec![],
+        regularization: 0.001,
+      },
+      trainer: TrainerSpec::Reinforce {
+        minimax_depth: 5,
+        random_prob: 0.1,
+        alpha: 0.001,
+      },
+    };
+
+    let mut trainer = create_training(game, &training_spec);
+
+    trainer.train(100, Duration::new(0, 0));
+    trainer.build_evaluator();
   }
 
 } // mod test

@@ -1,5 +1,3 @@
-use std::iter::repeat;
-
 fn norm(v: &[f32]) -> f64 {
   v.iter().map(|&x| x as f64 * x as f64).sum()
 }
@@ -7,83 +5,58 @@ fn norm(v: &[f32]) -> f64 {
 pub fn minimize(
   _f: &Fn(&[f32]) -> f32,
   g: &Fn(&[f32]) -> Vec<f32>,
-  init: &[f32],
-) -> Vec<f32> {
-  let mut optimizer = AdamOptimizer::new(init);
-  optimizer.set_step(0.1);
+  params: &mut [f32],
+) {
+  let mut optimizer = AdamOptimizer::new(params.len(), 0.1);
   loop {
-    let grad = g(optimizer.params());
-    // optimizer.report(grad.as_slice());
-    // println!("value: {}", f(optimizer.params()));
-    if norm(&grad) < 1E-12 * (1. + norm(optimizer.params())) {
+    let grad = g(params);
+    if norm(&grad) < 1E-12 * (1. + norm(params)) {
       break;
     };
-    optimizer.gradient_step(grad.as_slice());
+    optimizer.gradient_step(params, grad.as_slice());
   }
-  optimizer.params().to_vec()
 }
 
-trait Optimizer {
-  fn gradient_step(&mut self, gradient: &[f32]);
-  fn params<'a>(&'a self) -> &'a [f32];
+pub trait Optimizer {
+  fn gradient_step(&mut self, param: &mut [f32], gradient: &[f32]);
 }
 
-struct AdamOptimizer {
+pub struct AdamOptimizer {
   alpha: f32,
   beta1: f32,
   beta2: f32,
   eps: f32,
-  params: Vec<f32>,
   m: Vec<f32>,
   v: Vec<f32>,
   t: i32,
-  n: usize,
 }
 
 impl AdamOptimizer {
-  fn new(init_params: &[f32]) -> AdamOptimizer {
+  pub fn new(size: usize, alpha: f32) -> AdamOptimizer {
     AdamOptimizer {
-      alpha: 0.001,
+      alpha: alpha,
       beta1: 0.9,
       beta2: 0.999,
       eps: 1E-8,
-      params: init_params.to_vec(),
-      m: repeat(0.0).take(init_params.len()).collect(),
-      v: repeat(0.0).take(init_params.len()).collect(),
+      m: vec![0.0; size],
+      v: vec![0.0; size],
       t: 1,
-      n: init_params.len(),
     }
   }
-
-  fn set_step(&mut self, alpha: f32) {
-    self.alpha = alpha;
-  }
-
-  // fn report(&self, gradient: &[f32]) {
-  //   println!(
-  //     "t = {} params {:?} grad {:?}",
-  //     self.t,
-  //     self.params,
-  //     gradient
-  //   );
-  // }
 }
 
 impl Optimizer for AdamOptimizer {
-  fn params<'a>(&'a self) -> &'a [f32] {
-    self.params.as_slice()
-  }
-
-  fn gradient_step(&mut self, gradient: &[f32]) {
+  fn gradient_step(&mut self, param: &mut [f32], gradient: &[f32]) {
+    assert_eq!(param.len(), gradient.len());
     self.t = self.t.saturating_add(1);
 
-    for i in 0..self.n {
+    for i in 0..param.len() {
       self.m[i] = self.beta1 * self.m[i] + (1.0 - self.beta1) * gradient[i];
       self.v[i] =
         self.beta2 * self.v[i] + (1.0 - self.beta2) * gradient[i] * gradient[i];
       let mbiased = self.m[i] / (1.0 - self.beta1.powi(self.t));
       let vbiased = self.v[i] / (1.0 - self.beta2.powi(self.t));
-      self.params[i] -= self.alpha * mbiased / (vbiased.sqrt() + self.eps);
+      param[i] -= self.alpha * mbiased / (vbiased.sqrt() + self.eps);
     }
   }
 }
@@ -96,8 +69,9 @@ mod test {
   fn quadratic1d() {
     let f = |x: &[f32]| x[0] * x[0] + 3. * x[0] + 1.;
     let g = |x: &[f32]| vec![2. * x[0] + 3.];
-    let xmin = minimize(&f, &g, &[0.0]);
-    assert_relative_eq!(-1.5, xmin[0], max_relative = 1E-4);
+    let mut params = vec![0.0];
+    minimize(&f, &g, params.as_mut_slice());
+    assert_relative_eq!(-1.5, params[0], max_relative = 1E-4);
   }
 
   #[test]
@@ -106,8 +80,9 @@ mod test {
       3. * x[0] * x[0] - x[0] * x[1] + 2. * x[1] * x[1] + 2. * x[0] - x[1] + 1.
     };
     let g = |x: &[f32]| vec![6. * x[0] - x[1] + 2., -x[0] + 4. * x[1] - 1.];
-    let xmin = minimize(&f, &g, &[0., 0.]);
-    assert_relative_eq!(-7. / 23., xmin[0], max_relative = 1E-4);
-    assert_relative_eq!(4. / 23., xmin[1], max_relative = 1E-4);
+    let mut params = vec![0.0; 2];
+    minimize(&f, &g, params.as_mut_slice());
+    assert_relative_eq!(-7. / 23., params[0], max_relative = 1E-4);
+    assert_relative_eq!(4. / 23., params[1], max_relative = 1E-4);
   }
 }

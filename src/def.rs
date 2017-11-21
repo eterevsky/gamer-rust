@@ -68,12 +68,6 @@ pub trait Evaluator<S: State> {
   /// whose turn it is.
   fn evaluate(&self, state: &S) -> f32;
 
-  /// For training evaluators -- train for a number of steps. For non-training
-  /// evaluators -- keep non-implemented.
-  fn train(&mut self, _steps: u64, _time_limit: Duration) {
-    unreachable!()
-  }
-
   fn spec(&self) -> EvaluatorSpec;
 }
 
@@ -87,4 +81,27 @@ pub trait FeatureExtractor<S: State> {
   fn spec(&self) -> FeatureExtractorSpec;
 
   fn report(&self, _regression_spec: RegressionSpec) {}
+}
+
+pub trait Regression: Clone {
+  fn params<'a>(&'a self) -> &'a [f32];
+  fn mut_params<'a>(&'a mut self) -> &'a mut [f32];
+  fn evaluate(&self, features: &[f32]) -> f32;
+  fn gradient1(&self, features: &[f32], value: f32) -> Vec<f32>;
+  fn gradient(&self, feature_sets: &[Vec<f32>], values: &[f32]) -> Vec<f32> {
+    let mut grad = vec![0.0; feature_sets[0].len()];
+    for (ref features, &v) in feature_sets.iter().zip(values.iter()) {
+      let part_grad = self.gradient1(&features[..], v);
+      for i in 0..grad.len() {
+        grad[i] += part_grad[i];
+      }
+    }
+    grad
+  }
+  fn spec(&self) -> RegressionSpec;
+}
+
+pub trait Trainer<G: Game> {
+  fn train(&mut self, steps: u64, time_limit: Duration);
+  fn build_evaluator(&self) -> Box<Evaluator<G::State>>;
 }

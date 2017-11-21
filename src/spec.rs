@@ -40,8 +40,6 @@ pub enum EvaluatorSpec {
   Features {
     extractor: FeatureExtractorSpec,
     regression: RegressionSpec,
-    training_minimax_depth: u32,
-    #[serde(default)] steps: u64,
   },
   Sampler {
     samples: usize,
@@ -59,9 +57,25 @@ pub enum FeatureExtractorSpec {
 
 #[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct RegressionSpec {
-  pub speed: f32,
-  pub regularization: f32,
-  pub b: Vec<f32>,
+  pub params: Vec<f32>,
+  pub regularization: f32
+}
+
+#[derive(Clone, Serialize, Debug, Deserialize)]
+pub struct TrainingSpec {
+  pub extractor: FeatureExtractorSpec,
+  pub regression: RegressionSpec,
+  pub trainer: TrainerSpec,
+}
+
+#[derive(Clone, Serialize, Debug, Deserialize)]
+#[serde(tag = "type")]
+pub enum TrainerSpec {
+  Reinforce {
+    minimax_depth: u32,
+    random_prob: f32,
+    alpha: f32,
+  }
 }
 
 /// First match the string with "random" or "human". If it doesn't, treat it
@@ -112,6 +126,16 @@ pub fn load_evaluator_spec(s: &str) -> Result<EvaluatorSpec, String> {
     .map_err(|e| format!("Error while parsing EvaluatorSpec: {}", e))
 }
 
+pub fn load_training_spec(s: &str) -> Result<TrainingSpec, String> {
+  let mut f =
+    File::open(s).map_err(|e| format!("Error while opening file: {}", e))?;
+  let mut s = String::new();
+  f.read_to_string(&mut s)
+    .map_err(|e| format!("Error while reading file: {}", e))?;
+  serde_json::from_str(&s)
+    .map_err(|e| format!("Error while parsing TrainingSpec: {}", e))
+}
+
 pub fn agent_spec_to_json(agent_spec: &AgentSpec) -> String {
   serde_json::to_string_pretty(&agent_spec).unwrap()
 }
@@ -131,12 +155,9 @@ mod test {
       evaluator: EvaluatorSpec::Features {
         extractor: FeatureExtractorSpec::Subtractor(10),
         regression: RegressionSpec {
-          speed: 0.001,
+          params: vec![0.1, 0.2, 0.3],
           regularization: 0.001,
-          b: vec![0.1, 0.2, 0.3],
-        },
-        training_minimax_depth: 1,
-        steps: 0,
+        }
       },
     };
 

@@ -40,11 +40,13 @@ impl Ratings {
   }
 
   pub fn full_update(&mut self) {
-    self.ratings = minimize(
+    let mut ratings = self.ratings.clone();
+    minimize(
       &|r| self.log_prob(r),
       &|r| self.log_prob_grad(r),
-      self.ratings.as_slice(),
+      ratings.as_mut_slice(),
     );
+    self.ratings = ratings;
     self.min_rating = f32::MAX;
     for &r in self.ratings.iter() {
       if r < self.min_rating {

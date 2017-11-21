@@ -10,8 +10,8 @@ use std::time::Duration;
 
 use gamer::def::Game;
 use gamer::ladder::{play_game, Ladder};
-use gamer::registry::create_evaluator;
-use gamer::spec::{agent_spec_to_json, load_agent_spec, load_evaluator_spec,
+use gamer::registry::create_training;
+use gamer::spec::{agent_spec_to_json, load_agent_spec, load_training_spec,
                   AgentSpec, GameSpec};
 
 fn args_definition() -> clap::App<'static, 'static> {
@@ -162,17 +162,17 @@ fn run_play<G: Game>(game: &'static G, args: &ArgMatches) {
 }
 
 fn run_train<G: Game>(game: &'static G, args: &ArgMatches) {
-  let evaluator_spec =
-    load_evaluator_spec(args.value_of("input").unwrap()).unwrap();
-  println!("Evaluator: {:?}", evaluator_spec);
+  let training_spec =
+    load_training_spec(args.value_of("input").unwrap()).unwrap();
+  println!("Training: {:?}", training_spec);
   let steps: u64 = args.value_of("steps").unwrap().parse().unwrap();
   println!("Max steps: {}", steps);
   let t = parse_time_arg(args.value_of("time_limit"));
   println!("Time limit: {}", format_duration(t));
 
-  let mut evaluator = create_evaluator(game, &evaluator_spec);
-  evaluator.train(steps, t);
-  let agent_spec = AgentSpec::Minimax {depth: 1000, time_per_move: 0.0, evaluator: evaluator.spec()};
+  let mut trainer = create_training(game, &training_spec);
+  trainer.train(steps, t);
+  let agent_spec = AgentSpec::Minimax {depth: 1000, time_per_move: 0.0, evaluator: trainer.build_evaluator().spec()};
 
   let agent_json = agent_spec_to_json(&agent_spec);
   match args.value_of("output") {

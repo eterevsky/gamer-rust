@@ -172,7 +172,7 @@ impl FeatureExtractor<GomokuState> for GomokuLineFeatureExtractor {
   }
 
   fn report(&self, regression: RegressionSpec) {
-    let b = regression.b;
+    let b = regression.params;
     println!("closed straight / closed diagonal / open straight / open diagonal");
     for &player in &[true, false] {
       for len in 1..5 {

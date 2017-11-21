@@ -264,6 +264,7 @@ impl Cell for HexapawnCell {
   }
 }
 
+#[derive(Clone)]
 pub struct HexapawnNumberOfPawnsExtractor {}
 
 impl HexapawnNumberOfPawnsExtractor {
