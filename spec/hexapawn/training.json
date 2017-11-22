@@ -1,0 +1,15 @@
+{
+  "extractor": {
+    "type": "HexapawnNumberOfPawns"
+  },
+  "regression": {
+    "params": [],
+    "regularization": 0.1
+  },
+  "trainer": {
+    "type": "Reinforce",
+    "minimax_depth": 4,
+    "random_prob": 0.1,
+    "alpha": 0.001
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "type": "Minimax",
+  "depth": 1000,
+  "time_per_move": 0.0,
+  "evaluator": {
+    "type": "Features",
+    "extractor": {
+      "type": "HexapawnNumberOfPawns"
+    },
+    "regression": {
+      "params": [
+        0.03105206,
+        0.20429637,
+        -0.2086585
+      ],
+      "regularization": 0.1
+    }
+  }
+}

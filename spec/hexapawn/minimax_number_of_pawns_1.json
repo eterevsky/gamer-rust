@@ -8,14 +8,12 @@
       "type": "HexapawnNumberOfPawns"
     },
     "regression": {
-      "speed": 0.001,
-      "regularization": 0.001,
-      "b": [
-        0.31491053,
-        0.7613323,
-        -0.80069613
-      ]
-    },
-    "training_minimax_depth": 3
+      "params": [
+        0.050190452,
+        0.08660363,
+        -0.09205269
+      ],
+      "regularization": 0.1
+    }
   }
 }
