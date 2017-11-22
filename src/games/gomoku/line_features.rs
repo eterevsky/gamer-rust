@@ -176,8 +176,8 @@ impl FeatureExtractor<GomokuState> for GomokuLineFeatureExtractor {
     println!("closed straight / closed diagonal / open straight / open diagonal");
     for &player in &[true, false] {
       for len in 1..5 {
-        println!("{} {}: {:.3} {:.3} {:.3} {:.3}",
-                 (if player { "self" } else { "other" }),
+        println!("{} {}: {:>6.3} {:>6.3} {:>6.3} {:>6.3}",
+                 (if player { "self " } else { "other" }),
                  len,
                  b[Self::encode(len, false, false, player)],
                  b[Self::encode(len, false, true, player)],

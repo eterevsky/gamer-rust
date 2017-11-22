@@ -1,0 +1,15 @@
+{
+  "extractor": {
+    "type": "GomokuLines"
+  },
+  "regression": {
+    "params": [],
+    "regularization": 0.05
+  },
+  "trainer": {
+    "type": "Reinforce",
+    "minimax_depth": 1,
+    "random_prob": 0.1,
+    "alpha": 0.001
+  }
+}
