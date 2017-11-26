@@ -149,7 +149,7 @@ fn train_subtractor() {
     0.1,
     0.1);
 
-  trainer.train(100, Duration::new(0, 0));
+  trainer.train(200, Duration::new(0, 0));
   let evaluator = trainer.build_evaluator();
 
   for i in 0..12 {

@@ -5,7 +5,8 @@
   "evaluator": {
     "type": "Features",
     "extractor": {
-      "type": "GomokuLines"
+      "type": "GomokuLines",
+      "content": 1
     },
     "regression": {
       "params": [

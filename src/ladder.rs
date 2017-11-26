@@ -193,10 +193,35 @@ impl Ladder {
     for _ in 0..pairs.len() * nrounds as usize {
       let result = self.results_receiver.recv().unwrap();
       self.results.push(result);
-      println!("{:?}", result);
+      println!(
+        "{} v {} {}\n",
+        self.print_participant(result.player1_id),
+        self.print_participant(result.player2_id),
+        result.payoff
+      );
       self.ratings.add_game(result);
       self.ratings.full_update();
-      println!("{}", self.ratings);
+      println!(
+        "{}",
+        self.ratings.print(
+          (0..self.participants.len())
+            .map(|i| self.print_participant(i))
+            .collect::<Vec<&str>>()
+        )
+      );
+    }
+  }
+
+  fn print_participant<'a>(&'a self, id: usize) -> &'a str {
+    match self.participants[id].agent_spec {
+      AgentSpec::Random => "random",
+      AgentSpec::Human => "human",
+      AgentSpec::Minimax {
+        depth: _,
+        time_per_move: _,
+        evaluator: _,
+        ref name,
+      } => name,
     }
   }
 }
@@ -230,11 +255,13 @@ mod test {
       depth: 3,
       time_per_move: 0.0,
       evaluator: EvaluatorSpec::Terminal,
+      name: "1".to_string(),
     };
     let agent2_spec = AgentSpec::Minimax {
       depth: 10,
       time_per_move: 0.0,
       evaluator: EvaluatorSpec::Terminal,
+      name: "2".to_string(),
     };
     assert_eq!(-1.0, play_game(game, &agent1_spec, &agent2_spec, false));
   }
@@ -256,6 +283,7 @@ mod test {
         depth: 5,
         time_per_move: 0.0,
         evaluator: EvaluatorSpec::Terminal,
+        name: "2".to_string(),
       },
     };
 
@@ -282,6 +310,7 @@ mod test {
       depth: 5,
       time_per_move: 0.0,
       evaluator: EvaluatorSpec::Terminal,
+      name: "2".to_string(),
     });
 
     ladder.run_full_round(2);

@@ -1,5 +1,6 @@
 use std::f32;
 use std::fmt;
+use std::fmt::Write;
 
 use ladder::GameResult;
 use opt::minimize;
@@ -105,6 +106,24 @@ impl Ratings {
 
   pub fn get_rating(&self, player_id: usize) -> f32 {
     self.ratings[player_id] - self.ratings[0]
+  }
+
+  pub fn print<'a>(&self, names: Vec<&'a str>) -> String {
+    let mut indices: Vec<_> = (0..self.ratings.len()).collect();
+    indices.sort_unstable_by(|&i, &j| {
+      self.ratings[j].partial_cmp(&self.ratings[i]).unwrap()
+    });
+    let mut s = String::new();
+    for i in indices {
+      writeln!(
+        &mut s,
+        "{:24}  {:4.1}  {}",
+        names[i],
+        self.ratings[i] - self.min_rating,
+        self.played_games[i]
+      ).unwrap();
+    }
+    s
   }
 
   #[cfg(test)]

@@ -133,9 +133,11 @@ fn args_definition() -> clap::App<'static, 'static> {
             .takes_value(true)
             .default_value("0")
             .hide_default_value(true)
-            .help("The number of threads to run the games in parallel. \
-                   By default use all available cores.")
-        )
+            .help(
+              "The number of threads to run the games in parallel. \
+               By default use all available cores.",
+            ),
+        ),
     )
 }
 
@@ -145,7 +147,10 @@ fn parse_time_arg(arg: Option<&str>) -> Duration {
 }
 
 fn format_duration(t: Duration) -> String {
-  format!("{:.1}s", t.as_secs() as f64 + t.subsec_nanos() as f64 * 1E-9)
+  format!(
+    "{:.1}s",
+    t.as_secs() as f64 + t.subsec_nanos() as f64 * 1E-9
+  )
 }
 
 fn run_play<G: Game>(game: &'static G, args: &ArgMatches) {
@@ -172,7 +177,12 @@ fn run_train<G: Game>(game: &'static G, args: &ArgMatches) {
 
   let mut trainer = create_training(game, &training_spec);
   trainer.train(steps, t);
-  let agent_spec = AgentSpec::Minimax {depth: 1000, time_per_move: 0.0, evaluator: trainer.build_evaluator().spec()};
+  let agent_spec = AgentSpec::Minimax {
+    depth: 1000,
+    time_per_move: 0.0,
+    evaluator: trainer.build_evaluator().spec(),
+    name: String::new(),
+  };
 
   let agent_json = agent_spec_to_json(&agent_spec);
   match args.value_of("output") {
@@ -190,7 +200,11 @@ fn run_tournament<G: Game>(game: &'static G, args: &ArgMatches) {
   let t = parse_time_arg(args.value_of("time_per_move"));
   println!("Time per move: {}", format_duration(t));
   let threads: usize = args.value_of("threads").unwrap().parse().unwrap();
-  let threads = if threads == 0 { num_cpus::get() } else { threads };
+  let threads = if threads == 0 {
+    num_cpus::get()
+  } else {
+    threads
+  };
   println!("Number of worker threads: {}", threads);
   let agents: Vec<_> = args
     .values_of("AGENT")

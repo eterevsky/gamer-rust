@@ -80,6 +80,7 @@ impl<S: State> Agent<S> for MinimaxAgent<S> {
       depth: self.max_depth,
       time_per_move: convert_duration(self.time_limit),
       evaluator: self.evaluator.spec(),
+      name: String::new()
     }
   }
 }

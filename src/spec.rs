@@ -30,6 +30,7 @@ pub enum AgentSpec {
     depth: u32,
     #[serde(default)] time_per_move: f64,
     evaluator: EvaluatorSpec,
+    #[serde(default)] name: String
   },
 }
 
@@ -51,7 +52,7 @@ pub enum EvaluatorSpec {
 #[serde(tag = "type", content = "content")]
 pub enum FeatureExtractorSpec {
   Subtractor(u32),
-  GomokuLines,
+  GomokuLines(u32),
   HexapawnNumberOfPawns,
 }
 
@@ -82,12 +83,12 @@ pub enum TrainerSpec {
 /// as a filename. One the file, read the contents as JSON and convert to
 /// AgentSpec.
 pub fn load_agent_spec(
-  s: &str,
+  fname: &str,
   time_per_move: Duration,
 ) -> Result<AgentSpec, String> {
   let time_per_move =
     time_per_move.as_secs() as f64 + time_per_move.subsec_nanos() as f64 * 1E-9;
-  match s {
+  match fname {
     "random" => Ok(AgentSpec::Random),
 
     "human" => Ok(AgentSpec::Human),
@@ -95,7 +96,7 @@ pub fn load_agent_spec(
     _ => {
       // Treating the string as filename.
       let mut f =
-        File::open(s).map_err(|e| format!("Error while opening file: {}", e))?;
+        File::open(fname).map_err(|e| format!("Error while opening file: {}", e))?;
       let mut s = String::new();
       f.read_to_string(&mut s)
         .map_err(|e| format!("Error while reading file: {}", e))?;
@@ -105,11 +106,15 @@ pub fn load_agent_spec(
         depth: _,
         time_per_move: ref mut t,
         evaluator: _,
+        ref mut name
       } = spec
       {
         if time_per_move > 0.0 {
           *t = time_per_move
-        }
+        };
+        if name.is_empty() {
+          *name = fname.to_string()
+        };
       };
       Ok(spec)
     }
@@ -159,6 +164,7 @@ mod test {
           regularization: 0.001,
         }
       },
+      name: String::new()
     };
 
     let agent_json = serde_json::to_string_pretty(&agent_spec).unwrap();
@@ -175,6 +181,7 @@ mod test {
       depth: 3,
       time_per_move: 0.0,
       evaluator: EvaluatorSpec::Terminal,
+      name: String::new()
     };
 
     let agent_json = serde_json::to_string_pretty(&agent_spec).unwrap();

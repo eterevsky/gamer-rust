@@ -26,6 +26,7 @@ pub fn create_agent<G: Game>(
       depth,
       time_per_move,
       evaluator: ref evaluator_spec,
+      name: _,
     } => {
       let evaluator = create_evaluator(game, evaluator_spec);
       let duration = convert_duration(time_per_move);
@@ -69,8 +70,8 @@ pub fn create_evaluator<G: Game>(
           >(Box::new(evaluator))
         }
       }
-      &FeatureExtractorSpec::GomokuLines => {
-        let extractor = GomokuLineFeatureExtractor::new();
+      &FeatureExtractorSpec::GomokuLines(min_len) => {
+        let extractor = GomokuLineFeatureExtractor::new(min_len as usize);
         let regression = create_regression(regression_spec, &extractor);
         let gomoku: &Gomoku = (game as &Any).downcast_ref().unwrap();
         let evaluator = FeatureEvaluator::new(gomoku, extractor, regression);
@@ -114,8 +115,8 @@ pub fn create_training<G: Game>(
         create_trainer(subtractor, extractor, regression, &spec.trainer);
       unsafe { transmute::<Box<Trainer<Subtractor>>, Box<Trainer<G>>>(trainer) }
     }
-    &FeatureExtractorSpec::GomokuLines => {
-      let extractor = GomokuLineFeatureExtractor::new();
+    &FeatureExtractorSpec::GomokuLines(min_len) => {
+      let extractor = GomokuLineFeatureExtractor::new(min_len as usize);
       let regression = create_regression(&spec.regression, &extractor);
       let gomoku: &Gomoku = (game as &Any).downcast_ref().unwrap();
       let trainer =
@@ -196,6 +197,7 @@ mod test {
       depth: 10,
       time_per_move: 0.0,
       evaluator: EvaluatorSpec::Terminal,
+      name: String::new(),
     };
     let agent = create_agent(game, &agent_spec);
     let mut state = game.new_game();
@@ -217,6 +219,7 @@ mod test {
           params: vec![0.1, 0.2, 0.3],
         },
       },
+      name: String::new(),
     };
 
     let game = Subtractor::default(21, 4);
@@ -232,12 +235,13 @@ mod test {
       depth: 1,
       time_per_move: 0.0,
       evaluator: EvaluatorSpec::Features {
-        extractor: FeatureExtractorSpec::GomokuLines,
+        extractor: FeatureExtractorSpec::GomokuLines(1),
         regression: RegressionSpec {
           params: vec![],
           regularization: 0.001,
         },
       },
+      name: String::new(),
     };
 
     let game = Gomoku::default();
@@ -259,6 +263,7 @@ mod test {
           regularization: 0.001,
         },
       },
+      name: String::new(),
     };
 
     let game = Hexapawn::default(3, 3);
