@@ -76,7 +76,12 @@ pub enum TrainerSpec {
     minimax_depth: u32,
     random_prob: f32,
     alpha: f32,
-  }
+  },
+  Annealing {
+    step_size: f32,
+    minimax_depth: u32,
+    temperature: f32
+  },
 }
 
 /// First match the string with "random" or "human". If it doesn't, treat it

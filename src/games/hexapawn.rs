@@ -4,7 +4,7 @@ use std::fmt;
 
 use board::{Cell, Board, point_to_a};
 use def::{FeatureExtractor, Game, State};
-use spec::FeatureExtractorSpec;
+use spec::{FeatureExtractorSpec, RegressionSpec};
 use status::Status;
 
 lazy_static! {
@@ -295,6 +295,14 @@ impl FeatureExtractor<HexapawnState> for HexapawnNumberOfPawnsExtractor {
   fn spec(&self) -> FeatureExtractorSpec {
     FeatureExtractorSpec::HexapawnNumberOfPawns
   }
+
+  fn report(&self, regression: RegressionSpec) {
+    let b = regression.params;
+    println!("self: {:>6.3}", b[1]);
+    println!("other: {:>6.3}", b[2]);
+    println!("bias: {:>6.3}\n", b[0]);
+  }
+
 }
 
 #[cfg(test)]

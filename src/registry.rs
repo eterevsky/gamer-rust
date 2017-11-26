@@ -3,8 +3,8 @@ use std::mem::transmute;
 use std::time::Duration;
 
 use def::{Agent, Evaluator, FeatureExtractor, Game, Regression, State, Trainer};
-use evaluators::{FeatureEvaluator, LinearRegressionTanh, ReinforceTrainer,
-                 SamplerEvaluator, TerminalEvaluator};
+use evaluators::{AnnealingTrainer, FeatureEvaluator, LinearRegressionTanh,
+                 ReinforceTrainer, SamplerEvaluator, TerminalEvaluator};
 use games::{Gomoku, GomokuLineFeatureExtractor, Hexapawn,
             HexapawnNumberOfPawnsExtractor, Subtractor,
             SubtractorFeatureExtractor};
@@ -156,6 +156,18 @@ fn create_trainer<
       minimax_depth,
       random_prob,
       alpha,
+    )),
+    &TrainerSpec::Annealing {
+      step_size,
+      minimax_depth,
+      temperature,
+    } => Box::new(AnnealingTrainer::new(
+      game,
+      extractor,
+      regression,
+      step_size,
+      minimax_depth,
+      temperature,
     )),
   }
 }
