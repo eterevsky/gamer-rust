@@ -117,7 +117,7 @@ impl Ratings {
     for i in indices {
       writeln!(
         &mut s,
-        "{:24}  {:4.1}  {}",
+        "{:32}  {:>6.1}  {:>2}",
         names[i],
         self.ratings[i] - self.min_rating,
         self.played_games[i]
