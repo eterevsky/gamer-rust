@@ -67,7 +67,7 @@ impl State for SubtractorState {
   }
 
   fn iter_moves<'s>(&'s self) -> Box<Iterator<Item = u32> + 's> {
-    Box::new((1..cmp::min(self.max_sub, self.number + 1)))
+    Box::new(1..cmp::min(self.max_sub, self.number + 1))
   }
 
   fn get_random_move<R: rand::Rng>(&self, rng: &mut R) -> Option<Self::Move> {
