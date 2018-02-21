@@ -80,7 +80,7 @@ pub trait FeatureExtractor<S: State> {
 
   fn spec(&self) -> FeatureExtractorSpec;
 
-  fn report(&self, _regression_spec: RegressionSpec) {}
+  fn report<R: Regression>(&self, _regression: &R) {}
 }
 
 pub trait Regression: Clone {

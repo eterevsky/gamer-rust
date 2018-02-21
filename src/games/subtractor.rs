@@ -6,8 +6,8 @@ use rand;
 use std::cmp;
 use std::fmt;
 
-use def::{FeatureExtractor, Game, State};
-use spec::FeatureExtractorSpec;
+use def::{FeatureExtractor, Game, Regression, State};
+use spec::{FeatureExtractorSpec};
 
 lazy_static! {
   static ref INSTANCE_21_4: Subtractor = Subtractor::new(21, 4);
@@ -133,6 +133,13 @@ impl FeatureExtractor<SubtractorState> for SubtractorFeatureExtractor {
 
   fn spec(&self) -> FeatureExtractorSpec {
     FeatureExtractorSpec::Subtractor(self.nfeatures)
+  }
+
+  fn report<R: Regression>(&self, regression: &R) {
+    for f in 1..(self.nfeatures + 1) {
+      print!("{}: {:.3}  ", f, regression.params()[f as usize - 1]);
+    }
+    println!();
   }
 }
 

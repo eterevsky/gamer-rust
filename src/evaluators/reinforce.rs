@@ -113,7 +113,7 @@ where
       }
 
       if Instant::now() - last_report > Duration::new(10, 0) {
-        self.extractor.report(self.regression.spec());
+        self.extractor.report(&self.regression);
         last_report = Instant::now();
       }
     }
@@ -145,9 +145,9 @@ fn train_subtractor() {
     game,
     extractor,
     regression,
-    5,
-    0.1,
-    0.1);
+    5,           // minimax_depth
+    0.1,         // random_prob
+    0.1);        // AdamOptimizer alpha
 
   trainer.train(200, Duration::new(0, 0));
   let evaluator = trainer.build_evaluator();

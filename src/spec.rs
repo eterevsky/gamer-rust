@@ -80,7 +80,8 @@ pub enum TrainerSpec {
   Annealing {
     step_size: f32,
     minimax_depth: u32,
-    temperature: f32
+    temperature: f32,
+    ngames: u32,
   },
 }
 

@@ -1,9 +1,9 @@
 //! FeatureExtractor with features based on the continuous lines of stones
 //! of the same color.
 
-use def::{FeatureExtractor, State};
+use def::{FeatureExtractor, Regression, State};
 use super::gomoku::{GomokuState, PointState, BOARD_LEN, SIZE};
-use spec::{FeatureExtractorSpec, RegressionSpec};
+use spec::{FeatureExtractorSpec};
 
 #[derive(Clone, Copy, Debug)]
 pub struct LineRange {
@@ -218,8 +218,8 @@ impl FeatureExtractor<GomokuState> for GomokuLineFeatureExtractor {
     FeatureExtractorSpec::GomokuLines(self.min_len as u32)
   }
 
-  fn report(&self, regression: RegressionSpec) {
-    let b = regression.params;
+  fn report<R: Regression>(&self, regression: &R) {
+    let b = regression.params();
     println!(
       "closed straight / closed diagonal / open straight / open diagonal"
     );

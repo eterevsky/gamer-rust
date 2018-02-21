@@ -1,12 +1,12 @@
 use rand;
-use rand::Rng;
+use rand::{Rng, XorShiftRng};
 use spec::EvaluatorSpec;
+use std::cell::RefCell;
 use std::time::{Duration, Instant};
 
 use agents::MinimaxAgent;
 use def::{Agent, Evaluator, FeatureExtractor, Game, Regression, State, Trainer};
 use super::FeatureEvaluator;
-
 
 pub struct AnnealingTrainer<G, E, R>
 where
@@ -20,7 +20,9 @@ where
   step_size: f32,
   minimax_depth: u32,
   temperature: f32,
+  ngames: u32,
   steps: u64,
+  rng: RefCell<XorShiftRng>
 }
 
 impl<G, E, R> AnnealingTrainer<G, E, R>
@@ -36,6 +38,7 @@ where
     step_size: f32,
     minimax_depth: u32,
     temperature: f32,
+    ngames: u32
   ) -> Self {
     AnnealingTrainer {
       game,
@@ -44,8 +47,41 @@ where
       step_size,
       minimax_depth,
       temperature,
+      ngames,
       steps: 0,
+      rng: RefCell::new(rand::weak_rng())
     }
+  }
+
+  fn current_temperature(&self) -> f32 {
+    if self.temperature == 0.0 {
+      0.0
+    } else {
+      (-(self.steps as f32) / self.temperature).exp()
+    }
+  }
+
+  // Plays self.ngames games with alternating first player. Returns the sum
+  // of payoffs for player1.
+  fn run_games(&self, player1: &MinimaxAgent<G::State>, player2: &MinimaxAgent<G::State>) -> f32 {
+    let mut payoff = 0.0;
+    let mut player1_first = self.rng.borrow_mut().gen_weighted_bool(2);
+
+    for _game in 0..self.ngames {
+      let mut state = self.game.new_game();
+      while !state.is_terminal() {
+        let m = if player1_first == state.get_player() {
+          player1.select_move(&state).unwrap().get_move()
+        } else {
+          player2.select_move(&state).unwrap().get_move()
+        };
+        state.play(m).unwrap();
+      }
+      payoff += if player1_first { state.get_payoff().unwrap() } else { -state.get_payoff().unwrap() };
+      player1_first = !player1_first;
+    }
+
+    payoff
   }
 }
 
@@ -69,7 +105,7 @@ where
   }
 
   fn spec(&self) -> EvaluatorSpec {
-    unreachable!()
+    unreachable!("AnnealingTrainer shouldn't be converted to EvaluatorSpec directly.")
   }
 }
 
@@ -81,7 +117,7 @@ where
 {
   fn train(&mut self, steps: u64, time_limit: Duration) {
     let mut rng = rand::weak_rng();
-    let mut last_report = Instant::now();
+    // let mut last_report = Instant::now();
 
     let deadline = if time_limit != Duration::new(0, 0) {
       Some(Instant::now() + time_limit)
@@ -114,34 +150,18 @@ where
         None,
       );
 
-      let new_plays_first = rng.gen_weighted_bool(2);
-      let mut state = self.game.new_game();
-      while !state.is_terminal() {
-        let m = if new_plays_first != state.get_player() {
-          current_agent.select_move(&state).unwrap().get_move()
-        } else {
-          new_agent.select_move(&state).unwrap().get_move()
-        };
-        state.play(m).unwrap();
-      }
+      let new_payoff = self.run_games(&new_agent, &current_agent);
 
-      let new_won = new_plays_first != (state.get_payoff().unwrap() < 0.0);
-
-      if new_won
-        || self.temperature > 0.0
-          && rng.next_f32() < (-(self.steps as f32) / self.temperature).exp()
-      {
+      if new_payoff > 0.0 || rng.next_f32() < self.current_temperature() {
         current_agent = new_agent;
         self.regression = new_regression;
+
+        println!("Step {}, temperature {}", self.steps, self.current_temperature());
+        self.extractor.report(&self.regression);
+        // last_report = Instant::now();
       }
 
       self.steps += 1;
-
-      if Instant::now() - last_report > Duration::new(10, 0) {
-        println!("Step {}, temperature {}", self.steps, if self.temperature == 0.0 { 0.0 } else { (-(self.steps as f32) / self.temperature).exp()});
-        self.extractor.report(self.regression.spec());
-        last_report = Instant::now();
-      }
     }
   }
 
@@ -172,20 +192,25 @@ mod test {
       extractor,
       regression,
       0.001, // step size
-      1,     // minimax depth
-      0.0,
+      5,     // minimax depth
+      10.0,  // temperature
+      3      // ngames
     );
 
     trainer.train(200, Duration::new(0, 0));
     let evaluator = trainer.build_evaluator();
 
-    // let game4 = Subtractor::new(4, 4);
-    // let game5 = Subtractor::new(5, 4);
+    for n in 1..11 {
+      println!("eval({}) = {}", n, evaluator.evaluate(&Subtractor::new(n, 4).new_game()))
+    }
 
-    // assert!(
-    //   evaluator.evaluate(&game4.new_game())
-    //     < evaluator.evaluate(&game5.new_game())
-    // );
+    let game4 = Subtractor::new(4, 4);
+    let game5 = Subtractor::new(5, 4);
+
+    assert!(
+      evaluator.evaluate(&game4.new_game())
+        < evaluator.evaluate(&game5.new_game())
+    );
   }
 
 }

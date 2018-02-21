@@ -161,6 +161,7 @@ fn create_trainer<
       step_size,
       minimax_depth,
       temperature,
+      ngames
     } => Box::new(AnnealingTrainer::new(
       game,
       extractor,
@@ -168,6 +169,7 @@ fn create_trainer<
       step_size,
       minimax_depth,
       temperature,
+      ngames,
     )),
   }
 }
