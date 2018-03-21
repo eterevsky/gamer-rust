@@ -1,16 +1,18 @@
 use std::time::{Duration, Instant};
 
-use def::{Game, Evaluator, State};
+use def::{Evaluator, Game, State};
 use games::subtractor::{Subtractor, SubtractorState};
 use registry::create_training;
 use spec::{FeatureExtractorSpec, RegressionSpec, TrainerSpec, TrainingSpec};
-
 
 fn seconds(d: Duration) -> f64 {
   d.as_secs() as f64 + 1E-9 * d.subsec_nanos() as f64
 }
 
-fn select_best_move(state: &SubtractorState, evaluator: &Evaluator<SubtractorState>) -> u32 {
+fn select_best_move(
+  state: &SubtractorState,
+  evaluator: &Evaluator<SubtractorState>,
+) -> u32 {
   let current_player = state.get_player();
   let mut best_move = 0u32;
   let mut best_eval = 0.0;
@@ -55,14 +57,23 @@ fn evaluate_training(spec: &TrainingSpec) -> (i32, Duration, i32) {
     steps += 1;
 
     if Instant::now() - last_check > Duration::from_millis(1) {
-      let evaluator: Box<Evaluator<SubtractorState>> = trainer.build_evaluator();
+      let evaluator: Box<Evaluator<SubtractorState>> =
+        trainer.build_evaluator();
       correct = check_evaluator(evaluator.as_ref());
-      if correct == 21 { break; }
+      if correct == 21 {
+        break;
+      }
       last_check = Instant::now()
     }
   }
 
-  println!("{:?}\nSteps: {}\nTime: {:?}\nCorrect {}\n", spec, steps, Instant::now() - start, correct);
+  println!(
+    "{:?}\nSteps: {}\nTime: {:?}\nCorrect {}\n",
+    spec,
+    steps,
+    Instant::now() - start,
+    correct
+  );
 
   (21 - correct, Instant::now() - start, steps)
 }
@@ -91,7 +102,9 @@ pub fn train_subtractor_eval() {
     for &random_prob in random_prob_values.iter() {
       for &alpha in alpha_values.iter() {
         training_spec.trainer = TrainerSpec::Reinforce {
-          minimax_depth, random_prob, alpha
+          minimax_depth,
+          random_prob,
+          alpha,
         };
 
         let (wrong, t, steps) = evaluate_training(&training_spec);
