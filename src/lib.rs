@@ -21,3 +21,5 @@ mod ratings;
 pub mod registry;
 pub mod spec;
 mod status;
+
+pub use evaluators::train_subtractor_eval;

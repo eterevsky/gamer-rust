@@ -36,9 +36,6 @@ where
   R: Regression,
 {
   fn evaluate(&self, state: &G::State) -> f32 {
-    if let Some(score) = state.get_payoff() {
-      return score;
-    }
     let features = self.extractor.extract(state);
     let player_score = self.regression.evaluate(&features);
     if state.get_player() {

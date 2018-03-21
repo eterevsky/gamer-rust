@@ -8,6 +8,7 @@ use std::fs::File;
 use std::io::Write;
 use std::time::Duration;
 
+use gamer::train_subtractor_eval::train_subtractor_eval;
 use gamer::def::Game;
 use gamer::ladder::{play_game, Ladder};
 use gamer::registry::create_training;
@@ -96,6 +97,10 @@ fn args_definition() -> clap::App<'static, 'static> {
             .default_value("0")
             .help("Time limit for training."),
         ),
+    )
+    .subcommand(
+      SubCommand::with_name("train_subtractor_eval")
+        .about("Run training for Subtractor(21, 4) until it finds optimal move for all states.")
     )
     .subcommand(
       SubCommand::with_name("tournament")
@@ -229,6 +234,7 @@ fn main() {
   match args.subcommand() {
     ("play", Some(subargs)) => call_with_game!(run_play, &game_spec, subargs),
     ("train", Some(subargs)) => call_with_game!(run_train, &game_spec, subargs),
+    ("train_subtractor_eval", _) => train_subtractor_eval(),
     ("tournament", Some(subargs)) => {
       call_with_game!(run_tournament, &game_spec, subargs)
     }

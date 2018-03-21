@@ -68,6 +68,10 @@ pub trait Evaluator<S: State> {
   /// whose turn it is.
   fn evaluate(&self, state: &S) -> f32;
 
+  fn evaluate_for_player(&self, state: &S, player: bool) -> f32 {
+    if player { self.evaluate(state) } else { -self.evaluate(state) }
+  }
+
   fn spec(&self) -> EvaluatorSpec;
 }
 

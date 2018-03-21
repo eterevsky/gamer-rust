@@ -78,7 +78,6 @@ where
 {
   fn train(&mut self, steps: u64, time_limit: Duration) {
     let discount = 0.999;
-    let mut state = self.game.new_game();
     let mut rng = rand::weak_rng();
     let mut last_report = Instant::now();
 
@@ -94,22 +93,23 @@ where
           break;
         }
       }
-      if state.is_terminal() {
-        state = self.game.new_game();
-      }
 
-      let report = minimax_fixed_depth(&state, self, self.minimax_depth, discount);
-      let score = if state.get_player() { report.score } else { -report.score };
-      let gradient = self.regression.gradient1(
-          &self.extractor.extract(&state), score);
-      self.optimizer.gradient_step(self.regression.mut_params(), gradient.as_slice());
-      self.steps += 1;
+      let mut state = self.game.new_game();
 
-      if rng.next_f32() < self.random_prob {
-        let m = state.get_random_move(&mut rng).unwrap();
-        state.play(m).unwrap();
-      } else {
-        state.play(report.get_move()).unwrap();
+      while !state.is_terminal() {
+        let report = minimax_fixed_depth(&state, self, self.minimax_depth, discount);
+        let score = if state.get_player() { report.score } else { -report.score };
+        let gradient = self.regression.gradient1(
+            &self.extractor.extract(&state), score);
+        self.optimizer.gradient_step(self.regression.mut_params(), gradient.as_slice());
+        self.steps += 1;
+
+        if rng.next_f32() < self.random_prob {
+          let m = state.get_random_move(&mut rng).unwrap();
+          state.play(m).unwrap();
+        } else {
+          state.play(report.get_move()).unwrap();
+        }
       }
 
       if Instant::now() - last_report > Duration::new(10, 0) {

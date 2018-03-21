@@ -41,7 +41,7 @@ impl Game for Subtractor {
 
 #[derive(Clone, Debug)]
 pub struct SubtractorState {
-  number: u32,
+  pub number: u32,
   max_sub: u32,
   player: bool
 }

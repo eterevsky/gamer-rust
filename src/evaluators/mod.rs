@@ -4,6 +4,7 @@ mod regression;
 mod reinforce;
 mod sampler;
 mod terminal;
+pub mod train_subtractor_eval;
 
 pub use self::annealing::AnnealingTrainer;
 pub use self::features::FeatureEvaluator;

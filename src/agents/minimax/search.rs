@@ -129,6 +129,8 @@ impl<'e, S: State> MinimaxSearch<'e, S> {
   }
 }
 
+// discount -- a value <= 1.0, but close to it. The payoff will be multiplied
+// by if for every move.
 pub fn minimax_fixed_depth<S: State, E: Evaluator<S>>(
     state: &S, evaluator: &E, depth: u32, discount: f32
 ) -> MinimaxReport<S::Move> {

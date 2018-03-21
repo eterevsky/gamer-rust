@@ -1,6 +1,6 @@
 mod gomoku;
 mod hexapawn;
-mod subtractor;
+pub mod subtractor;
 
 pub use self::gomoku::{Gomoku, GomokuLineFeatureExtractor};
 pub use self::hexapawn::{Hexapawn, HexapawnNumberOfPawnsExtractor};

@@ -1,5 +1,5 @@
 mod human;
-mod minimax;
+pub mod minimax;
 mod random;
 
 pub use self::human::HumanAgent;
