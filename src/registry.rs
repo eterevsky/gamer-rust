@@ -6,7 +6,7 @@ use def::{Agent, Evaluator, FeatureExtractor, Game, Regression, State, Trainer};
 use evaluators::{AnnealingTrainer, FeatureEvaluator, LinearRegressionTanh,
                  ReinforceTrainer, SamplerEvaluator, TerminalEvaluator};
 use games::{Gomoku, GomokuLineFeatureExtractor, Hexapawn,
-            HexapawnNumberOfPawnsExtractor, Subtractor,
+            HexapawnCompleteExtractor, HexapawnNumberOfPawnsExtractor, Subtractor,
             SubtractorFeatureExtractor};
 use agents::{HumanAgent, MinimaxAgent, RandomAgent};
 use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec, RegressionSpec,
@@ -85,8 +85,20 @@ pub fn create_evaluator<G: Game>(
       &FeatureExtractorSpec::HexapawnNumberOfPawns => {
         let extractor = HexapawnNumberOfPawnsExtractor::new();
         let regression = create_regression(regression_spec, &extractor);
-        let gomoku: &Hexapawn = (game as &Any).downcast_ref().unwrap();
-        let evaluator = FeatureEvaluator::new(gomoku, extractor, regression);
+        let hexapawn: &Hexapawn = (game as &Any).downcast_ref().unwrap();
+        let evaluator = FeatureEvaluator::new(hexapawn, extractor, regression);
+        unsafe {
+          transmute::<
+            Box<Evaluator<<Hexapawn as Game>::State>>,
+            Box<Evaluator<G::State>>,
+          >(Box::new(evaluator))
+        }
+      }
+      &FeatureExtractorSpec::HexapawnComplete => {
+        let hexapawn: &Hexapawn = (game as &Any).downcast_ref().unwrap();
+        let extractor = HexapawnCompleteExtractor::new(hexapawn);
+        let regression = create_regression(regression_spec, &extractor);
+        let evaluator = FeatureEvaluator::new(hexapawn, extractor, regression);
         unsafe {
           transmute::<
             Box<Evaluator<<Hexapawn as Game>::State>>,
@@ -127,6 +139,14 @@ pub fn create_training<G: Game>(
       let extractor = HexapawnNumberOfPawnsExtractor::new();
       let regression = create_regression(&spec.regression, &extractor);
       let hexapawn: &Hexapawn = (game as &Any).downcast_ref().unwrap();
+      let trainer =
+        create_trainer(hexapawn, extractor, regression, &spec.trainer);
+      unsafe { transmute::<Box<Trainer<Hexapawn>>, Box<Trainer<G>>>(trainer) }
+    }
+    &FeatureExtractorSpec::HexapawnComplete => {
+      let hexapawn: &Hexapawn = (game as &Any).downcast_ref().unwrap();
+      let extractor = HexapawnCompleteExtractor::new(hexapawn);
+      let regression = create_regression(&spec.regression, &extractor);
       let trainer =
         create_trainer(hexapawn, extractor, regression, &spec.trainer);
       unsafe { transmute::<Box<Trainer<Hexapawn>>, Box<Trainer<G>>>(trainer) }

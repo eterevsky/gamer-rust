@@ -3,7 +3,7 @@ mod hexapawn;
 pub mod subtractor;
 
 pub use self::gomoku::{Gomoku, GomokuLineFeatureExtractor};
-pub use self::hexapawn::{Hexapawn, HexapawnNumberOfPawnsExtractor};
+pub use self::hexapawn::{Hexapawn, HexapawnCompleteExtractor, HexapawnNumberOfPawnsExtractor};
 pub use self::subtractor::{Subtractor, SubtractorFeatureExtractor};
 
 #[macro_export]

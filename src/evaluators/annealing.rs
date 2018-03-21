@@ -117,7 +117,7 @@ where
 {
   fn train(&mut self, steps: u64, time_limit: Duration) {
     let mut rng = rand::weak_rng();
-    // let mut last_report = Instant::now();
+    let mut last_report = Instant::now();
 
     let deadline = if time_limit != Duration::new(0, 0) {
       Some(Instant::now() + time_limit)
@@ -156,9 +156,11 @@ where
         current_agent = new_agent;
         self.regression = new_regression;
 
-        println!("Step {}, temperature {}", self.steps, self.current_temperature());
-        self.extractor.report(&self.regression);
-        // last_report = Instant::now();
+        if Instant::now() - last_report > Duration::from_secs(5) {
+          println!("Step {}, temperature {}", self.steps, self.current_temperature());
+          self.extractor.report(&self.regression);
+          last_report = Instant::now();
+        }
       }
 
       self.steps += 1;
@@ -197,7 +199,7 @@ mod test {
       3      // ngames
     );
 
-    trainer.train(200, Duration::new(0, 0));
+    trainer.train(500, Duration::new(0, 0));
     let evaluator = trainer.build_evaluator();
 
     for n in 1..11 {

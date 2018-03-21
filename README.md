@@ -9,9 +9,6 @@
 
 ### To be implemented
 
-- Sim
-- Nim
-- Kayles
 - Quarto
 - Hex
 - Connect Four
