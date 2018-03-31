@@ -1,0 +1,16 @@
+{
+  "extractor": {
+    "type": "HexapawnComplete"
+  },
+  "regression": {
+    "params": [],
+    "regularization": 0.1
+  },
+  "trainer": {
+    "type": "LadderAnnealing",
+    "minimax_depth": 2,
+    "temperature": 100,
+    "ngames": 32,
+    "step_size": 0.01
+  }
+}

@@ -84,6 +84,12 @@ pub enum TrainerSpec {
     temperature: f32,  // For each of this number of steps the temperature will fall exponentially.
     ngames: u32,  // Number of games between players to determine the winner.
   },
+  LadderAnnealing {
+    step_size: f32,
+    minimax_depth: u32,
+    temperature: f32,
+    ngames: usize,
+  }
 }
 
 /// First match the string with "random" or "human". If it doesn't, treat it

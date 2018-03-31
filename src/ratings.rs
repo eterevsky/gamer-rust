@@ -475,7 +475,7 @@ mod test {
   }
 
   #[test]
-  fn predict_ratio_fast_upadtes() {
+  fn predict_ratio_fast_updates() {
     let mut ratings = Ratings::new(true);
     for r in gen_100elo_results() {
       ratings.add_game(r);
@@ -487,6 +487,19 @@ mod test {
 
     assert!(ratings.ratings[0] - ratings.ratings[1] > 95.);
     assert!(ratings.ratings[0] - ratings.ratings[1] < 105.);
+  }
+
+  #[test]
+  fn predict_ratio_only_fast_updates() {
+    let mut ratings = Ratings::new(true);
+    for r in gen_100elo_results() {
+      ratings.add_game(r);
+    }
+
+    println!("{:?}", ratings.ratings);
+
+    assert!(ratings.ratings[0] - ratings.ratings[1] > 85.);
+    assert!(ratings.ratings[0] - ratings.ratings[1] < 115.);
   }
 
   #[test]

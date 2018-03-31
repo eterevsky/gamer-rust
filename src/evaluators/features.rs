@@ -48,6 +48,10 @@ where
     }
   }
 
+  fn report(&self) {
+    self.extractor.report(&self.regression);
+  }
+
   fn spec(&self) -> EvaluatorSpec {
     EvaluatorSpec::Features {
       extractor: self.extractor.spec(),

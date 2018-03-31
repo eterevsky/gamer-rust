@@ -82,8 +82,12 @@ impl<G: Game> Worker<G> {
     player1: &Participant,
     player2: &Participant,
   ) -> GameResult {
-    let payoff =
-      play_game(self.game, &player1.agent_spec, &player2.agent_spec, false);
+    let payoff = play_game(
+      self.game,
+      &player1.agent_spec,
+      &player2.agent_spec,
+      false,
+    );
 
     GameResult {
       player1_id: player1.id,
@@ -94,7 +98,12 @@ impl<G: Game> Worker<G> {
 
   fn run(&mut self) {
     loop {
-      let job = self.jobs_receiver.lock().unwrap().recv().unwrap();
+      let job = self
+        .jobs_receiver
+        .lock()
+        .unwrap()
+        .recv()
+        .unwrap();
       match job {
         Job::Stop => break,
         Job::Play(player1, player2) => {
@@ -161,18 +170,53 @@ impl Ladder {
     let id = self.participants.len();
     self.participants.push(Participant {
       id,
-      agent_spec: (*agent_spec).clone(),
+      agent_spec: agent_spec.clone(),
     });
     id
   }
 
+  pub fn get_participant<'a>(&'a self, id: usize) -> &'a AgentSpec {
+    &self.participants[id].agent_spec
+  }
+
   /// Adds a participant and estimate its rating.
-  /// 
+  ///
   /// Adds a new agent to the ladded and runs `ngames` games with existing
   /// participants to estimate its rating. The ratings of existing participants
   /// will be updates as well.
-  // pub fn add_participant_and_rank(&mut self, agent_spec: &AgentSpec, ngames: usize) -> (usize, f32) {
-  // }
+  pub fn add_participant_and_rank(
+    &mut self,
+    agent_spec: &AgentSpec,
+    ngames: usize,
+  ) -> (usize, f32) {
+    let prior_participants = self.participants.len();
+    let id = self.add_participant(agent_spec);
+    let mut rng = weak_rng();
+
+    for _ in 0..ngames {
+      let opponent = rng.gen_range(0, prior_participants);
+      let (player1, player2) = if rng.gen_range(0, 2) > 0 {
+        (id, opponent)
+      } else {
+        (opponent, id)
+      };
+      self
+        .jobs_sender
+        .send(Job::Play(
+          self.participants[player1].clone(),
+          self.participants[player2].clone(),
+        ))
+        .unwrap();
+    }
+
+    for _ in 0..ngames {
+      let result = self.results_receiver.recv().unwrap();
+      self.ratings.add_game(result);
+    }
+    self.ratings.full_update();      
+
+    (id, self.ratings.get_rating(id))
+  }
 
   pub fn get_rating(&self, id: usize) -> f32 {
     self.ratings.get_rating(id)
@@ -193,8 +237,10 @@ impl Ladder {
       rng.shuffle(&mut pairs);
 
       for &(i, j) in pairs.iter() {
-        let job =
-          Job::Play(self.participants[i].clone(), self.participants[j].clone());
+        let job = Job::Play(
+          self.participants[i].clone(),
+          self.participants[j].clone(),
+        );
         self.jobs_sender.send(job).unwrap();
       }
     }
@@ -210,15 +256,19 @@ impl Ladder {
       );
       self.ratings.add_game(result);
       self.ratings.full_update();
-      println!(
-        "{}",
-        self.ratings.print(
-          (0..self.participants.len())
-            .map(|i| self.print_participant(i))
-            .collect::<Vec<&str>>()
-        )
-      );
+      self.print_all();
     }
+  }
+
+  pub fn print_all(&self) {
+    println!(
+      "{}",
+      self.ratings.print(
+        (0..self.participants.len())
+          .map(|i| self.print_participant(i))
+          .collect::<Vec<&str>>()
+      )
+    );
   }
 
   fn print_participant<'a>(&'a self, id: usize) -> &'a str {
@@ -256,7 +306,6 @@ mod test {
   use games::{Hexapawn, Subtractor};
   use spec::{AgentSpec, EvaluatorSpec};
 
-
   #[test]
   fn play_hexapawn() {
     let game = Hexapawn::default(3, 3);
@@ -272,7 +321,10 @@ mod test {
       evaluator: EvaluatorSpec::Terminal,
       name: "2".to_string(),
     };
-    assert_eq!(-1.0, play_game(game, &agent1_spec, &agent2_spec, false));
+    assert_eq!(
+      -1.0,
+      play_game(game, &agent1_spec, &agent2_spec, false)
+    );
   }
 
   #[test]

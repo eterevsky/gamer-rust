@@ -3,15 +3,15 @@ use std::mem::transmute;
 use std::time::Duration;
 
 use def::{Agent, Evaluator, FeatureExtractor, Game, Regression, State, Trainer};
-use evaluators::{AnnealingTrainer, FeatureEvaluator, LinearRegressionTanh,
-                 ReinforceTrainer, SamplerEvaluator, TerminalEvaluator};
+use evaluators::{AnnealingTrainer, FeatureEvaluator, LadderAnnealingTrainer,
+                 LinearRegressionTanh, ReinforceTrainer, SamplerEvaluator,
+                 TerminalEvaluator};
 use games::{Gomoku, GomokuLineFeatureExtractor, Hexapawn,
-            HexapawnCompleteExtractor, HexapawnNumberOfPawnsExtractor, Subtractor,
-            SubtractorFeatureExtractor};
+            HexapawnCompleteExtractor, HexapawnNumberOfPawnsExtractor,
+            Subtractor, SubtractorFeatureExtractor};
 use agents::{HumanAgent, MinimaxAgent, RandomAgent};
 use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec, RegressionSpec,
            TrainerSpec, TrainingSpec};
-
 
 pub fn create_agent<G: Game>(
   game: &'static G,
@@ -30,7 +30,11 @@ pub fn create_agent<G: Game>(
     } => {
       let evaluator = create_evaluator(game, evaluator_spec);
       let duration = convert_duration(time_per_move);
-      Box::new(MinimaxAgent::new_boxed(evaluator, depth, duration))
+      Box::new(MinimaxAgent::new_boxed(
+        evaluator,
+        depth,
+        duration,
+      ))
     }
   }
 }
@@ -108,9 +112,10 @@ pub fn create_evaluator<G: Game>(
       }
     },
 
-    &EvaluatorSpec::Sampler { samples, discount } => {
-      Box::new(SamplerEvaluator::new(samples, discount))
-    }
+    &EvaluatorSpec::Sampler {
+      samples,
+      discount,
+    } => Box::new(SamplerEvaluator::new(samples, discount)),
   }
 }
 
@@ -181,11 +186,25 @@ fn create_trainer<
       step_size,
       minimax_depth,
       temperature,
-      ngames
+      ngames,
     } => Box::new(AnnealingTrainer::new(
       game,
       extractor,
       regression,
+      step_size,
+      minimax_depth,
+      temperature,
+      ngames,
+    )),
+    &TrainerSpec::LadderAnnealing {
+      step_size,
+      minimax_depth,
+      temperature,
+      ngames,
+    } => Box::new(LadderAnnealingTrainer::new(
+      game,
+      extractor.spec(),
+      regression.spec(),
       step_size,
       minimax_depth,
       temperature,
@@ -204,7 +223,6 @@ fn convert_duration(seconds: f64) -> Option<Duration> {
     ))
   }
 }
-
 
 #[cfg(test)]
 mod test {

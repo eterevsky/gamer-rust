@@ -73,6 +73,8 @@ pub trait Evaluator<S: State> {
   }
 
   fn spec(&self) -> EvaluatorSpec;
+
+  fn report(&self) {}
 }
 
 pub trait FeatureExtractor<S: State> {

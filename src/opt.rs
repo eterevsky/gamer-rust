@@ -18,7 +18,6 @@ pub fn minimize(
     optimizer.gradient_step(params, grad.as_slice());
     if i > 200000 { break; }
   }
-  println!("i = {}", i);
 }
 
 pub trait Optimizer {

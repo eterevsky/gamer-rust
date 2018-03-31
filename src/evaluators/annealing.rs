@@ -57,7 +57,7 @@ where
     if self.temperature == 0.0 {
       0.0
     } else {
-      (-(self.steps as f32) / self.temperature).exp()
+      0.01_f32.max( (-(self.steps as f32) / self.temperature).exp() )
     }
   }
 
