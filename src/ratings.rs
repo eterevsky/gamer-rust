@@ -10,22 +10,37 @@ pub struct Ratings {
   reg: f64, // regularization coefficient
   ratings: Vec<f32>,
   played_games: Vec<u32>,
+  wins: Vec<f32>,
   results: Vec<GameResult>,
   min_rating: f32,
+  single_step_rate: f64,
+  total_fast_update_loss: f32,
 }
 
 impl Ratings {
-  pub fn new() -> Self {
+  /// Create a new `Ratings` instance.
+  ///
+  /// `single_step_rate` defines the multiplier for the simple ratings updates
+  /// based on a single game. This is used in `add_game()`, and ignored in
+  /// `full_update()`. If this value is equal to 0, the `add_game()` only adds
+  /// a game result, but doesn affect the ratings.
+  pub fn new(fast_updates: bool) -> Self {
     Ratings {
       k: 3.0f64.ln() / 400.,
-      reg: 1E-6,
+      reg: 2E-7,  // 1E-6
       ratings: vec![],
       played_games: vec![],
+      wins: vec![],
       results: vec![],
       min_rating: 0.0,
+      single_step_rate: if fast_updates { 400. * 400. / 1.5 } else {0.0},
+      total_fast_update_loss: 0.0,
     }
   }
 
+  /// Adds a game to the set and updates the ratings of the two players.
+  ///
+  /// The update for the rating only applies to the two participants.
   pub fn add_game(&mut self, result: GameResult) {
     self.results.push(result);
 
@@ -34,10 +49,30 @@ impl Ratings {
     {
       self.ratings.push(0.0);
       self.played_games.push(0);
+      self.wins.push(0.0);
     }
 
     self.played_games[result.player1_id] += 1;
+    self.wins[result.player1_id] += (result.payoff + 1.) / 2.;
     self.played_games[result.player2_id] += 1;
+    self.wins[result.player2_id] += (-result.payoff + 1.) / 2.;
+
+    if self.single_step_rate == 0. {
+      return;
+    }
+
+    let diff = self.ratings[result.player1_id] as f64
+      - self.ratings[result.player2_id] as f64;
+    let prob = self.logistic_function(diff);
+    let deriv = self.logistic_derivative(diff);
+    let d = 0.5 * deriv
+      * ((result.payoff as f64 + 1.) / prob
+        + (result.payoff as f64 - 1.) / (1. - prob));
+    let d1 = d / (self.played_games[result.player1_id] as f64);
+    let d2 = -d / (self.played_games[result.player2_id] as f64);
+
+    self.ratings[result.player1_id] += (self.single_step_rate * d1) as f32;
+    self.ratings[result.player2_id] += (self.single_step_rate * d2) as f32;
   }
 
   pub fn full_update(&mut self) {
@@ -47,6 +82,13 @@ impl Ratings {
       &|r| self.log_prob_grad(r),
       ratings.as_mut_slice(),
     );
+    let square_error: f32 = self
+      .ratings
+      .iter()
+      .zip(ratings.iter())
+      .map(|(x, y)| (x - y) * (x - y))
+      .sum();
+    self.total_fast_update_loss += square_error;
     self.ratings = ratings;
     self.min_rating = f32::MAX;
     for &r in self.ratings.iter() {
@@ -101,7 +143,10 @@ impl Ratings {
       grad[result.player2_id] += d;
     }
 
-    grad.iter().map(|&x| x as f32).collect::<Vec<_>>()
+    grad
+      .iter()
+      .map(|&x| x as f32)
+      .collect::<Vec<_>>()
   }
 
   pub fn get_rating(&self, player_id: usize) -> f32 {
@@ -111,16 +156,19 @@ impl Ratings {
   pub fn print<'a>(&self, names: Vec<&'a str>) -> String {
     let mut indices: Vec<_> = (0..self.ratings.len()).collect();
     indices.sort_unstable_by(|&i, &j| {
-      self.ratings[j].partial_cmp(&self.ratings[i]).unwrap()
+      self.ratings[j]
+        .partial_cmp(&self.ratings[i])
+        .unwrap()
     });
     let mut s = String::new();
     for i in indices {
       writeln!(
         &mut s,
-        "{:32}  {:>6.1}  {:>2}",
+        "{:32}  {:>6.1}  {:>2} ({})",
         names[i],
         self.ratings[i] - self.min_rating,
-        self.played_games[i]
+        self.played_games[i],
+        self.wins[i]
       ).unwrap();
     }
     s
@@ -138,7 +186,9 @@ impl fmt::Display for Ratings {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
     let mut indices: Vec<_> = (0..self.ratings.len()).collect();
     indices.sort_unstable_by(|&i, &j| {
-      self.ratings[j].partial_cmp(&self.ratings[i]).unwrap()
+      self.ratings[j]
+        .partial_cmp(&self.ratings[i])
+        .unwrap()
     });
     for i in indices {
       writeln!(
@@ -153,9 +203,10 @@ impl fmt::Display for Ratings {
   }
 }
 
-
 #[cfg(test)]
 mod test {
+
+  use rand::{weak_rng, Rng};
 
   use super::*;
   use ladder::GameResult;
@@ -170,7 +221,7 @@ mod test {
 
   #[test]
   fn logistic_derivative() {
-    let ratings = Ratings::new();
+    let ratings = Ratings::new(false);
     assert_relative_eq!(
       approx_derivative(&|x| ratings.logistic_function(x), 0.),
       ratings.logistic_derivative(0.),
@@ -200,13 +251,15 @@ mod test {
 
   #[test]
   fn regularization() {
-    let mut ratings = Ratings::new();
+    let mut ratings = Ratings::new(false);
     ratings.played_games.push(0);
     ratings.played_games.push(0);
     ratings.ratings.push(0.0);
-    ratings.ratings.push(1000.0);
+    ratings.ratings.push(10000.0);
 
     ratings.full_update();
+
+    eprintln!("{:?}", ratings.ratings);
 
     assert_eq!(0.0, ratings.ratings[0]);
     assert!(ratings.ratings[1] < 1.0);
@@ -214,12 +267,16 @@ mod test {
 
   #[test]
   fn single_game() {
-    let mut ratings = Ratings::new();
+    let mut ratings = Ratings::new(false);
     ratings.add_game(GameResult {
       player1_id: 0,
       player2_id: 1,
       payoff: 1.0,
     });
+    // With single_step_rate = 0, the ratings shouldn't be updated before
+    // full_update is called.
+    assert_eq!(0.0, ratings.ratings[0]);
+    assert_eq!(0.0, ratings.ratings[1]);
 
     ratings.full_update();
 
@@ -233,7 +290,7 @@ mod test {
 
   #[test]
   fn two_to_one() {
-    let mut ratings = Ratings::new();
+    let mut ratings = Ratings::new(false);
     ratings.add_game(GameResult {
       player1_id: 0,
       player2_id: 1,
@@ -260,7 +317,7 @@ mod test {
 
   #[test]
   fn three_to_one() {
-    let mut ratings = Ratings::new();
+    let mut ratings = Ratings::new(false);
     ratings.add_game(GameResult {
       player1_id: 0,
       player2_id: 1,
@@ -296,7 +353,7 @@ mod test {
 
   #[test]
   fn nine_to_one() {
-    let mut ratings = Ratings::new();
+    let mut ratings = Ratings::new(false);
     for _ in 0..9 {
       ratings.add_game(GameResult {
         player1_id: 0,
@@ -320,7 +377,7 @@ mod test {
 
   #[test]
   fn three_games() {
-    let mut ratings = Ratings::new();
+    let mut ratings = Ratings::new(false);
     ratings.add_game(GameResult {
       player1_id: 0,
       player2_id: 1,
@@ -343,6 +400,107 @@ mod test {
 
     assert!(ratings.get_rating(1) - ratings.get_rating(0) > 200.0);
     assert!(ratings.get_rating(0) - ratings.get_rating(2) > 200.0);
+  }
+
+  #[test]
+  fn fast_update() {
+    let mut ratings = Ratings::new(true);
+    ratings.add_game(GameResult {
+      player1_id: 0,
+      player2_id: 1,
+      payoff: -1.0,
+    });
+
+    assert!(ratings.ratings[0] < 0.);
+    assert!(ratings.ratings[1] > 0.);
+
+    let ratings1 = ratings.ratings.clone();
+
+    ratings.add_game(GameResult {
+      player1_id: 0,
+      player2_id: 2,
+      payoff: -1.0,
+    });
+
+    assert!(ratings.ratings[1] == ratings1[1]);
+    assert!(ratings.ratings[2] > 0.);
+    assert!(ratings.ratings[2] < ratings.ratings[1]);
+    assert!(ratings.ratings[0] < ratings1[0]);
+    assert!(ratings.ratings[2] > ratings1[0] - ratings.ratings[0]);
+
+    eprintln!("{:?}", ratings.ratings);
+
+    ratings.full_update();
+
+    eprintln!("{:?}", ratings.ratings);
+  }
+
+  fn gen_100elo_results() -> Vec<GameResult> {
+    let mut results = vec![];
+
+    for _ in 0..64 {
+      results.push(GameResult {
+        player1_id: 0,
+        player2_id: 1,
+        payoff: 1.0
+      })
+    }
+
+    for _ in 0..36 {
+      results.push(GameResult {
+        player1_id: 0,
+        player2_id: 1,
+        payoff: -1.0
+      })
+    }
+
+    weak_rng().shuffle(&mut results);
+
+    results
+  }
+
+  #[test]
+  fn predict_ratio_simple() {
+    let mut ratings = Ratings::new(false);
+    for r in gen_100elo_results() {
+      ratings.add_game(r);
+    }
+
+    ratings.full_update();
+
+    println!("{:?}", ratings.ratings);
+
+    assert!(ratings.ratings[0] - ratings.ratings[1] > 95.);
+    assert!(ratings.ratings[0] - ratings.ratings[1] < 105.);
+  }
+
+  #[test]
+  fn predict_ratio_fast_upadtes() {
+    let mut ratings = Ratings::new(true);
+    for r in gen_100elo_results() {
+      ratings.add_game(r);
+    }
+
+    ratings.full_update();
+
+    println!("{:?}", ratings.ratings);
+
+    assert!(ratings.ratings[0] - ratings.ratings[1] > 95.);
+    assert!(ratings.ratings[0] - ratings.ratings[1] < 105.);
+  }
+
+  #[test]
+  fn predict_ratio_many_updates() {
+    let mut ratings = Ratings::new(false);
+    for r in gen_100elo_results() {
+      ratings.add_game(r);
+      ratings.full_update();
+    }
+
+    println!("{:?}", ratings.ratings);
+
+    assert!(ratings.ratings[0] - ratings.ratings[1] > 95.);
+    assert!(ratings.ratings[0] - ratings.ratings[1] < 105.);
   }
 
 } // mod tests

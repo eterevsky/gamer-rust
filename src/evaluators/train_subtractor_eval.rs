@@ -30,7 +30,7 @@ fn select_best_move(
   best_move
 }
 
-fn check_evaluator(evaluator: &Evaluator<SubtractorState>) -> i32 {
+pub fn check_evaluator(evaluator: &Evaluator<SubtractorState>) -> i32 {
   let mut correct = 0;
   for i in 1..22 {
     let mut state = Subtractor::new(i, 4).new_game();
@@ -93,30 +93,61 @@ pub fn train_subtractor_eval() {
   };
 
   let minimax_values = vec![1, 2, 3, 4];
-  let random_prob_values = vec![0.01, 0.03, 0.05, 0.1, 0.3, 0.5];
-  let alpha_values = vec![0.00001, 0.0001, 0.001, 0.01, 0.1, 1.0];
+  // let random_prob_values = vec![0.01, 0.03, 0.05, 0.1, 0.3, 0.5];
+  // let alpha_values = vec![0.00001, 0.0001, 0.001, 0.01, 0.1, 1.0];
+
+  // let mut configs = vec![];
+
+  // for &minimax_depth in minimax_values.iter() {
+  //   for &random_prob in random_prob_values.iter() {
+  //     for &alpha in alpha_values.iter() {
+  //       training_spec.trainer = TrainerSpec::Reinforce {
+  //         minimax_depth,
+  //         random_prob,
+  //         alpha,
+  //       };
+
+  //       let (wrong, t, steps) = evaluate_training(&training_spec);
+  //       configs.push((minimax_depth, random_prob, alpha, wrong, t, steps))
+  //     }
+  //   }
+  // }
+
+  // configs.sort_unstable_by_key(|c| (c.3, c.4));
+  // for c in configs {
+  //   let (depth, random_prob, alpha, wrong, t, steps) = c;
+  //   println!("depth = {}  random = {}  alpha = {}  ->  wrong = {}  time = {:.3}  steps = {}",
+  //        depth, random_prob, alpha, wrong, seconds(t), steps);;
+  // }
 
   let mut configs = vec![];
 
-  for &minimax_depth in minimax_values.iter() {
-    for &random_prob in random_prob_values.iter() {
-      for &alpha in alpha_values.iter() {
-        training_spec.trainer = TrainerSpec::Reinforce {
-          minimax_depth,
-          random_prob,
-          alpha,
-        };
+  let step_sizes = vec![0.01, 0.1, 1.0];
+  let temperatures = vec![1.0, 10.0, 100.0];
+  let ngameses = vec![1, 3, 5];
 
-        let (wrong, t, steps) = evaluate_training(&training_spec);
-        configs.push((minimax_depth, random_prob, alpha, wrong, t, steps))
+  for &minimax_depth in minimax_values.iter() {
+    for &step_size in step_sizes.iter() {
+      for &temperature in temperatures.iter() {
+        for &ngames in ngameses.iter() {
+          training_spec.trainer = TrainerSpec::Annealing {
+            step_size,
+            minimax_depth,
+            temperature,
+            ngames
+          };
+
+          let (wrong, t, steps) = evaluate_training(&training_spec);
+          configs.push((minimax_depth, step_size, temperature, ngames, wrong, t, steps))
+        }
       }
     }
   }
 
-  configs.sort_unstable_by_key(|c| (c.3, c.4));
+  configs.sort_unstable_by_key(|c| (c.4, c.5));
   for c in configs {
-    let (depth, random_prob, alpha, wrong, t, steps) = c;
-    println!("depth = {}  random = {}  alpha = {}  ->  wrong = {}  time = {:.3}  steps = {}",
-         depth, random_prob, alpha, wrong, seconds(t), steps);;
+    let (minimax_depth, step_size, temperature, ngames, wrong, t, steps) = c;
+    println!("depth = {}  step = {}  temp = {}  ngames = {}  ->  wrong = {}  time = {:.3}  steps = {}",
+         minimax_depth, step_size, temperature, ngames, wrong, seconds(t), steps);;
   }
 }

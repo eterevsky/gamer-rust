@@ -8,13 +8,17 @@ pub fn minimize(
   params: &mut [f32],
 ) {
   let mut optimizer = AdamOptimizer::new(params.len(), 0.1);
+  let mut i = 0;
   loop {
+    i += 1;
     let grad = g(params);
-    if norm(&grad) < 1E-12 * (1. + norm(params)) {
+    if norm(&grad) < 1E-14 * (1. + norm(params)) {
       break;
     };
     optimizer.gradient_step(params, grad.as_slice());
+    if i > 200000 { break; }
   }
+  println!("i = {}", i);
 }
 
 pub trait Optimizer {

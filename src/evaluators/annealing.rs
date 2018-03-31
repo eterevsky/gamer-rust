@@ -22,7 +22,7 @@ where
   temperature: f32,
   ngames: u32,
   steps: u64,
-  rng: RefCell<XorShiftRng>
+  rng: RefCell<XorShiftRng>,
 }
 
 impl<G, E, R> AnnealingTrainer<G, E, R>
@@ -38,7 +38,7 @@ where
     step_size: f32,
     minimax_depth: u32,
     temperature: f32,
-    ngames: u32
+    ngames: u32,
   ) -> Self {
     AnnealingTrainer {
       game,
@@ -49,7 +49,7 @@ where
       temperature,
       ngames,
       steps: 0,
-      rng: RefCell::new(rand::weak_rng())
+      rng: RefCell::new(rand::weak_rng()),
     }
   }
 
@@ -63,7 +63,11 @@ where
 
   // Plays self.ngames games with alternating first player. Returns the sum
   // of payoffs for player1.
-  fn run_games(&self, player1: &MinimaxAgent<G::State>, player2: &MinimaxAgent<G::State>) -> f32 {
+  fn run_games(
+    &self,
+    player1: &MinimaxAgent<G::State>,
+    player2: &MinimaxAgent<G::State>,
+  ) -> f32 {
     let mut payoff = 0.0;
     let mut player1_first = self.rng.borrow_mut().gen_weighted_bool(2);
 
@@ -77,7 +81,11 @@ where
         };
         state.play(m).unwrap();
       }
-      payoff += if player1_first { state.get_payoff().unwrap() } else { -state.get_payoff().unwrap() };
+      payoff += if player1_first {
+        state.get_payoff().unwrap()
+      } else {
+        -state.get_payoff().unwrap()
+      };
       player1_first = !player1_first;
     }
 
@@ -105,7 +113,9 @@ where
   }
 
   fn spec(&self) -> EvaluatorSpec {
-    unreachable!("AnnealingTrainer shouldn't be converted to EvaluatorSpec directly.")
+    unreachable!(
+      "AnnealingTrainer shouldn't be converted to EvaluatorSpec directly."
+    )
   }
 }
 
@@ -157,7 +167,11 @@ where
         self.regression = new_regression;
 
         if Instant::now() - last_report > Duration::from_secs(5) {
-          println!("Step {}, temperature {}", self.steps, self.current_temperature());
+          println!(
+            "Step {}, temperature {}",
+            self.steps,
+            self.current_temperature()
+          );
           self.extractor.report(&self.regression);
           last_report = Instant::now();
         }
@@ -181,38 +195,38 @@ mod test {
 
   use super::*;
   use evaluators::LinearRegressionTanh;
+  use evaluators::train_subtractor_eval::check_evaluator;
   use games::{Subtractor, SubtractorFeatureExtractor};
 
   #[test]
   fn train_subtractor() {
     let game = Subtractor::default(21, 4);
-    let extractor = SubtractorFeatureExtractor::new(5);
-    let regression = LinearRegressionTanh::zeros(5, 0.001);
+    let extractor = SubtractorFeatureExtractor::new(10);
+    let regression = LinearRegressionTanh::zeros(10, 0.001);
 
     let mut trainer = AnnealingTrainer::new(
       game,
       extractor,
       regression,
-      0.001, // step size
-      5,     // minimax depth
-      10.0,  // temperature
-      3      // ngames
+      0.01,  // step size
+      2,     // minimax depth
+      1.0,  // temperature
+      1,     // ngames
     );
 
-    trainer.train(500, Duration::new(0, 0));
+    trainer.train(2000, Duration::new(0, 0));
     let evaluator = trainer.build_evaluator();
 
-    for n in 1..11 {
-      println!("eval({}) = {}", n, evaluator.evaluate(&Subtractor::new(n, 4).new_game()))
+    println!();
+    for n in 1..22 {
+      println!(
+        "eval({}) = {}",
+        n,
+        evaluator.evaluate(&Subtractor::new(n, 4).new_game())
+      )
     }
 
-    let game4 = Subtractor::new(4, 4);
-    let game5 = Subtractor::new(5, 4);
-
-    assert!(
-      evaluator.evaluate(&game4.new_game())
-        < evaluator.evaluate(&game5.new_game())
-    );
+    assert_eq!(21, check_evaluator(evaluator.as_ref()));
   }
 
 }

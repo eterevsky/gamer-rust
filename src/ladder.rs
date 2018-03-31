@@ -149,13 +149,14 @@ impl Ladder {
     Ladder {
       participants: Vec::new(),
       results: Vec::new(),
-      ratings: Ratings::new(),
+      ratings: Ratings::new(true),
       threads,
       jobs_sender,
       results_receiver,
     }
   }
 
+  /// Adds a new agent to the ladder and returns an id that it was assigned.
   pub fn add_participant(&mut self, agent_spec: &AgentSpec) -> usize {
     let id = self.participants.len();
     self.participants.push(Participant {
@@ -164,6 +165,14 @@ impl Ladder {
     });
     id
   }
+
+  /// Adds a participant and estimate its rating.
+  /// 
+  /// Adds a new agent to the ladded and runs `ngames` games with existing
+  /// participants to estimate its rating. The ratings of existing participants
+  /// will be updates as well.
+  // pub fn add_participant_and_rank(&mut self, agent_spec: &AgentSpec, ngames: usize) -> (usize, f32) {
+  // }
 
   pub fn get_rating(&self, id: usize) -> f32 {
     self.ratings.get_rating(id)
@@ -307,7 +316,7 @@ mod test {
     let mut ladder = Ladder::new(Subtractor::default(21, 4), 2);
     let random_id = ladder.add_participant(&AgentSpec::Random);
     let minimax_id = ladder.add_participant(&AgentSpec::Minimax {
-      depth: 5,
+      depth: 6,
       time_per_move: 0.0,
       evaluator: EvaluatorSpec::Terminal,
       name: "2".to_string(),
