@@ -1,16 +1,17 @@
 {
   "extractor": {
-    "type": "HexapawnComplete"
+    "type": "GomokuLines",
+    "content": 2
   },
   "regression": {
     "params": [],
-    "regularization": 0.1
+    "regularization": 0.05
   },
   "trainer": {
     "type": "LadderAnnealing",
     "minimax_depth": 2,
     "temperature": 100,
-    "ngames": 48,
+    "ngames": 24,
     "step_size": 0.01
   }
 }
