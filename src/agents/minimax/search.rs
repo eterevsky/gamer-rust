@@ -3,12 +3,14 @@ use std;
 use std::f32;
 use std::fmt;
 use std::time::Instant;
+use std::marker::PhantomData;
 
 use def::{Evaluator, State};
 use super::MinimaxReport;
 
-pub struct MinimaxSearch<'e, S: State + 'e> {
-  evaluator: &'e Evaluator<S>,
+pub struct MinimaxSearch<S: State, E: Evaluator<S>> {
+  _state: PhantomData<S>,
+  evaluator: E,
   deadline: Option<Instant>,
   // Discount per depth.
   discount: Vec<f32>,
@@ -21,15 +23,15 @@ pub struct MinimaxSearch<'e, S: State + 'e> {
 
 #[derive(Debug)]
 pub enum SearchResult<M: 'static + Copy + fmt::Debug> {
-  Deadline, // Deadline exceeded while scanning the branch.
+  Deadline,  // Deadline exceeded while scanning the branch.
   Lower,
   Higher,
   Found(f32, Vec<M>),
 }
 
-impl<'e, S: State> MinimaxSearch<'e, S> {
+impl<S: State, E: Evaluator<S>> MinimaxSearch<S, E> {
   pub fn new(
-    evaluator: &'e Evaluator<S>,
+    evaluator: E,
     depth: u32,
     discount: f32,
     deadline: Option<Instant>,
@@ -39,6 +41,7 @@ impl<'e, S: State> MinimaxSearch<'e, S> {
       .map(|d| discount.powi(d as i32))
       .collect();
     MinimaxSearch {
+      _state: PhantomData{},
       evaluator,
       deadline,
       discount: discount_vec,

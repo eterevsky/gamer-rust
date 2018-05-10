@@ -30,7 +30,7 @@ pub fn create_agent<G: Game>(
     } => {
       let evaluator = create_evaluator(game, evaluator_spec);
       let duration = convert_duration(time_per_move);
-      Box::new(MinimaxAgent::new_boxed(
+      Box::new(MinimaxAgent::new(
         evaluator,
         depth,
         duration,

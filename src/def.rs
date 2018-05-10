@@ -2,6 +2,7 @@
 
 use rand;
 use std::fmt;
+use std::ops::Deref;
 use std::time::Duration;
 
 use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec, RegressionSpec};
@@ -75,6 +76,34 @@ pub trait Evaluator<S: State> {
   fn spec(&self) -> EvaluatorSpec;
 
   fn report(&self) {}
+}
+
+impl<'a, S: State, U: ?Sized + Evaluator<S>> Evaluator<S> for &'a U {
+  fn evaluate(&self, state: &S) -> f32 {
+    (*self).evaluate(state)
+  }
+
+  fn spec(&self) -> EvaluatorSpec {
+    (*self).spec()
+  }
+
+  fn report(&self) {
+    (*self).report()
+  }
+}
+
+impl<S: State, U: ?Sized + Evaluator<S>> Evaluator<S> for Box<U> {
+  fn evaluate(&self, state: &S) -> f32 {
+    self.deref().evaluate(state)
+  }
+
+  fn spec(&self) -> EvaluatorSpec {
+    self.deref().spec()
+  }
+
+  fn report(&self) {
+    self.deref().report()
+  }  
 }
 
 pub trait FeatureExtractor<S: State> {
