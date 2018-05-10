@@ -98,7 +98,7 @@ impl HexapawnState {
 
   fn gen_moves(&mut self) {
     self.moves.clear();
-    let player = self.get_player();
+    let player = self.player();
     let width = self.board.width;
     for point in 0..self.board.len() {
       if self.board.get(point).unwrap().is_player(player) {
@@ -135,7 +135,7 @@ impl HexapawnState {
   }
 
   fn check_move(&self, m: HexapawnMove) -> Result<(), &'static str> {
-    let player = self.get_player();
+    let player = self.player();
     if !self.board.get(m.from as usize).unwrap().is_player(player) {
       return Err("Original square doesn't contain player's pawn.");
     }
@@ -156,16 +156,16 @@ impl HexapawnState {
 impl State for HexapawnState {
   type Move = HexapawnMove;
 
-  fn get_player(&self) -> bool {
-    self.status.get_player()
+  fn player(&self) -> bool {
+    self.status.player()
   }
 
   fn is_terminal(&self) -> bool {
     self.status.is_terminal()
   }
 
-  fn get_payoff(&self) -> Option<f32> {
-    self.status.get_payoff()
+  fn payoff(&self) -> Option<f32> {
+    self.status.payoff()
   }
 
   fn iter_moves<'s>(&'s self) -> Box<Iterator<Item = HexapawnMove> + 's> {
@@ -181,7 +181,7 @@ impl State for HexapawnState {
   }
 
   fn play(&mut self, m: HexapawnMove) -> Result<(), &'static str> {
-    let player = self.get_player();
+    let player = self.player();
     self.check_move(m)?;
     self.board.set(m.from as usize, HexapawnCell::Empty);
     self.board.set(m.to as usize, HexapawnCell::player(player));
@@ -203,7 +203,7 @@ impl State for HexapawnState {
   }
 
   fn undo(&mut self, m: HexapawnMove) -> Result<(), &'static str> {
-    let player = !self.get_player();
+    let player = !self.player();
     if !self.board.get(m.to as usize).unwrap().is_player(player)
       || !self.board.get(m.from as usize).unwrap().is_empty()
     {
@@ -328,7 +328,7 @@ impl FeatureExtractor<HexapawnState> for HexapawnNumberOfPawnsExtractor {
         _ => (w, b),
       });
 
-    if state.get_player() {
+    if state.player() {
       vec![1.0, whites as f32, blacks as f32]
     } else {
       vec![1.0, blacks as f32, whites as f32]
@@ -376,7 +376,7 @@ impl FeatureExtractor<HexapawnState> for HexapawnCompleteExtractor {
       match value {
         HexapawnCell::White => {
           assert!((i as u32) < self.width * (self.height - 1));
-          let ind = if state.get_player() {
+          let ind = if state.player() {
             i
           } else {
             2 * player_offset - i - 1
@@ -385,7 +385,7 @@ impl FeatureExtractor<HexapawnState> for HexapawnCompleteExtractor {
         }
         HexapawnCell::Black => {
           assert!(i as u32 >= self.width);
-          let ind = if state.get_player() {
+          let ind = if state.player() {
             player_offset + i - self.width as usize
           } else {
             player_offset + self.width as usize - i - 1
@@ -442,33 +442,33 @@ mod test {
     assert_eq!(Some(HexapawnCell::Black), state.board.get_a("b3"));
     assert_eq!(Some(HexapawnCell::Empty), state.board.get_a("c2"));
 
-    assert!(state.get_player());
+    assert!(state.player());
     assert!(!state.is_terminal());
 
     let moves: Vec<_> = state.iter_moves().collect();
     assert_eq!(3, moves.len());
 
     assert!(state.play(HexapawnMove::new(1, 4, 3)).is_ok());
-    assert!(!state.get_player());
+    assert!(!state.player());
     assert!(!state.is_terminal());
 
     let moves: Vec<_> = state.iter_moves().collect();
     assert_eq!(4, moves.len());
 
     assert!(state.play(HexapawnMove::new(6, 4, 3)).is_ok());
-    assert!(state.get_player());
+    assert!(state.player());
     assert!(!state.is_terminal());
 
     assert!(state.play(HexapawnMove::new(0, 3, 3)).is_ok());
     assert!(state.play(HexapawnMove::new(4, 1, 3)).is_ok());
 
     assert!(state.is_terminal());
-    assert_eq!(Some(-1.0), state.get_payoff());
+    assert_eq!(Some(-1.0), state.payoff());
 
     assert!(state.undo(HexapawnMove::new(4, 1, 3)).is_ok());
 
     assert!(!state.is_terminal());
-    assert!(!state.get_player());
+    assert!(!state.player());
     assert_eq!(Some(HexapawnCell::White), state.board.get_a("a2"));
     assert_eq!(Some(HexapawnCell::Black), state.board.get_a("b2"));
     assert_eq!(Some(HexapawnCell::Empty), state.board.get_a("b1"));
@@ -484,7 +484,7 @@ mod test {
     assert!(state.play(HexapawnMove::new(2, 5, 3)).is_ok());
 
     assert!(state.is_terminal());
-    assert_eq!(Some(1.0), state.get_payoff());
+    assert_eq!(Some(1.0), state.payoff());
   }
 
   #[test]
@@ -530,7 +530,7 @@ mod test {
 
     let m = state.parse_move("a1-a2").unwrap();
     assert!(state.play(m).is_ok());
-    assert!(!state.get_player());
+    assert!(!state.player());
 
     assert_eq!(
       vec![1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0],

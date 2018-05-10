@@ -12,7 +12,7 @@ impl Status {
     Status(0)
   }
 
-  pub fn get_player(self) -> bool {
+  pub fn player(self) -> bool {
     self.0 & PLAYER_MASK == 0
   }
 
@@ -36,7 +36,7 @@ impl Status {
     self.0 |= DRAW_MASK
   }
 
-  pub fn get_payoff(self) -> Option<f32> {
+  pub fn payoff(self) -> Option<f32> {
     match self.0 & TERMINAL_MASK {
       PLAYER1_WIN_MASK => Some(1.0),
       PLAYER2_WIN_MASK => Some(-1.0),
@@ -55,18 +55,18 @@ use super::*;
 #[test]
 fn status() {
   let mut status = Status::new();
-  assert!(status.get_player());
+  assert!(status.player());
   assert!(!status.is_terminal());
-  assert!(status.get_payoff().is_none());
+  assert!(status.payoff().is_none());
 
   status.switch_player();
-  assert!(!status.get_player());
+  assert!(!status.player());
   assert!(!status.is_terminal());
-  assert!(status.get_payoff().is_none());
+  assert!(status.payoff().is_none());
 
   status.set_winner(false);
   assert!(status.is_terminal());
-  assert_eq!(Some(-1.0), status.get_payoff());
+  assert_eq!(Some(-1.0), status.payoff());
 }
 
 }  // mod test

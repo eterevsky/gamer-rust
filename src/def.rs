@@ -21,21 +21,21 @@ pub trait State: Clone + fmt::Display {
   type Move: 'static + Clone + Copy + fmt::Debug + fmt::Display;
 
   /// Returns true if it's the turn of the first player.
-  fn get_player(&self) -> bool;
+  fn player(&self) -> bool;
 
   /// Returns true if position is terminal.
   fn is_terminal(&self) -> bool {
-    self.get_payoff() == None
+    self.payoff() == None
   }
 
   /// Returns payoff for the first player if position is terminal, None
   /// otherwize.
-  fn get_payoff(&self) -> Option<f32>;
+  fn payoff(&self) -> Option<f32>;
 
   /// Returns an iterator over all legal moves in the given position.
   fn iter_moves<'s>(&'s self) -> Box<Iterator<Item = Self::Move> + 's>;
 
-  /// Returns a random valid move or None if the position is terminal.
+  /// Generates a random valid move or None if the position is terminal.
   fn get_random_move<R: rand::Rng>(&self, rng: &mut R) -> Option<Self::Move>;
 
   /// Plays a move.

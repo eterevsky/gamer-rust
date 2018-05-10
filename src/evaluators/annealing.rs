@@ -74,7 +74,7 @@ where
     for _game in 0..self.ngames {
       let mut state = self.game.new_game();
       while !state.is_terminal() {
-        let m = if player1_first == state.get_player() {
+        let m = if player1_first == state.player() {
           player1.select_move(&state).unwrap().get_move()
         } else {
           player2.select_move(&state).unwrap().get_move()
@@ -82,9 +82,9 @@ where
         state.play(m).unwrap();
       }
       payoff += if player1_first {
-        state.get_payoff().unwrap()
+        state.payoff().unwrap()
       } else {
-        -state.get_payoff().unwrap()
+        -state.payoff().unwrap()
       };
       player1_first = !player1_first;
     }
@@ -100,12 +100,12 @@ where
   R: Regression,
 {
   fn evaluate(&self, state: &G::State) -> f32 {
-    if let Some(score) = state.get_payoff() {
+    if let Some(score) = state.payoff() {
       return score;
     }
     let features = self.extractor.extract(state);
     let player_score = self.regression.evaluate(&features);
-    if state.get_player() {
+    if state.player() {
       player_score
     } else {
       -player_score

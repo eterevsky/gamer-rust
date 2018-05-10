@@ -40,7 +40,7 @@ impl<S: State> Agent<S> for RandomAgent {
   fn select_move(&self, state: &S)
       -> Result<Box<AgentReport<S::Move>>, &'static str> {
     match state.get_random_move(&mut *self.rng.borrow_mut()) {
-      Some(m) => Ok(Box::new(RandomAgentReport{m, player: state.get_player()})),
+      Some(m) => Ok(Box::new(RandomAgentReport{m, player: state.player()})),
       None => Err("Terminal position")
     }
   }

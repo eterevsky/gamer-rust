@@ -27,7 +27,7 @@ impl<S: State> Agent<S> for HumanAgent {
   fn select_move(&self, state: &S)
       -> Result<Box<AgentReport<S::Move>>, &'static str> {
     loop {
-      print!("Player {} move: ", if  state.get_player() { 1 } else { 2 });
+      print!("Player {} move: ", if state.player() { 1 } else { 2 });
       io::stdout().flush().map_err(|_| "Unknown error")?;
       let mut move_str = String::new();
       io::stdin().read_line(&mut move_str)

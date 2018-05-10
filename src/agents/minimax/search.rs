@@ -84,7 +84,7 @@ impl<'e, S: State> MinimaxSearch<'e, S> {
       return SearchResult::Found(evaluation, Vec::new());
     }
 
-    let player = state.get_player();
+    let player = state.player();
     let mut lo = lo;
     let mut hi = hi;
     let mut state_clone = state.clone();
@@ -158,7 +158,7 @@ pub fn minimax_fixed_depth<S: State, E: Evaluator<S>>(
       pv,
       samples: minimax.leaves,
       duration: start_time.elapsed(),
-      player: state.get_player(),
+      player: state.player(),
       depth,
     }
   } else {

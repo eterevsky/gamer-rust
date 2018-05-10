@@ -36,16 +36,12 @@ where
   R: Regression,
 {
   fn evaluate(&self, state: &G::State) -> f32 {
-    if let Some(payoff) = state.get_payoff() {
+    if let Some(payoff) = state.payoff() {
       return payoff;
     }
     let features = self.extractor.extract(state);
     let player_score = self.regression.evaluate(&features);
-    if state.get_player() {
-      player_score
-    } else {
-      -player_score
-    }
+    if state.player() { player_score } else { -player_score }
   }
 
   fn report(&self) {

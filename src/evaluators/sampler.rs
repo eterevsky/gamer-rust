@@ -24,7 +24,7 @@ impl SamplerEvaluator {
 impl<S: State> Evaluator<S> for SamplerEvaluator {
   fn evaluate(&self, state: &S) -> f32 {
     if state.is_terminal() {
-      return state.get_payoff().unwrap();
+      return state.payoff().unwrap();
     }
     let rng = &mut *self.rng.borrow_mut();
     let mut total_payoff: f64 = 0.0;
@@ -35,7 +35,7 @@ impl<S: State> Evaluator<S> for SamplerEvaluator {
         playout_state.play(m).unwrap();
         moves += 1;
       }
-      let payoff = playout_state.get_payoff().unwrap() as f64;
+      let payoff = playout_state.payoff().unwrap() as f64;
       total_payoff += payoff * self.discount.powi(moves);
     }
 

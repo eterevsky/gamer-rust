@@ -48,7 +48,7 @@ impl<S: State> Agent<S> for MinimaxAgent<S> {
       pv: vec![state.get_random_move(&mut rand::weak_rng()).unwrap()],
       samples: 0,
       duration: Duration::new(0, 0),
-      player: state.get_player(),
+      player: state.player(),
       depth: 0,
     };
 

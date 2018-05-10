@@ -12,7 +12,7 @@ pub fn run_game(moves_str: &str, result: f32) -> GomokuState {
   let mut player = true;
 
   for move_str in moves_str.split(' ') {
-    assert_eq!(player, state.get_player());
+    assert_eq!(player, state.player());
     assert!(!state.is_terminal());
     let m: GomokuMove = FromStr::from_str(move_str).unwrap();
     assert!(state.play(m).is_ok());
@@ -20,7 +20,7 @@ pub fn run_game(moves_str: &str, result: f32) -> GomokuState {
   }
 
   if result != 0.0 {
-    assert_eq!(Some(result), state.get_payoff())
+    assert_eq!(Some(result), state.payoff())
   }
 
   state
@@ -41,11 +41,11 @@ fn play() {
   assert_eq!(Some(PointState::Empty), state.gets("c3"));
 
   assert!(state.play("c3".parse().unwrap()).is_ok());
-  assert_eq!(false, state.get_player());
+  assert_eq!(false, state.player());
   assert_eq!(Some(PointState::Black), state.gets("c3"));
 
   assert!(state.play("d4".parse().unwrap()).is_ok());
-  assert!(state.get_player());
+  assert!(state.player());
   assert_eq!(Some(PointState::White), state.gets("d4"));
 
   assert!(!state.play("d4".parse().unwrap()).is_ok());
@@ -104,7 +104,7 @@ fn game_draw() {
   }
 
   assert!(state.is_terminal());
-  assert_eq!(Some(0.0), state.get_payoff());
+  assert_eq!(Some(0.0), state.payoff());
 }
 
 #[test]
