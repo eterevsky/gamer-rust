@@ -10,10 +10,10 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
-mod agents;
+pub mod agents;
 mod board;
 pub mod def;
-mod evaluators;
+pub mod evaluators;
 pub mod games;
 pub mod ladder;
 mod opt;
