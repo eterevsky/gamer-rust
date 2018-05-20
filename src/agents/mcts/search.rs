@@ -24,6 +24,6 @@ impl<S: State, P: Policy<S>, E: Evaluator<S>> MctsSearch<S, P, E> {
       return Err("the state is terminal");
     }
 
-    Ok(MctsReport::new(self.root_state.get_random_move(&mut rand::weak_rng()).unwrap(), 0, 0., self.root_state.get_player()))
+    Ok(MctsReport::new(self.root_state.get_random_move(&mut rand::weak_rng()).unwrap(), 0, 0., self.root_state.player()))
   }
 }

@@ -13,7 +13,7 @@ fn select_best_move(
   state: &SubtractorState,
   evaluator: &Evaluator<SubtractorState>,
 ) -> u32 {
-  let current_player = state.get_player();
+  let current_player = state.player();
   let mut best_move = 0u32;
   let mut best_eval = 0.0;
   let moves = state.iter_moves().collect::<Vec<_>>();

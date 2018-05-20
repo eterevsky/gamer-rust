@@ -53,12 +53,12 @@ where
 impl<G, E, R> Evaluator<G::State> for ReinforceTrainer<G, E, R>
 where G: Game, E: FeatureExtractor<G::State>, R: Regression {
   fn evaluate(&self, state: &G::State) -> f32 {
-    if let Some(score) = state.get_payoff() {
+    if let Some(score) = state.payoff() {
       return score;
     }
     let features = self.extractor.extract(state);
     let player_score = self.regression.evaluate(&features);
-    if state.get_player() {
+    if state.player() {
       player_score
     } else {
       -player_score
@@ -98,7 +98,7 @@ where
 
       while !state.is_terminal() {
         let report = minimax_fixed_depth(&state, self, self.minimax_depth, discount);
-        let score = if state.get_player() { report.score } else { -report.score };
+        let score = if state.player() { report.score } else { -report.score };
         let gradient = self.regression.gradient1(
             &self.extractor.extract(&state), score);
         self.optimizer.gradient_step(self.regression.mut_params(), gradient.as_slice());

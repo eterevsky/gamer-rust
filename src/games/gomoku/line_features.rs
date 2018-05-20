@@ -149,7 +149,7 @@ impl GomokuLineFeatureExtractor {
     let mut color = PointState::Empty;
     let mut point = line.start;
     let mut opened_line = false;
-    let active_player = PointState::from_player(state.get_player());
+    let active_player = PointState::from_player(state.player());
 
     while point < line.end {
       if state.board[point] == color {

@@ -55,10 +55,10 @@ impl SubtractorState {
 impl State for SubtractorState {
   type Move = u32;
 
-  fn get_player(&self) -> bool { self.player }
+  fn player(&self) -> bool { self.player }
   fn is_terminal(&self) -> bool { self.number == 0 }
 
-  fn get_payoff(&self) -> Option<f32> {
+  fn payoff(&self) -> Option<f32> {
     if self.number == 0 {
       if self.player { Some(-1.0) } else { Some(1.0) }
     } else {
@@ -153,28 +153,28 @@ use super::*;
 fn game() {
   let game = Subtractor::new(10, 4);
   let mut state = game.new_game();
-  assert!(state.get_player());
+  assert!(state.player());
   assert!(!state.is_terminal());
-  assert!(state.get_payoff().is_none());
+  assert!(state.payoff().is_none());
   assert_eq!(vec![1, 2, 3], state.iter_moves().collect::<Vec<u32>>());
 
   assert!(state.play(0).is_err());
-  assert!(state.get_player());
+  assert!(state.player());
   assert!(state.play(4).is_err());
-  assert!(state.get_player());
+  assert!(state.player());
 
   // Player 1: -3  ->  7
   assert!(state.play(3).is_ok());
-  assert!(!state.get_player());
+  assert!(!state.player());
   assert!(!state.is_terminal());
 
   // Player 2: -3  ->  4
   assert!(state.play(3).is_ok());
-  assert!(state.get_player());
+  assert!(state.player());
 
   // Player 1: -3  ->  1
   assert!(state.play(3).is_ok());
-  assert!(!state.get_player());
+  assert!(!state.player());
   assert!(!state.is_terminal());
   assert_eq!(vec![1], state.iter_moves().collect::<Vec<u32>>());
 
@@ -184,7 +184,7 @@ fn game() {
   assert!(state.play(1).is_ok());
 
   assert!(state.is_terminal());
-  assert_eq!(Some(-1.0), state.get_payoff());
+  assert_eq!(Some(-1.0), state.payoff());
 }
 
 #[test]

@@ -9,10 +9,11 @@ use rand::Rng;
 use std::time::Duration;
 
 use gamer::def::{Evaluator, FeatureExtractor, Game, State};
-use gamer::feature_evaluator::{FeatureEvaluator, LinearRegression, Regression};
+use gamer::evaluators::{FeatureEvaluator, LinearRegressionTanh, TerminalEvaluator};
 use gamer::games::{Gomoku, GomokuLineFeatureExtractor, Hexapawn, Subtractor, SubtractorFeatureExtractor};
-use gamer::minimax::{minimax_fixed_depth};
-use gamer::terminal_evaluator::TerminalEvaluator;
+use gamer::agents::minimax_fixed_depth;
+use gamer::spec::{FeatureExtractorSpec, TrainerSpec, TrainingSpec, RegressionSpec};
+use gamer::registry::create_training;
 
 fn generate_random_gomoku_position() -> <Gomoku as Game>::State {
   let mut rng = rand::XorShiftRng::new_unseeded();
@@ -32,33 +33,33 @@ fn gomoku_random(bench: &mut Bencher) {
     while let Some(m) = state.get_random_move(&mut rng) {
       state.play(m).unwrap();
     }
-    state.get_payoff().unwrap()
+    state.payoff().unwrap()
   })
 }
 
 fn gomoku_lines_feature_extractor_start(bench: &mut Bencher) {
   let state = Gomoku::default().new_game();
-  let feature_extractor = GomokuLineFeatureExtractor::default();
+  let feature_extractor = GomokuLineFeatureExtractor::default(2);
   bench.iter(|| {feature_extractor.extract(&state)});
 }
 
 fn gomoku_lines_feature_extractor_rand_position(bench: &mut Bencher) {
-  let feature_extractor = GomokuLineFeatureExtractor::default();
+  let feature_extractor = GomokuLineFeatureExtractor::default(2);
   let state = generate_random_gomoku_position();
   bench.iter(|| {feature_extractor.extract(&state)});
 }
 
-fn gomoku_train_evaluator_1000(bench: &mut Bencher) {
-  let game = Gomoku::default();
+// fn gomoku_train_evaluator_1000(bench: &mut Bencher) {
+//   let game = Gomoku::default();
 
-  bench.iter(|| {
-    let extractor = GomokuLineFeatureExtractor::new();
-    let regression = LinearRegression::new(vec![0.0; 33], (0.001, 0.0001));
-    let mut evaluator = FeatureEvaluator::new(game, extractor, regression, 1, 0);
-    evaluator.train(1000, Duration::new(0, 0));
-    evaluator
-  });
-}
+//   bench.iter(|| {
+//     let extractor = GomokuLineFeatureExtractor::new(2);
+//     let regression = LinearRegressionTanh::new(&[0.0; 33], 0.001);
+//     let mut evaluator = FeatureEvaluator::new(game, extractor, regression, 1, 0);
+//     evaluator.train(1000, Duration::new(0, 0));
+//     evaluator
+//   });
+// }
 
 fn subtractor_random(bench: &mut Bencher) {
   let game = Subtractor::new(21, 4);
@@ -68,7 +69,7 @@ fn subtractor_random(bench: &mut Bencher) {
     while let Some(m) = state.get_random_move(&mut rng) {
       state.play(m).unwrap();
     }
-    state.get_payoff().unwrap()
+    state.payoff().unwrap()
   })
 }
 
@@ -82,10 +83,9 @@ fn subtractor_minimax(bench: &mut Bencher) {
 fn subtractor_feature_evaluator(bench: &mut Bencher) {
   let game = Subtractor::default(21, 4);
   let extractor = SubtractorFeatureExtractor::new(10);
-  let regression = LinearRegression::new(
-      vec![0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-      (0.0, 0.0));
-  let evaluator = FeatureEvaluator::new(game, extractor, regression, 1, 0);
+  let regression = LinearRegressionTanh::new(
+      &[0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 0.0);
+  let evaluator = FeatureEvaluator::new(game, extractor, regression);
 
   let state = game.new_game();
   bench.iter(|| {evaluator.evaluate(&state)});
@@ -93,13 +93,24 @@ fn subtractor_feature_evaluator(bench: &mut Bencher) {
 
 fn subtractor_train_evaluator_1000(bench: &mut Bencher) {
   let game = Subtractor::default(21, 4);
+  let training_spec = TrainingSpec {
+    extractor: FeatureExtractorSpec::Subtractor(10),
+    regression: RegressionSpec {
+      params: vec![],
+      regularization: 0.001,
+    },
+    trainer: TrainerSpec::Reinforce {
+      minimax_depth: 1,
+      random_prob: 0.1,
+      alpha: 0.001,
+    },
+  };
+
+  let mut trainer = create_training(game, &training_spec);
 
   bench.iter(|| {
-    let extractor = SubtractorFeatureExtractor::new(10);
-    let regression = LinearRegression::new(vec![0.0; 10], (0.1, 0.001));
-    let mut evaluator = FeatureEvaluator::new(game, extractor, regression, 1, 0);
-    evaluator.train(1000, Duration::new(0, 0));
-    evaluator
+    trainer.train(1000, Duration::new(0, 0));
+    trainer.build_evaluator()
   });
 }
 

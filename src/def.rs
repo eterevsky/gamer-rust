@@ -2,6 +2,7 @@
 
 use rand;
 use std::fmt;
+use std::ops::Deref;
 use std::time::Duration;
 
 use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec, RegressionSpec};
@@ -21,21 +22,21 @@ pub trait State: Clone + fmt::Display {
   type Move: 'static + Clone + Copy + fmt::Debug + fmt::Display;
 
   /// Returns true if it's the turn of the first player.
-  fn get_player(&self) -> bool;
+  fn player(&self) -> bool;
 
   /// Returns true if position is terminal.
   fn is_terminal(&self) -> bool {
-    self.get_payoff() == None
+    self.payoff() == None
   }
 
   /// Returns payoff for the first player if position is terminal, None
   /// otherwize.
-  fn get_payoff(&self) -> Option<f32>;
+  fn payoff(&self) -> Option<f32>;
 
   /// Returns an iterator over all legal moves in the given position.
   fn iter_moves<'s>(&'s self) -> Box<Iterator<Item = Self::Move> + 's>;
 
-  /// Returns a random valid move or None if the position is terminal.
+  /// Generates a random valid move or None if the position is terminal.
   fn get_random_move<R: rand::Rng>(&self, rng: &mut R) -> Option<Self::Move>;
 
   /// Plays a move.
@@ -81,7 +82,7 @@ pub trait Evaluator<S: State> {
   fn report(&self) {}
 }
 
-impl<'a, S: State, P: Evaluator<S>> Evaluator<S> for &'a P {
+impl<'a, S: State, U: ?Sized + Evaluator<S>> Evaluator<S> for &'a U {
   fn evaluate(&self, state: &S) -> f32 {
     (*self).evaluate(state)
   }
@@ -93,6 +94,20 @@ impl<'a, S: State, P: Evaluator<S>> Evaluator<S> for &'a P {
   fn report(&self) {
     (*self).report()
   }
+}
+
+impl<S: State, U: ?Sized + Evaluator<S>> Evaluator<S> for Box<U> {
+  fn evaluate(&self, state: &S) -> f32 {
+    self.deref().evaluate(state)
+  }
+
+  fn spec(&self) -> EvaluatorSpec {
+    self.deref().spec()
+  }
+
+  fn report(&self) {
+    self.deref().report()
+  }  
 }
 
 /// A policy trait that generates for a state the set of moves with probabilities.

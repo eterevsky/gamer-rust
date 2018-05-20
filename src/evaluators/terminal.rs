@@ -13,7 +13,7 @@ impl TerminalEvaluator {
 impl<S: State> Evaluator<S> for TerminalEvaluator {
   fn evaluate(&self, state: &S) -> f32 {
     if state.is_terminal() {
-      state.get_payoff().unwrap()
+      state.payoff().unwrap()
     } else {
       0.0
     }

@@ -168,7 +168,7 @@ impl GomokuState {
   }
 
   fn play_stone(&mut self, point: usize) {
-    let player = self.get_player();
+    let player = self.player();
     let player_stone = PointState::from_player(player);
 
     self.board[point] = player_stone;
@@ -255,12 +255,12 @@ impl State for GomokuState {
     self.status.is_terminal()
   }
 
-  fn get_player(&self) -> bool {
-    self.status.get_player()
+  fn player(&self) -> bool {
+    self.status.player()
   }
 
-  fn get_payoff(&self) -> Option<f32> {
-    self.status.get_payoff()
+  fn payoff(&self) -> Option<f32> {
+    self.status.payoff()
   }
 
   fn parse_move(&self, move_str: &str) -> Result<GomokuMove, &'static str> {

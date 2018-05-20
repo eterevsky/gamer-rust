@@ -28,7 +28,7 @@ where
 impl<G, E, R> AnnealingTrainer<G, E, R>
 where
   G: Game,
-  E: FeatureExtractor<G::State>,
+  E: FeatureExtractor<G::State> + Clone,
   R: Regression,
 {
   pub fn new(
@@ -63,18 +63,15 @@ where
 
   // Plays self.ngames games with alternating first player. Returns the sum
   // of payoffs for player1.
-  fn run_games(
-    &self,
-    player1: &MinimaxAgent<G::State>,
-    player2: &MinimaxAgent<G::State>,
-  ) -> f32 {
+  fn run_games<A1: Agent<G::State>, A2: Agent<G::State>>(
+      &self, player1: &A1, player2: &A2) -> f32 {
     let mut payoff = 0.0;
     let mut player1_first = self.rng.borrow_mut().gen_weighted_bool(2);
 
     for _game in 0..self.ngames {
       let mut state = self.game.new_game();
       while !state.is_terminal() {
-        let m = if player1_first == state.get_player() {
+        let m = if player1_first == state.player() {
           player1.select_move(&state).unwrap().get_move()
         } else {
           player2.select_move(&state).unwrap().get_move()
@@ -82,14 +79,22 @@ where
         state.play(m).unwrap();
       }
       payoff += if player1_first {
-        state.get_payoff().unwrap()
+        state.payoff().unwrap()
       } else {
-        -state.get_payoff().unwrap()
+        -state.payoff().unwrap()
       };
       player1_first = !player1_first;
     }
 
     payoff
+  }
+
+  fn build_unboxed_evaluator(&self) -> FeatureEvaluator<G, E, R> {
+    FeatureEvaluator::new(
+      self.game,
+      self.extractor.clone(),
+      self.regression.clone(),
+    )
   }
 }
 
@@ -100,12 +105,12 @@ where
   R: Regression,
 {
   fn evaluate(&self, state: &G::State) -> f32 {
-    if let Some(score) = state.get_payoff() {
+    if let Some(score) = state.payoff() {
       return score;
     }
     let features = self.extractor.extract(state);
     let player_score = self.regression.evaluate(&features);
-    if state.get_player() {
+    if state.player() {
       player_score
     } else {
       -player_score
@@ -136,7 +141,7 @@ where
     };
 
     let mut current_agent =
-      MinimaxAgent::new_boxed(self.build_evaluator(), self.minimax_depth, None);
+      MinimaxAgent::new(self.build_unboxed_evaluator(), self.minimax_depth, None);
 
     for _step in 0..steps {
       if let Some(d) = deadline {
@@ -150,12 +155,12 @@ where
         *param += (rng.gen_range(-1, 2) as i32 as f32) * self.step_size;
       }
 
-      let new_agent = MinimaxAgent::new_boxed(
-        Box::new(FeatureEvaluator::new(
+      let new_agent = MinimaxAgent::new(
+        FeatureEvaluator::new(
           self.game,
           self.extractor.clone(),
           new_regression.clone(),
-        )),
+        ),
         self.minimax_depth,
         None,
       );
@@ -182,11 +187,7 @@ where
   }
 
   fn build_evaluator(&self) -> Box<Evaluator<G::State>> {
-    Box::new(FeatureEvaluator::new(
-      self.game,
-      self.extractor.clone(),
-      self.regression.clone(),
-    ))
+    Box::new(self.build_unboxed_evaluator())
   }
 }
 

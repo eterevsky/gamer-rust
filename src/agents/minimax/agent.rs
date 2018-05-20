@@ -1,4 +1,5 @@
 use rand;
+use std::marker::PhantomData;
 use std::time::{Duration, Instant};
 
 use def::{Agent, AgentReport, Evaluator, State};
@@ -6,28 +7,30 @@ use super::search::{MinimaxSearch, SearchResult};
 use super::report::MinimaxReport;
 use spec::AgentSpec;
 
-pub struct MinimaxAgent<S: State> {
-  evaluator: Box<Evaluator<S>>,
+pub struct MinimaxAgent<S: State, E: Evaluator<S>> {
+  _state: PhantomData<S>,
+  evaluator: E,
   max_depth: u32,
   time_limit: Option<Duration>,
 }
 
-impl<S: State> MinimaxAgent<S> {
-  pub fn new_boxed(
-    evaluator: Box<Evaluator<S>>,
+impl<S: State, E: Evaluator<S>> MinimaxAgent<S, E> {
+  pub fn new(
+    evaluator: E,
     max_depth: u32,
     time_limit: Option<Duration>,
   ) -> Self {
     assert!(max_depth > 0);
     MinimaxAgent {
-      evaluator: evaluator,
-      max_depth: max_depth,
+      _state: PhantomData{},
+      evaluator,
+      max_depth,
       time_limit,
     }
   }
 }
 
-impl<S: State> Agent<S> for MinimaxAgent<S> {
+impl<S: State, E: Evaluator<S>> Agent<S> for MinimaxAgent<S, E> {
   fn select_move(
     &self,
     state: &S,
@@ -42,13 +45,13 @@ impl<S: State> Agent<S> for MinimaxAgent<S> {
       None => None,
     };
 
-    let mut minimax = MinimaxSearch::new(&*self.evaluator, 1, 0.999, deadline);
+    let mut minimax = MinimaxSearch::new(&self.evaluator, 1, 0.999, deadline);
     let mut report = MinimaxReport {
       score: 0.0,
       pv: vec![state.get_random_move(&mut rand::weak_rng()).unwrap()],
       samples: 0,
       duration: Duration::new(0, 0),
-      player: state.get_player(),
+      player: state.player(),
       depth: 0,
     };
 
@@ -102,8 +105,7 @@ mod test {
 
   #[test]
   fn subtractor() {
-    let agent =
-      MinimaxAgent::new_boxed(Box::new(TerminalEvaluator::new()), 10, None);
+    let agent = MinimaxAgent::new(TerminalEvaluator::new(), 10, None);
     let game = Subtractor::new(10, 4);
     let mut state = game.new_game();
 

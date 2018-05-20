@@ -40,7 +40,7 @@ pub fn play_game<G: Game>(
     if output {
       println!("{}", state);
     }
-    let report = if state.get_player() {
+    let report = if state.player() {
       agent1.select_move(&state)
     } else {
       agent2.select_move(&state)
@@ -51,7 +51,7 @@ pub fn play_game<G: Game>(
     }
     state.play(report.get_move()).unwrap();
   }
-  let payoff = state.get_payoff().unwrap();
+  let payoff = state.payoff().unwrap();
   if output {
     println!("{}\nPayoff: {}", state, payoff);
   }
