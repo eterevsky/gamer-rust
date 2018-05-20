@@ -12,6 +12,9 @@ pub struct SamplerEvaluator {
 }
 
 impl SamplerEvaluator {
+  /// Create a SamplerEvaluator. `nsamples` is the number of random samples 
+  /// over which the payoff is averaged. The payoff is multiplied by `discount`
+  /// for every extra move, so the discount should be close to 1.0.
   pub fn new(nsamples: usize, discount: f32) -> Self {
     SamplerEvaluator {
       rng: RefCell::new(weak_rng()),

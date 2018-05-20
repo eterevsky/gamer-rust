@@ -54,7 +54,7 @@ pub trait AgentReport<M>: fmt::Display {
 }
 
 pub trait Agent<S: State> {
-  /// Returns a pair of a move and agent report if
+  /// Returns an agent report that includes the selected move.
   fn select_move(
     &self,
     state: &S,
@@ -69,12 +69,44 @@ pub trait Evaluator<S: State> {
   fn evaluate(&self, state: &S) -> f32;
 
   fn evaluate_for_player(&self, state: &S, player: bool) -> f32 {
-    if player { self.evaluate(state) } else { -self.evaluate(state) }
+    if player {
+      self.evaluate(state)
+    } else {
+      -self.evaluate(state)
+    }
   }
 
   fn spec(&self) -> EvaluatorSpec;
 
   fn report(&self) {}
+}
+
+impl<'a, S: State, P: Evaluator<S>> Evaluator<S> for &'a P {
+  fn evaluate(&self, state: &S) -> f32 {
+    (*self).evaluate(state)
+  }
+
+  fn spec(&self) -> EvaluatorSpec {
+    (*self).spec()
+  }
+
+  fn report(&self) {
+    (*self).report()
+  }
+}
+
+/// A policy trait that generates for a state the set of moves with probabilities.
+pub trait Policy<S: State> {
+  /// Generate moves for a given state with their probabilities. Generates a
+  /// subset of all valid moves in the given state. The probabilities for
+  /// different moves should sum up to 1.
+  fn get_moves(&self, state: &S) -> Vec<(S::Move, f32)>;
+}
+
+impl<'a, S: State, P: Policy<S>> Policy<S> for &'a P {
+  fn get_moves(&self, state: &S) -> Vec<(S::Move, f32)> {
+    (*self).get_moves(state)
+  }
 }
 
 pub trait FeatureExtractor<S: State> {

@@ -13,6 +13,7 @@ extern crate serde_json;
 mod agents;
 mod board;
 pub mod def;
+mod equal_policy;
 mod evaluators;
 pub mod games;
 pub mod ladder;

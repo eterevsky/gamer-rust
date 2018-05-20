@@ -1,4 +1,5 @@
 mod human;
+pub mod mcts;
 pub mod minimax;
 mod random;
 
