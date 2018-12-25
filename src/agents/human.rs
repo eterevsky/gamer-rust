@@ -2,8 +2,8 @@ use std::fmt;
 use std::io;
 use std::io::Write;
 
-use def::{Agent, AgentReport, State};
-use spec::AgentSpec;
+use crate::def::{Agent, AgentReport, State};
+use crate::spec::AgentSpec;
 
 pub struct HumanAgentReport<M: Copy + fmt::Display> {
   m: M

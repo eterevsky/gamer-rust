@@ -1,5 +1,5 @@
-use def::{Evaluator, State};
-use spec::EvaluatorSpec;
+use crate::def::{Evaluator, State};
+use crate::spec::EvaluatorSpec;
 
 #[derive(Clone, Debug)]
 pub struct TerminalEvaluator {}
@@ -27,9 +27,10 @@ impl<S: State> Evaluator<S> for TerminalEvaluator {
 #[cfg(test)]
 mod test {
 
-use def::Game;
-use def::Evaluator;
-use games::{Gomoku, Subtractor};
+use crate::def::Game;
+use crate::def::Evaluator;
+use crate::games::{Gomoku, Subtractor};
+
 use super::*;
 
 #[test]

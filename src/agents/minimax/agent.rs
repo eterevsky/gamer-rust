@@ -2,10 +2,10 @@ use rand;
 use std::marker::PhantomData;
 use std::time::{Duration, Instant};
 
-use def::{Agent, AgentReport, Evaluator, State};
+use crate::def::{Agent, AgentReport, Evaluator, State};
+use crate::spec::AgentSpec;
 use super::search::{MinimaxSearch, SearchResult};
 use super::report::MinimaxReport;
-use spec::AgentSpec;
 
 pub struct MinimaxAgent<S: State, E: Evaluator<S>> {
   _state: PhantomData<S>,
@@ -48,7 +48,7 @@ impl<S: State, E: Evaluator<S>> Agent<S> for MinimaxAgent<S, E> {
     let mut minimax = MinimaxSearch::new(&self.evaluator, 1, 0.999, deadline);
     let mut report = MinimaxReport {
       score: 0.0,
-      pv: vec![state.get_random_move(&mut rand::weak_rng()).unwrap()],
+      pv: vec![state.get_random_move(&mut rand::thread_rng()).unwrap()],
       samples: 0,
       duration: Duration::new(0, 0),
       player: state.player(),
@@ -98,9 +98,10 @@ fn convert_duration(duration: Option<Duration>) -> f64 {
 #[cfg(test)]
 mod test {
 
-  use def::{Agent, Game};
-  use games::Subtractor;
-  use evaluators::TerminalEvaluator;
+  use crate::def::{Agent, Game};
+  use crate::games::Subtractor;
+  use crate::evaluators::TerminalEvaluator;
+  
   use super::*;
 
   #[test]

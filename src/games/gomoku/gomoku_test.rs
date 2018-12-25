@@ -1,8 +1,9 @@
-extern crate rand;
+use rand::FromEntropy;
+use rand::rngs::SmallRng;
 use std::str::FromStr;
 
-use def::Game;
-use def::State;
+use crate::def::Game;
+use crate::def::State;
 use super::gomoku_move::GomokuMove;
 use super::gomoku::{Gomoku, GomokuState, PointState, BOARD_LEN, SIZE};
 use super::util;
@@ -156,7 +157,7 @@ fn is_finished(state: &GomokuState) -> bool {
 
 #[test]
 fn random_game() {
-  let mut rng = rand::XorShiftRng::new_unseeded();
+  let mut rng = SmallRng::from_entropy();
 
   for _ in 0..100 {
     let game = Gomoku::new();

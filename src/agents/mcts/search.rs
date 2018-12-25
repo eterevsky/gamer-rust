@@ -1,7 +1,7 @@
 use rand;
 use std::time::Instant;
 
-use def::{Evaluator, Policy, State};
+use crate::def::{Evaluator, Policy, State};
 use super::report::MctsReport;
 
 pub struct MctsSearch<S: State, P: Policy<S>, E: Evaluator<S>> {
@@ -21,7 +21,7 @@ impl<S: State, P: Policy<S>, E: Evaluator<S>> MctsSearch<S, P, E> {
 
   pub fn search(
     &self,
-    max_samples: u32,
+    max_samples: u64,
     deadline: Instant,
   ) -> Result<MctsReport<S::Move>, &'static str> {
     if self.root_state.is_terminal() {
@@ -31,7 +31,7 @@ impl<S: State, P: Policy<S>, E: Evaluator<S>> MctsSearch<S, P, E> {
     Ok(MctsReport::new(
       self
         .root_state
-        .get_random_move(&mut rand::weak_rng())
+        .get_random_move(&mut rand::thread_rng())
         .unwrap(),
       0,
       0.,
@@ -43,10 +43,12 @@ impl<S: State, P: Policy<S>, E: Evaluator<S>> MctsSearch<S, P, E> {
 struct Node<S: State> {
   samples: u32,
   score: f32,
-  children: Vec<Node>
+  last_move: S::Move,
+  children: Vec<Node<S>>
 }
 
 impl<S: State> Node<S> {
-  fn 
-
+  fn expand<P: Policy<S>>(&mut self, policy: &P) {
+    
+  }
 }

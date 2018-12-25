@@ -1,11 +1,13 @@
-use rand;
+use lazy_static::lazy_static;
+use rand::Rng;
+use rand::seq::SliceRandom;
 use regex::Regex;
 use std::fmt;
 
-use board::{point_to_a, Board, Cell};
-use def::{FeatureExtractor, Game, Regression, State};
-use spec::FeatureExtractorSpec;
-use status::Status;
+use crate::board::{point_to_a, Board, Cell};
+use crate::def::{FeatureExtractor, Game, Regression, State};
+use crate::spec::FeatureExtractorSpec;
+use crate::status::Status;
 
 lazy_static! {
   static ref INSTANCE_3_3: Hexapawn = Hexapawn::new(3, 3);
@@ -172,12 +174,12 @@ impl State for HexapawnState {
     Box::new(self.moves.iter().map(|&m| m))
   }
 
-  fn get_random_move<R: rand::Rng>(&self, rng: &mut R) -> Option<HexapawnMove> {
+  fn get_random_move<R: Rng>(&self, rng: &mut R) -> Option<HexapawnMove> {
     if self.is_terminal() {
       return None;
     }
 
-    Some(*rng.choose(&self.moves).unwrap())
+    Some(*self.moves.choose(rng).unwrap())
   }
 
   fn play(&mut self, m: HexapawnMove) -> Result<(), &'static str> {
@@ -492,7 +494,7 @@ mod test {
     let game = Hexapawn::new(3, 3);
     let mut state = game.new_game();
 
-    let mut rng = rand::XorShiftRng::new_unseeded();
+    let mut rng = rand::thread_rng();
 
     while !state.is_terminal() {
       let m = state.get_random_move(&mut rng).unwrap();

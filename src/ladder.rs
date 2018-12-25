@@ -1,13 +1,15 @@
-use rand::{weak_rng, Rng};
+use rand::{Rng, FromEntropy};
+use rand::rngs::SmallRng;
+use rand::seq::SliceRandom;
 use std::clone::Clone;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread::{spawn, JoinHandle};
 
-use def::{Game, State};
-use ratings::Ratings;
-use registry::create_agent;
-use spec::AgentSpec;
+use crate::def::{Game, State};
+use crate::ratings::Ratings;
+use crate::registry::create_agent;
+use crate::spec::AgentSpec;
 
 #[derive(Clone)]
 struct Participant {
@@ -191,7 +193,7 @@ impl Ladder {
   ) -> (usize, f32) {
     let prior_participants = self.participants.len();
     let id = self.add_participant(agent_spec);
-    let mut rng = weak_rng();
+    let mut rng = SmallRng::from_entropy();
 
     for _ in 0..ngames {
       let opponent = rng.gen_range(0, prior_participants);
@@ -232,9 +234,9 @@ impl Ladder {
       }
     }
 
-    let mut rng = weak_rng();
+    let mut rng = SmallRng::from_entropy();
     for _ in 0..nrounds {
-      rng.shuffle(&mut pairs);
+      pairs.shuffle(&mut rng);
 
       for &(i, j) in pairs.iter() {
         let job = Job::Play(
@@ -299,12 +301,12 @@ impl Drop for Ladder {
 
 #[cfg(test)]
 mod test {
-
   use std::sync::mpsc::channel;
 
+  use crate::games::{Hexapawn, Subtractor};
+  use crate::spec::{AgentSpec, EvaluatorSpec};
+
   use super::*;
-  use games::{Hexapawn, Subtractor};
-  use spec::{AgentSpec, EvaluatorSpec};
 
   #[test]
   fn play_hexapawn() {
@@ -374,7 +376,7 @@ mod test {
       name: "2".to_string(),
     });
 
-    ladder.run_full_round(2);
+    ladder.run_full_round(4);
 
     assert_eq!(0.0, ladder.get_rating(random_id));
     assert!(ladder.get_rating(minimax_id) > 400.0);

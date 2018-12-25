@@ -1,5 +1,5 @@
-use def::Regression;
-use spec::RegressionSpec;
+use crate::def::Regression;
+use crate::spec::RegressionSpec;
 
 #[derive(Clone, Debug)]
 pub struct LinearRegressionTanh {

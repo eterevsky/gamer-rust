@@ -1,7 +1,7 @@
 use std::fmt;
 use std::time::Duration;
 
-use def::AgentReport;
+use crate::def::AgentReport;
 
 #[derive(Clone)]
 pub struct MinimaxReport<M: fmt::Display + 'static> {

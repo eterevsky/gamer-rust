@@ -5,7 +5,8 @@ extern crate rand;
 extern crate gamer;
 
 use bencher::Bencher;
-use rand::Rng;
+use rand::FromEntropy;
+use rand::rngs::SmallRng;
 use std::time::Duration;
 
 use gamer::def::{Evaluator, FeatureExtractor, Game, State};
@@ -16,7 +17,7 @@ use gamer::spec::{FeatureExtractorSpec, TrainerSpec, TrainingSpec, RegressionSpe
 use gamer::registry::create_training;
 
 fn generate_random_gomoku_position() -> <Gomoku as Game>::State {
-  let mut rng = rand::XorShiftRng::new_unseeded();
+  let mut rng = SmallRng::from_entropy();
   let mut state = Gomoku::default().new_game();
   for _ in 0..60 {
     let m = state.get_random_move(&mut rng).unwrap();
@@ -27,7 +28,7 @@ fn generate_random_gomoku_position() -> <Gomoku as Game>::State {
 
 fn gomoku_random(bench: &mut Bencher) {
   let game = Gomoku::new();
-  let mut rng = rand::weak_rng();
+  let mut rng = SmallRng::from_entropy();
   bench.iter(|| {
     let mut state = game.new_game();
     while let Some(m) = state.get_random_move(&mut rng) {
@@ -63,7 +64,7 @@ fn gomoku_lines_feature_extractor_rand_position(bench: &mut Bencher) {
 
 fn subtractor_random(bench: &mut Bencher) {
   let game = Subtractor::new(21, 4);
-  let mut rng = rand::weak_rng();
+  let mut rng = SmallRng::from_entropy();
   bench.iter(|| {
     let mut state = game.new_game();
     while let Some(m) = state.get_random_move(&mut rng) {
@@ -457,23 +458,6 @@ fn f64_arr_mult(bench: &mut Bencher) {
   bench.iter(|| -> f64 { a.iter().zip(b.iter()).map(|(x, y)| x * y).sum() });
 }
 
-fn xorshift_rng_new(bench: &mut Bencher) {
-  bench.iter(|| rand::weak_rng());
-}
-
-fn xorshift_rng_new_unseeded(bench: &mut Bencher) {
-  bench.iter(|| rand::XorShiftRng::new_unseeded());
-}
-
-fn xorshift_rng_new_gen1(bench: &mut Bencher) {
-  bench.iter(|| rand::weak_rng().next_u32());
-}
-
-fn xorshift_rng_gen1(bench: &mut Bencher) {
-  let mut rng = rand::XorShiftRng::new_unseeded();
-  bench.iter(|| rng.next_u32());
-}
-
 benchmark_group!(benches,
     f32_arr_mult,
     f32_vec_mult,
@@ -500,9 +484,5 @@ benchmark_group!(benches,
     subtractor_minimax,
     subtractor_feature_evaluator,
     subtractor_train_evaluator_1000,
-    xorshift_rng_new,
-    xorshift_rng_new_unseeded,
-    xorshift_rng_new_gen1,
-    xorshift_rng_gen1
     );
 benchmark_main!(benches);

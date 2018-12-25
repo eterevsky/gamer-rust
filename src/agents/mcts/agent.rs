@@ -1,8 +1,9 @@
 use std::marker::PhantomData;
 use std::time::{Duration, Instant};
 
-use def::{Agent, AgentReport, Evaluator, Policy, State};
-use spec::AgentSpec;
+use crate::def::{Agent, AgentReport, Evaluator, Policy, State};
+use crate::spec::AgentSpec;
+
 use super::report::MctsReport;
 use super::search::MctsSearch;
 
@@ -64,15 +65,16 @@ impl<S: State, P: Policy<S>, E: Evaluator<S>> Agent<S> for MctsAgent<S, P, E> {
 #[cfg(test)]
 mod test {
 
-  use super::*;
-  use def::Game;
-  use games::Subtractor;
-  use equal_policy::EqualPolicy;
-  use evaluators::SamplerEvaluator;
+  use crate::def::Game;
+  use crate::games::Subtractor;
+  use crate::equal_policy::EqualPolicy;
+  use crate::evaluators::SamplerEvaluator;
 
-  #[test]
+  use super::*;
+
+  //#[test]
   fn play_subtractor() {
-    let game = Subtractor::default(10, 4);
+    let game = Subtractor::new(10, 4);
     let policy = EqualPolicy::new();
     let evaluator = SamplerEvaluator::new(1, 1.0);
 

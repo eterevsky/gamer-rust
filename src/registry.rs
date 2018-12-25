@@ -2,15 +2,15 @@ use std::any::Any;
 use std::mem::transmute;
 use std::time::Duration;
 
-use def::{Agent, Evaluator, FeatureExtractor, Game, Regression, State, Trainer};
-use evaluators::{AnnealingTrainer, FeatureEvaluator, LadderAnnealingTrainer,
+use crate::def::{Agent, Evaluator, FeatureExtractor, Game, Regression, State, Trainer};
+use crate::evaluators::{AnnealingTrainer, FeatureEvaluator, LadderAnnealingTrainer,
                  LinearRegressionTanh, ReinforceTrainer, SamplerEvaluator,
                  TerminalEvaluator};
-use games::{Gomoku, GomokuLineFeatureExtractor, Hexapawn,
+use crate::games::{Gomoku, GomokuLineFeatureExtractor, Hexapawn,
             HexapawnCompleteExtractor, HexapawnNumberOfPawnsExtractor,
             Subtractor, SubtractorFeatureExtractor};
-use agents::{HumanAgent, MinimaxAgent, RandomAgent};
-use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec, RegressionSpec,
+use crate::agents::{HumanAgent, MinimaxAgent, RandomAgent};
+use crate::spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec, RegressionSpec,
            TrainerSpec, TrainingSpec};
 
 pub fn create_agent<G: Game>(
@@ -226,10 +226,10 @@ fn convert_duration(seconds: f64) -> Option<Duration> {
 
 #[cfg(test)]
 mod test {
+  use crate::def::State;
+  use crate::games::{Gomoku, Hexapawn, Subtractor};
+  use crate::spec::*;
 
-  use def::State;
-  use games::{Gomoku, Hexapawn, Subtractor};
-  use spec::*;
   use super::*;
 
   #[test]

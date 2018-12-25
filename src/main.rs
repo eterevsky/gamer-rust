@@ -1,13 +1,9 @@
-extern crate clap;
-#[macro_use]
-extern crate gamer;
-extern crate num_cpus;
-
 use clap::{App, Arg, ArgMatches, SubCommand};
 use std::fs::File;
 use std::io::Write;
 use std::time::Duration;
 
+use gamer::call_with_game;
 use gamer::train_subtractor_eval::train_subtractor_eval;
 use gamer::def::Game;
 use gamer::ladder::{play_game, Ladder};

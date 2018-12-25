@@ -1,9 +1,12 @@
 //! FeatureExtractor with features based on the continuous lines of stones
 //! of the same color.
 
-use def::{FeatureExtractor, Regression, State};
+use lazy_static::lazy_static;
+
+use crate::def::{FeatureExtractor, Regression, State};
+use crate::spec::{FeatureExtractorSpec};
+
 use super::gomoku::{GomokuState, PointState, BOARD_LEN, SIZE};
-use spec::{FeatureExtractorSpec};
 
 #[derive(Clone, Copy, Debug)]
 pub struct LineRange {
@@ -243,9 +246,11 @@ impl FeatureExtractor<GomokuState> for GomokuLineFeatureExtractor {
 #[cfg(test)]
 mod test {
 
+  use crate::def::Game;
+
   use super::super::gomoku_test::run_game;
   use super::super::gomoku::Gomoku;
-  use def::Game;
+
   use super::*;
 
   fn encode(

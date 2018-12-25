@@ -1,13 +1,13 @@
 //! Generate new evaluators, evaluate them using a ladder.
 
-use rand;
-use rand::Rng;
+use rand::{Rng, FromEntropy};
+use rand::rngs::SmallRng;
 use std::time::{Duration, Instant};
 
-use def::{Evaluator, Game, Trainer};
-use ladder::Ladder;
-use registry::create_evaluator;
-use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec, RegressionSpec};
+use crate::def::{Evaluator, Game, Trainer};
+use crate::ladder::Ladder;
+use crate::registry::create_evaluator;
+use crate::spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec, RegressionSpec};
 
 pub struct LadderAnnealingTrainer<G: Game> {
   game: &'static G,
@@ -79,7 +79,7 @@ impl<G: Game> LadderAnnealingTrainer<G> {
 impl<G: Game> Trainer<G> for LadderAnnealingTrainer<G> {
   fn train(&mut self, steps: u64, time_limit: Duration) {
     println!("steps: {}", steps);
-    let mut rng = rand::weak_rng();
+    let mut rng = SmallRng::from_entropy();
     let mut last_report = Instant::now();
 
     let deadline = if time_limit != Duration::new(0, 0) {
@@ -116,7 +116,7 @@ impl<G: Game> Trainer<G> for LadderAnnealingTrainer<G> {
         .add_participant_and_rank(&new_agent_spec, self.ngames);
 
       if new_rating > self.ladder.get_rating(self.best_id)
-        || rng.next_f32() < self.current_temperature()
+        || rng.gen_bool(self.current_temperature() as f64)
       {
         self.best_id = new_id;
         self.best_regression_spec = new_regression;

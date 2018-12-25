@@ -1,11 +1,13 @@
-use rand::{weak_rng, Rng, XorShiftRng};
+use rand::FromEntropy;
+use rand::rngs::SmallRng;
+use rand::seq::SliceRandom;
 use std;
 use std::f32;
 use std::fmt;
 use std::time::Instant;
 use std::marker::PhantomData;
 
-use def::{Evaluator, State};
+use crate::def::{Evaluator, State};
 use super::MinimaxReport;
 
 pub struct MinimaxSearch<S: State, E: Evaluator<S>> {
@@ -18,7 +20,7 @@ pub struct MinimaxSearch<S: State, E: Evaluator<S>> {
 
   depth: u32,
   pub leaves: u64,
-  rng: XorShiftRng,
+  rng: SmallRng,
 }
 
 #[derive(Debug)]
@@ -49,7 +51,7 @@ impl<S: State, E: Evaluator<S>> MinimaxSearch<S, E> {
 
       depth: 0,
       leaves: 0,
-      rng: weak_rng(),
+      rng: SmallRng::from_entropy(),
     }
   }
 
@@ -100,7 +102,7 @@ impl<S: State, E: Evaluator<S>> MinimaxSearch<S, E> {
     self.depth += 1;
 
     let mut moves: Vec<S::Move> = state.iter_moves().collect();
-    self.rng.shuffle(&mut moves);
+    moves.shuffle(&mut self.rng);
     for m in moves {
       state_clone.play(m).unwrap();
       let child_result = self.search(&state_clone, lo, hi);
@@ -172,9 +174,10 @@ pub fn minimax_fixed_depth<S: State, E: Evaluator<S>>(
 #[cfg(test)]
 mod test {
 
-  use def::{AgentReport, Game};
-  use games::Subtractor;
-  use evaluators::TerminalEvaluator;
+  use crate::def::{AgentReport, Game};
+  use crate::games::Subtractor;
+  use crate::evaluators::TerminalEvaluator;
+  
   use super::*;
 
   #[test]

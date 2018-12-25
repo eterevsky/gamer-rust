@@ -5,7 +5,7 @@ use std::fmt;
 use std::ops::Deref;
 use std::time::Duration;
 
-use spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec, RegressionSpec};
+use crate::spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec, RegressionSpec};
 
 /// A trait for a game rules set.
 pub trait Game: 'static + Sync {

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use def::AgentReport;
+use crate::def::AgentReport;
 
 #[derive(Clone)]
 pub struct MctsReport<M: fmt::Display + Clone + 'static> {

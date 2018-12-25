@@ -1,11 +1,12 @@
+use lazy_static::lazy_static;
 use rand;
 use std::fmt;
 use std::str::FromStr;
 
-use def::{Game, State};
+use crate::def::{Game, State};
 use super::gomoku_move::GomokuMove;
 use super::util;
-use status::Status;
+use crate::status::Status;
 
 pub const SIZE: u32 = 19;
 pub const BOARD_LEN: usize = (SIZE as usize) * (SIZE as usize);
@@ -280,31 +281,30 @@ impl Clone for GomokuState {
 
 impl fmt::Display for GomokuState {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-    try!(write!(f, "  "));
+    write!(f, "  ")?;
     for x in 0..SIZE {
-      try!(write!(f, " {}", util::col_letter(x)));
+      write!(f, " {}", util::col_letter(x))?;
     }
-    try!(writeln!(f, ""));
+    writeln!(f, "")?;
 
     for y in (0..SIZE).rev() {
-      try!(write!(f, "{:2}", y + 1));
+      write!(f, "{:2}", y + 1)?;
       for x in 0..SIZE {
         let i = (SIZE * y + x) as usize;
-        try!(match self.board[i] {
+        match self.board[i] {
           PointState::Empty => write!(f, " ."),
           PointState::Black => write!(f, " X"),
           PointState::White => write!(f, " O")
-        });
+        }?;
       }
-      try!(writeln!(f, ""))
+      writeln!(f, "")?
     }
 
-    try!(write!(f, "  "));
+    write!(f, "  ")?;
     for x in 0..SIZE {
-      try!(write!(f, " {}", util::col_letter(x)));
+      write!(f, " {}", util::col_letter(x))?;
     }
     writeln!(f)?;
-
 
     Ok(())
   }

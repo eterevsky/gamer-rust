@@ -1,20 +1,9 @@
-#[cfg(test)]
-#[macro_use]
-extern crate approx;
-#[macro_use]
-extern crate lazy_static;
-extern crate rand;
-extern crate regex;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_json;
-
 pub mod agents;
 mod board;
 pub mod def;
 mod equal_policy;
 pub mod evaluators;
+#[macro_use]
 pub mod games;
 pub mod ladder;
 mod opt;
@@ -23,4 +12,4 @@ pub mod registry;
 pub mod spec;
 mod status;
 
-pub use evaluators::train_subtractor_eval;
+pub use self::evaluators::train_subtractor_eval;

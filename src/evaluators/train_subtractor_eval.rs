@@ -1,9 +1,9 @@
 use std::time::{Duration, Instant};
 
-use def::{Evaluator, Game, State};
-use games::subtractor::{Subtractor, SubtractorState};
-use registry::create_training;
-use spec::{FeatureExtractorSpec, RegressionSpec, TrainerSpec, TrainingSpec};
+use crate::def::{Evaluator, Game, State};
+use crate::games::subtractor::{Subtractor, SubtractorState};
+use crate::registry::create_training;
+use crate::spec::{FeatureExtractorSpec, RegressionSpec, TrainerSpec, TrainingSpec};
 
 fn seconds(d: Duration) -> f64 {
   d.as_secs() as f64 + 1E-9 * d.subsec_nanos() as f64

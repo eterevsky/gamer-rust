@@ -2,8 +2,8 @@ use std::f32;
 use std::fmt;
 use std::fmt::Write;
 
-use ladder::GameResult;
-use opt::minimize;
+use crate::ladder::GameResult;
+use crate::opt::minimize;
 
 pub struct Ratings {
   k: f64,   // normalization of logistic function
@@ -205,11 +205,13 @@ impl fmt::Display for Ratings {
 
 #[cfg(test)]
 mod test {
+  use approx::assert_relative_eq;
+  use rand::thread_rng;
+  use rand::seq::SliceRandom;
 
-  use rand::{weak_rng, Rng};
+  use crate::ladder::GameResult;
 
   use super::*;
-  use ladder::GameResult;
 
   fn approx_derivative(f: &Fn(f64) -> f64, x: f64) -> f64 {
     let eps = 1E-3 * x.abs();
@@ -454,7 +456,7 @@ mod test {
       })
     }
 
-    weak_rng().shuffle(&mut results);
+    results.shuffle(&mut thread_rng());
 
     results
   }

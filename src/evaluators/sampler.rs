@@ -1,12 +1,13 @@
-use rand::{weak_rng, XorShiftRng};
+use rand::FromEntropy;
+use rand::rngs::SmallRng;
 use std::cell::RefCell;
 
-use def::{Evaluator, State};
-use spec::EvaluatorSpec;
+use crate::def::{Evaluator, State};
+use crate::spec::EvaluatorSpec;
 
 #[derive(Clone, Debug)]
 pub struct SamplerEvaluator {
-  rng: RefCell<XorShiftRng>,
+  rng: RefCell<SmallRng>,
   nsamples: usize,
   discount: f64,
 }
@@ -17,7 +18,7 @@ impl SamplerEvaluator {
   /// for every extra move, so the discount should be close to 1.0.
   pub fn new(nsamples: usize, discount: f32) -> Self {
     SamplerEvaluator {
-      rng: RefCell::new(weak_rng()),
+      rng: RefCell::new(SmallRng::from_entropy()),
       nsamples,
       discount: discount as f64,
     }
@@ -56,8 +57,9 @@ impl<S: State> Evaluator<S> for SamplerEvaluator {
 #[cfg(test)]
 mod test {
 
-use def::{Game, State};
-use games::Subtractor;
+use crate::def::{Game, State};
+use crate::games::Subtractor;
+
 use super::*;
 
 #[test]

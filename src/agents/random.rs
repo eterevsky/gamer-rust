@@ -1,12 +1,13 @@
 //! Implementation of a trivial agent, selecting random valid moves.
 
-use rand;
+use rand::FromEntropy;
+use rand::rngs::SmallRng;
 use std::cell::RefCell;
 use std::fmt;
 use std::fmt::Display;
 
-use def::{Agent, AgentReport, State};
-use spec::AgentSpec;
+use crate::def::{Agent, AgentReport, State};
+use crate::spec::AgentSpec;
 
 #[derive(Debug)]
 pub struct RandomAgentReport<M> {
@@ -23,16 +24,17 @@ impl<M: Copy + Display + 'static> AgentReport<M> for RandomAgentReport<M> {
 impl<M: Display> Display for RandomAgentReport<M> {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
     write!(f, "Player {} random move: {}", self.player, self.m)
+
   }
 }
 
 pub struct RandomAgent {
-  rng: RefCell<rand::XorShiftRng>
+  rng: RefCell<SmallRng>
 }
 
 impl RandomAgent {
   pub fn new() -> Self {
-    RandomAgent { rng: RefCell::new(rand::weak_rng()) }
+    RandomAgent { rng: RefCell::new(SmallRng::from_entropy()) }
   }
 }
 

@@ -1,4 +1,4 @@
-use def::{Policy, State};
+use crate::def::{Policy, State};
 
 /// A policy that returns all possible moves with equal probability.
 pub struct EqualPolicy {}
@@ -21,8 +21,8 @@ impl<S: State> Policy<S> for EqualPolicy {
 mod test {
 
   use super::*;
-  use def::Game;
-  use games::Subtractor;
+  use crate::def::Game;
+  use crate::games::Subtractor;
 
   #[test]
   fn gen_moves() {

@@ -1,7 +1,7 @@
 use std::f32;
 
-use def::{Evaluator, FeatureExtractor, Game, Regression, State};
-use spec::EvaluatorSpec;
+use crate::def::{Evaluator, FeatureExtractor, Game, Regression, State};
+use crate::spec::EvaluatorSpec;
 
 pub struct FeatureEvaluator<G, E, R>
 where
@@ -59,9 +59,10 @@ where
 #[cfg(test)]
 mod test {
 
+  use crate::games::{Subtractor, SubtractorFeatureExtractor};
+  use crate::evaluators::LinearRegressionTanh;
+
   use super::*;
-  use games::{Subtractor, SubtractorFeatureExtractor};
-  use evaluators::LinearRegressionTanh;
 
   #[test]
   fn evaluate_subtractor() {

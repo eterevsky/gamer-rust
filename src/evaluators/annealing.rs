@@ -1,11 +1,12 @@
-use rand;
-use rand::{Rng, XorShiftRng};
-use spec::EvaluatorSpec;
+use rand::{Rng, FromEntropy};
+use rand::rngs::SmallRng;
 use std::cell::RefCell;
 use std::time::{Duration, Instant};
 
-use agents::MinimaxAgent;
-use def::{Agent, Evaluator, FeatureExtractor, Game, Regression, State, Trainer};
+use crate::agents::MinimaxAgent;
+use crate::def::{Agent, Evaluator, FeatureExtractor, Game, Regression, State, Trainer};
+use crate::spec::EvaluatorSpec;
+
 use super::FeatureEvaluator;
 
 pub struct AnnealingTrainer<G, E, R>
@@ -22,7 +23,7 @@ where
   temperature: f32,
   ngames: u32,
   steps: u64,
-  rng: RefCell<XorShiftRng>,
+  rng: RefCell<SmallRng>,
 }
 
 impl<G, E, R> AnnealingTrainer<G, E, R>
@@ -49,7 +50,7 @@ where
       temperature,
       ngames,
       steps: 0,
-      rng: RefCell::new(rand::weak_rng()),
+      rng: RefCell::new(SmallRng::from_entropy()),
     }
   }
 
@@ -66,7 +67,7 @@ where
   fn run_games<A1: Agent<G::State>, A2: Agent<G::State>>(
       &self, player1: &A1, player2: &A2) -> f32 {
     let mut payoff = 0.0;
-    let mut player1_first = self.rng.borrow_mut().gen_weighted_bool(2);
+    let mut player1_first = self.rng.borrow_mut().gen_ratio(1, 2);
 
     for _game in 0..self.ngames {
       let mut state = self.game.new_game();
@@ -131,7 +132,7 @@ where
   R: Regression + 'static,
 {
   fn train(&mut self, steps: u64, time_limit: Duration) {
-    let mut rng = rand::weak_rng();
+    let mut rng = SmallRng::from_entropy();
     let mut last_report = Instant::now();
 
     let deadline = if time_limit != Duration::new(0, 0) {
@@ -167,7 +168,7 @@ where
 
       let new_payoff = self.run_games(&new_agent, &current_agent);
 
-      if new_payoff > 0.0 || rng.next_f32() < self.current_temperature() {
+      if new_payoff > 0.0 || rng.gen_bool(self.current_temperature() as f64) {
         current_agent = new_agent;
         self.regression = new_regression;
 
@@ -195,9 +196,9 @@ where
 mod test {
 
   use super::*;
-  use evaluators::LinearRegressionTanh;
-  use evaluators::train_subtractor_eval::check_evaluator;
-  use games::{Subtractor, SubtractorFeatureExtractor};
+  use crate::evaluators::LinearRegressionTanh;
+  use crate::evaluators::train_subtractor_eval::check_evaluator;
+  use crate::games::{Subtractor, SubtractorFeatureExtractor};
 
   #[test]
   fn train_subtractor() {
@@ -215,7 +216,7 @@ mod test {
       1,     // ngames
     );
 
-    trainer.train(2000, Duration::new(0, 0));
+    trainer.train(3000, Duration::new(0, 0));
     let evaluator = trainer.build_evaluator();
 
     println!();

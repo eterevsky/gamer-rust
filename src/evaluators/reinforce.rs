@@ -1,11 +1,12 @@
-use rand;
-use rand::Rng;
-use spec::EvaluatorSpec;
+use rand::{Rng, FromEntropy};
+use rand::rngs::SmallRng;
 use std::time::{Duration, Instant};
 
-use agents::minimax_fixed_depth;
-use def::{AgentReport, Evaluator, FeatureExtractor, Game, Regression, State, Trainer};
-use opt::{AdamOptimizer, Optimizer};
+use crate::agents::minimax_fixed_depth;
+use crate::def::{AgentReport, Evaluator, FeatureExtractor, Game, Regression, State, Trainer};
+use crate::opt::{AdamOptimizer, Optimizer};
+use crate::spec::EvaluatorSpec;
+
 use super::FeatureEvaluator;
 
 pub struct ReinforceTrainer<G, E, R>
@@ -78,7 +79,7 @@ where
 {
   fn train(&mut self, steps: u64, time_limit: Duration) {
     let discount = 0.999;
-    let mut rng = rand::weak_rng();
+    let mut rng = SmallRng::from_entropy();
     let mut last_report = Instant::now();
 
     let deadline = if time_limit != Duration::new(0, 0) {
@@ -104,7 +105,7 @@ where
         self.optimizer.gradient_step(self.regression.mut_params(), gradient.as_slice());
         self.steps += 1;
 
-        if rng.next_f32() < self.random_prob {
+        if rng.gen_bool(self.random_prob as f64) {
           let m = state.get_random_move(&mut rng).unwrap();
           state.play(m).unwrap();
         } else {
@@ -131,9 +132,10 @@ where
 #[cfg(test)]
 mod test {
 
+use crate::evaluators::LinearRegressionTanh;
+use crate::games::{Subtractor, SubtractorFeatureExtractor};
+
 use super::*;
-use evaluators::LinearRegressionTanh;
-use games::{Subtractor, SubtractorFeatureExtractor};
 
 #[test]
 fn train_subtractor() {

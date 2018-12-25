@@ -66,6 +66,7 @@ impl Optimizer for AdamOptimizer {
 
 #[cfg(test)]
 mod test {
+  use approx::assert_relative_eq;
   use super::*;
 
   #[test]
