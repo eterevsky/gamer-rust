@@ -28,6 +28,13 @@ impl<S: State, P: Policy<S>, E: Evaluator<S>> MctsSearch<S, P, E> {
       return Err("the state is terminal");
     }
 
+    let mut root_node = Node::new(None);
+
+    for _ in 0..max_samples {
+      self.sample(self.root_state.clone(), root_node, self.policy);
+      if Instant::now() > deadline { break }
+    }
+
     Ok(MctsReport::new(
       self
         .root_state
@@ -38,17 +45,41 @@ impl<S: State, P: Policy<S>, E: Evaluator<S>> MctsSearch<S, P, E> {
       self.root_state.player(),
     ))
   }
+
+  fn sample<S: State, P: Policy<S>>(&self, state: S, node: &mut Node<S>) -> f32 {
+    if node.children.is_empty() && node.samples > 0 {
+      node.expand(&state, self.policy)
+    }
+
+    if node.samples == 0 {
+      
+    }
+  }
+
 }
 
 struct Node<S: State> {
   samples: u32,
   score: f32,
-  last_move: S::Move,
-  children: Vec<Node<S>>
+  last_move: Option<S::Move>,
+  children: Vec<(Self, f32)>,
 }
 
 impl<S: State> Node<S> {
-  fn expand<P: Policy<S>>(&mut self, policy: &P) {
-    
+  fn new(m: Option<S::Move>) -> Self {
+    Node {
+      samples: 0,
+      score: 0.0,
+      last_move: m,
+      children: Vec::new()
+    }
+  }
+
+  fn expand<P: Policy<S>>(&mut self, state: &S, policy: &P) {
+    let rated_moves = policy.get_moves(state);
+    self.children.reserve_exact(rated_moves.len());
+    for m in moves.iter() {
+      self.children.push(Node::new(Some(*m)));
+    }            
   }
 }

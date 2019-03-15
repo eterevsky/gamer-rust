@@ -72,7 +72,7 @@ mod test {
 
   use super::*;
 
-  //#[test]
+  #[test]
   fn play_subtractor() {
     let game = Subtractor::new(10, 4);
     let policy = EqualPolicy::new();

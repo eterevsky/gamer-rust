@@ -1,4 +1,3 @@
-use serde;
 use serde_derive::{Serialize, Deserialize};
 use serde_json;
 use std::fs::File;
