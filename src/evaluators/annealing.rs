@@ -216,7 +216,7 @@ mod test {
       1,     // ngames
     );
 
-    trainer.train(3000, Duration::new(0, 0));
+    trainer.train(10000, Duration::new(0, 0));
     let evaluator = trainer.build_evaluator();
 
     println!();

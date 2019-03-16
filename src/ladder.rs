@@ -376,7 +376,7 @@ mod test {
       name: "2".to_string(),
     });
 
-    ladder.run_full_round(4);
+    ladder.run_full_round(10);
 
     assert_eq!(0.0, ladder.get_rating(random_id));
     assert!(ladder.get_rating(minimax_id) > 400.0);

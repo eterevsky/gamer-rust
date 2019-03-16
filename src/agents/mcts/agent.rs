@@ -35,7 +35,7 @@ impl<S: State, P: Policy<S>, E: Evaluator<S>> MctsAgent<S, P, E> {
     &self,
     state: &S,
   ) -> Result<MctsReport<S::Move>, &'static str> {
-    let mut search = MctsSearch::new(
+    let search = MctsSearch::new(
       &self.policy,
       &self.evaluator,
       state.clone(),
@@ -68,7 +68,7 @@ mod test {
   use crate::def::Game;
   use crate::games::Subtractor;
   use crate::equal_policy::EqualPolicy;
-  use crate::evaluators::SamplerEvaluator;
+  use crate::evaluators::TerminalEvaluator;
 
   use super::*;
 
@@ -76,12 +76,14 @@ mod test {
   fn play_subtractor() {
     let game = Subtractor::new(10, 4);
     let policy = EqualPolicy::new();
-    let evaluator = SamplerEvaluator::new(1, 1.0);
+    let evaluator = TerminalEvaluator::new();
 
     let agent = MctsAgent::new(policy, evaluator, Some(1000), None);
 
     let state = game.new_game();
     let report = agent.select_move_with_report(&state).unwrap();
+    println!();
+    println!("{}", report);
     assert_eq!(2, report.get_move());
   }
 
