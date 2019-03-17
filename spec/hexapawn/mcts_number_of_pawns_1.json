@@ -1,0 +1,20 @@
+{
+  "type": "Mcts",
+  "policy": {
+    "type": "Equal"
+  },
+  "evaluator": {
+    "type": "Features",
+    "extractor": {
+      "type": "HexapawnNumberOfPawns"
+    },
+    "regression": {
+      "params": [
+        0.050190452,
+        0.08660363,
+        -0.09205269
+      ],
+      "regularization": 0.1
+    }
+  }
+}

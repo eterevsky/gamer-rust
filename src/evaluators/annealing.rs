@@ -211,12 +211,12 @@ mod test {
       extractor,
       regression,
       0.01,  // step size
-      2,     // minimax depth
-      1.0,  // temperature
+      1,     // minimax depth
+      400.0, // temperature
       1,     // ngames
     );
 
-    trainer.train(10000, Duration::new(0, 0));
+    trainer.train(4000, Duration::new(0, 0));
     let evaluator = trainer.build_evaluator();
 
     println!();

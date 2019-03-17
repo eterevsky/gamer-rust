@@ -1,0 +1,11 @@
+{
+  "type": "Mcts",
+  "policy": {
+    "type": "Equal"
+  },
+  "evaluator": {
+    "type": "Sampler",
+    "discount": 0.999,
+    "samples": 1
+  }
+}

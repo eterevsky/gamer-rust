@@ -283,6 +283,13 @@ impl Ladder {
         evaluator: _,
         ref name,
       } => name,
+      AgentSpec::Mcts {
+        samples: _,
+        time_per_move: _,
+        evaluator: _,
+        policy: _,
+        ref name,
+      } => name,
     }
   }
 }

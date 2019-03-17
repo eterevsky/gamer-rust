@@ -1,0 +1,9 @@
+{
+  "type": "Mcts",
+  "policy": {
+    "type": "Equal"
+  },
+  "evaluator": {
+    "type": "Terminal"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "type": "Mcts",
+  "time_per_move": 0.0,
+  "policy": {
+    "type": "Equal"
+  },
+  "evaluator": {
+    "type": "Features",
+    "extractor": {
+      "type": "GomokuLines",
+      "content": 3
+    },
+    "regression": {
+      "params": [
+        -0.1,
+        -0.5,
+        -0.1,
+        -0.5,
+        0.5,
+        4.0,
+        0.5,
+        4.0,
+
+        -1.0,
+        -10.0,
+        -1.0,
+        -10.0,
+        20.0,
+        20.0,
+        20.0,
+        20.0,
+
+        0.0
+      ],
+      "regularization": 0.05
+    }
+  }
+}

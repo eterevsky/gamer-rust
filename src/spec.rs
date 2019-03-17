@@ -1,4 +1,4 @@
-use serde_derive::{Serialize, Deserialize};
+use serde_derive::{Deserialize, Serialize};
 use serde_json;
 use std::fs::File;
 use std::io::Read;
@@ -29,9 +29,21 @@ pub enum AgentSpec {
   Human,
   Minimax {
     depth: u32,
-    #[serde(default)] time_per_move: f64,
+    #[serde(default)]
+    time_per_move: f64,
     evaluator: EvaluatorSpec,
-    #[serde(default)] name: String
+    #[serde(default)]
+    name: String,
+  },
+  Mcts {
+    policy: PolicySpec,
+    evaluator: EvaluatorSpec,
+    #[serde(default)]
+    samples: u64,
+    #[serde(default)]
+    time_per_move: f64,
+    #[serde(default)]
+    name: String,
   },
 }
 
@@ -46,7 +58,13 @@ pub enum EvaluatorSpec {
   Sampler {
     samples: usize,
     discount: f32,
-  }
+  },
+}
+
+#[derive(Clone, Serialize, Debug, Deserialize)]
+#[serde(tag = "type")]
+pub enum PolicySpec {
+  Equal,
 }
 
 #[derive(Clone, Serialize, Debug, Deserialize)]
@@ -61,7 +79,7 @@ pub enum FeatureExtractorSpec {
 #[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct RegressionSpec {
   pub params: Vec<f32>,
-  pub regularization: f32
+  pub regularization: f32,
 }
 
 #[derive(Clone, Serialize, Debug, Deserialize)]
@@ -82,15 +100,15 @@ pub enum TrainerSpec {
   Annealing {
     step_size: f32,
     minimax_depth: u32,
-    temperature: f32,  // For each of this number of steps the temperature will fall exponentially.
-    ngames: u32,  // Number of games between players to determine the winner.
+    temperature: f32, // For each of this number of steps the temperature will fall exponentially.
+    ngames: u32, // Number of games between players to determine the winner.
   },
   LadderAnnealing {
     step_size: f32,
     minimax_depth: u32,
     temperature: f32,
     ngames: usize,
-  }
+  },
 }
 
 /// First match the string with "random" or "human". If it doesn't, treat it
@@ -109,27 +127,45 @@ pub fn load_agent_spec(
 
     _ => {
       // Treating the string as filename.
-      let mut f =
-        File::open(fname).map_err(|e| format!("Error while opening file: {}", e))?;
+      let mut f = File::open(fname)
+        .map_err(|e| format!("Error while opening file: {}", e))?;
       let mut s = String::new();
       f.read_to_string(&mut s)
         .map_err(|e| format!("Error while reading file: {}", e))?;
       let mut spec = serde_json::from_str(&s)
         .map_err(|e| format!("Error while parsing AgentSpec: {}", e))?;
-      if let AgentSpec::Minimax {
-        depth: _,
-        time_per_move: ref mut t,
-        evaluator: _,
-        ref mut name
-      } = spec
-      {
-        if time_per_move > 0.0 {
-          *t = time_per_move
-        };
-        if name.is_empty() {
-          *name = fname.to_string()
-        };
-      };
+
+      match spec {
+        AgentSpec::Minimax {
+          depth: _,
+          time_per_move: ref mut t,
+          evaluator: _,
+          ref mut name,
+        } => {
+          if time_per_move > 0.0 {
+            *t = time_per_move
+          }
+          if name.is_empty() {
+            *name = fname.to_string()
+          }
+        }
+        AgentSpec::Mcts {
+          policy: _,
+          evaluator: _,
+          samples: _,
+          time_per_move: ref mut t,
+          ref mut name,
+        } => {
+          if time_per_move > 0.0 {
+            *t = time_per_move
+          }
+          if name.is_empty() {
+            *name = fname.to_string()
+          }
+        }
+        _ => (),
+      }
+
       Ok(spec)
     }
   }
@@ -176,9 +212,9 @@ mod test {
         regression: RegressionSpec {
           params: vec![0.1, 0.2, 0.3],
           regularization: 0.001,
-        }
+        },
       },
-      name: String::new()
+      name: String::new(),
     };
 
     let agent_json = serde_json::to_string_pretty(&agent_spec).unwrap();
@@ -195,7 +231,7 @@ mod test {
       depth: 3,
       time_per_move: 0.0,
       evaluator: EvaluatorSpec::Terminal,
-      name: String::new()
+      name: String::new(),
     };
 
     let agent_json = serde_json::to_string_pretty(&agent_spec).unwrap();

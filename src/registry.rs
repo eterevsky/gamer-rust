@@ -9,9 +9,10 @@ use crate::evaluators::{AnnealingTrainer, FeatureEvaluator, LadderAnnealingTrain
 use crate::games::{Gomoku, GomokuLineFeatureExtractor, Hexapawn,
             HexapawnCompleteExtractor, HexapawnNumberOfPawnsExtractor,
             Subtractor, SubtractorFeatureExtractor};
-use crate::agents::{HumanAgent, MinimaxAgent, RandomAgent};
-use crate::spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec, RegressionSpec,
+use crate::agents::{HumanAgent, MctsAgent, MinimaxAgent, RandomAgent};
+use crate::spec::{AgentSpec, EvaluatorSpec, FeatureExtractorSpec, PolicySpec, RegressionSpec,
            TrainerSpec, TrainingSpec};
+use crate::equal_policy::EqualPolicy;
 
 pub fn create_agent<G: Game>(
   game: &'static G,
@@ -35,7 +36,26 @@ pub fn create_agent<G: Game>(
         depth,
         duration,
       ))
+    },
+
+    &AgentSpec::Mcts {
+      samples,
+      time_per_move,
+      evaluator: ref evaluator_spec,
+      policy: ref policy_spec,
+      name: _,
+    } => {
+      let evaluator = create_evaluator(game, evaluator_spec);
+      let policy = create_policy(game, policy_spec);
+      let duration = convert_duration(time_per_move);
+      Box::new(MctsAgent::new(
+        policy,
+        evaluator,
+        if samples == 0 { None } else { Some(samples) },
+        duration,
+      ))
     }
+
   }
 }
 
@@ -48,6 +68,10 @@ fn create_regression<S: State, FE: FeatureExtractor<S>>(
   } else {
     LinearRegressionTanh::new(spec.params.as_slice(), spec.regularization)
   }
+}
+
+pub fn create_policy<G: Game>(_game: &'static G, _spec: &PolicySpec) -> EqualPolicy {
+  EqualPolicy::new()
 }
 
 pub fn create_evaluator<G: Game>(
